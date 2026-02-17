@@ -33,12 +33,18 @@ const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || "";
 const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASS || "1234";
 
 const SERVICES = [
-  { value: "Haircut", label: "قص الشعر", minutes: 45, price: 20000 },
-  { value: "Hair coloring", label: "صبغ الشعر", minutes: 120, price: 55000 },
-  { value: "Blowdry", label: "تسشوار", minutes: 45, price: 18000 },
-  { value: "Facial", label: "تنظيف بشرة", minutes: 60, price: 30000 },
-  { value: "Manicure", label: "مانيكير", minutes: 45, price: 15000 },
-  { value: "Pedicure", label: "باديكير", minutes: 60, price: 17000 },
+  { value: "Haircut", label: "قص الشعر", minutes: 45, price: 20000, image: "/images/service-hair.jpg" },
+  {
+    value: "Hair coloring",
+    label: "صبغ الشعر",
+    minutes: 120,
+    price: 55000,
+    image: "/images/service-hair.jpg",
+  },
+  { value: "Blowdry", label: "تسشوار", minutes: 45, price: 18000, image: "/images/service-hair.jpg" },
+  { value: "Facial", label: "تنظيف بشرة", minutes: 60, price: 30000, image: "/images/service-facial.jpg" },
+  { value: "Manicure", label: "مانيكير", minutes: 45, price: 15000, image: "/images/service-nails.jpg" },
+  { value: "Pedicure", label: "باديكير", minutes: 60, price: 17000, image: "/images/service-nails.jpg" },
 ];
 
 const STAFF = [
@@ -47,13 +53,11 @@ const STAFF = [
   { value: "Mariam", label: "مريم", role: "مكياج وتسريحات" },
 ];
 
-const PORTFOLIO = [
-  { src: "/salon-1.jpg", title: "تسريحات عصرية" },
-  { src: "/salon-2.jpg", title: "ألوان شعر ناعمة" },
-  { src: "/salon-3.jpg", title: "عناية بالبشرة" },
-  { src: "/salon-4.jpg", title: "ستايل مناسبات" },
-  { src: "/salon-5.jpg", title: "مانيكير وباديكير" },
-  { src: "/salon-6.jpg", title: "أجواء مريحة" },
+const GALLERY_IMAGES = [
+  { src: "/images/gallery-1.jpg", title: "ستايل شعر ناعم" },
+  { src: "/images/gallery-2.jpg", title: "ركن العناية بالبشرة" },
+  { src: "/images/gallery-3.jpg", title: "تفاصيل جلسات الأظافر" },
+  { src: "/images/gallery-4.jpg", title: "أجواء استقبال راقية" },
 ];
 
 const STATUS_LABELS = {
@@ -173,13 +177,13 @@ function csvEscape(value) {
   return s;
 }
 
-function PortfolioItem({ src, title }) {
+function SafeImage({ src, alt, className, fallbackClassName, fallbackText = "صورة" }) {
   const [failed, setFailed] = useState(false);
 
   if (failed) {
     return (
-      <div className="portfolio-fallback" role="img" aria-label={title}>
-        <span>{title}</span>
+      <div className={fallbackClassName} role="img" aria-label={alt}>
+        <span>{fallbackText}</span>
       </div>
     );
   }
@@ -187,9 +191,9 @@ function PortfolioItem({ src, title }) {
   return (
     <img
       src={src}
-      alt={title}
+      alt={alt}
       loading="lazy"
-      className="portfolio-image"
+      className={className}
       onError={() => setFailed(true)}
     />
   );
@@ -575,11 +579,19 @@ function App() {
         {view === "book" ? (
           <>
             <section className="hero-panel">
-              <div>
+              <SafeImage
+                src="/images/hero.jpg"
+                alt={`صورة رئيسية لصالون ${SALON_NAME}`}
+                className="hero-bg-image"
+                fallbackClassName="hero-bg-fallback"
+                fallbackText="واجهة الصالون"
+              />
+              <div className="hero-overlay" />
+              <div className="hero-content">
                 <p className="eyebrow">أهلاً بكِ في {SALON_NAME}</p>
-                <h2>احجزي موعدك بسهولة وخلي الباقي علينا</h2>
+                <h2>إطلالة أجمل تبدأ من حجزك السريع</h2>
                 <p>
-                  اختاري الخدمة والوقت المناسب، ونرسل طلبك مباشرة للصالون للتأكيد.
+                  احجزي الآن خلال دقيقة، وفريق الصالون يتواصل وياج فوراً لتأكيد الموعد.
                 </p>
 
                 <div className="hero-actions">
@@ -602,12 +614,20 @@ function App() {
 
             <section className="portfolio-section">
               <div className="section-head">
-                <h3>أعمالنا</h3>
-                <p>نماذج من خدماتنا اليومية داخل الصالون</p>
+                <h3>معرض الأعمال</h3>
+                <p>صور حقيقية لأجواء وخدمات الصالون</p>
               </div>
               <div className="portfolio-grid">
-                {PORTFOLIO.map((item) => (
-                  <PortfolioItem key={item.src} src={item.src} title={item.title} />
+                {GALLERY_IMAGES.map((item) => (
+                  <article key={item.src} className="gallery-card">
+                    <SafeImage
+                      src={item.src}
+                      alt={item.title}
+                      className="gallery-image"
+                      fallbackClassName="gallery-fallback"
+                      fallbackText={item.title}
+                    />
+                  </article>
                 ))}
               </div>
             </section>
@@ -654,6 +674,13 @@ function App() {
                               className={active ? "service-card active" : "service-card"}
                               onClick={() => setService(item.value)}
                             >
+                              <SafeImage
+                                src={item.image}
+                                alt={item.label}
+                                className="service-image"
+                                fallbackClassName="service-fallback"
+                                fallbackText={item.label}
+                              />
                               <strong>{item.label}</strong>
                               <small>{item.minutes} دقيقة</small>
                               <b>{formatCurrencyIQD(item.price)}</b>
