@@ -119,6 +119,26 @@ function buildSlotsForNextDays(days = 7) {
   return slots;
 }
 
+function digitsOnly(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function normalizeIraqiPhone(value) {
+  const digits = digitsOnly(value);
+  if (!digits) return "";
+
+  if (digits.startsWith("964")) return digits;
+  if (digits.startsWith("07") && digits.length === 11) return `964${digits.slice(1)}`;
+  if (digits.startsWith("7") && digits.length === 10) return `964${digits}`;
+  return digits;
+}
+
+function isValidE164WithoutPlus(value) {
+  return /^[1-9]\d{7,14}$/.test(value);
+}
+
+const SALON_WHATSAPP = normalizeIraqiPhone(WHATSAPP_NUMBER);
+
 function App() {
   const bookingSectionRef = useRef(null);
 
@@ -145,6 +165,7 @@ function App() {
   const [bookings, setBookings] = useState([]);
   const [adminFilter, setAdminFilter] = useState("upcoming");
   const [refreshTick, setRefreshTick] = useState(0);
+  const [statusUpdating, setStatusUpdating] = useState({});
 
   const suggestedSlots = useMemo(() => buildSlotsForNextDays(7), []);
 
@@ -171,6 +192,23 @@ function App() {
       return;
     }
 
+    const normalizedCustomerPhone = normalizeIraqiPhone(customerPhone);
+    if (!isValidE164WithoutPlus(normalizedCustomerPhone)) {
+      setMsg({
+        type: "error",
+        text: "يرجى إدخال رقم الهاتف بصيغة صحيحة مثل 07xxxxxxxxx أو 9647xxxxxxxxx.",
+      });
+      return;
+    }
+
+    if (!isValidE164WithoutPlus(SALON_WHATSAPP)) {
+      setMsg({
+        type: "error",
+        text: "رقم واتساب الصالون في الإعدادات غير صالح. عدلي VITE_WHATSAPP_NUMBER أولاً.",
+      });
+      return;
+    }
+
     const appointmentAt = new Date(slot);
     if (Number.isNaN(appointmentAt.getTime())) {
       setMsg({ type: "error", text: "يرجى اختيار موعد صحيح." });
@@ -184,7 +222,8 @@ function App() {
         {
           salon_slug: SALON_SLUG,
           customer_name: customerName.trim(),
-          customer_phone: customerPhone.trim(),
+          customer_phone: normalizedCustomerPhone,
+          salon_whatsapp: SALON_WHATSAPP,
           service,
           staff,
           appointment_at: appointmentAt.toISOString(),
@@ -197,21 +236,9 @@ function App() {
 
       setMsg({
         type: "success",
-        text: "تم إرسال طلب الحجز بنجاح. سنتواصل معكِ قريباً لتأكيد الموعد.",
+        text: "تم إرسال طلب الحجز بنجاح. وصلكِ التأكيد وسنبلغ الصالون فوراً عبر واتساب.",
       });
-
-      if (WHATSAPP_NUMBER) {
-        const waText = encodeURIComponent(
-          `طلب حجز جديد:%0Aالاسم: ${customerName}%0Aالهاتف: ${customerPhone}%0Aالخدمة: ${
-            SERVICE_LABELS[service] || service
-          }%0Aالموظفة: ${STAFF_LABELS[staff] || staff}%0Aالوقت: ${appointmentAt.toLocaleString(
-            "ar-IQ"
-          )}%0Aملاحظات: ${notes || "-"}`
-        );
-        const waUrl = `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, "")}?text=${waText}`;
-        window.open(waUrl, "_blank", "noopener,noreferrer");
-      }
-
+      setCustomerPhone(normalizedCustomerPhone);
       setNotes("");
     } catch (err) {
       setMsg({
@@ -263,14 +290,44 @@ function App() {
       return;
     }
 
+    if (statusUpdating[id]) return;
+
+    const previous = bookings.find((b) => b.id === id);
+    if (!previous) return;
+
+    setStatusUpdating((prev) => ({ ...prev, [id]: status }));
+    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
+
     try {
-      const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
+      const { data, error } = await supabase
+        .from("bookings")
+        .update({ status })
+        .eq("id", id)
+        .eq("salon_slug", SALON_SLUG)
+        .select("*")
+        .single();
+
       if (error) throw error;
+
+      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, ...data } : b)));
+      setMsg({
+        type: "success",
+        text: status === "confirmed" ? "تم تأكيد الحجز وإشعار العميلة عبر واتساب." : "تم إلغاء الحجز وإشعار العميلة عبر واتساب.",
+      });
       setRefreshTick((x) => x + 1);
     } catch (err) {
+      setBookings((prev) =>
+        prev.map((b) => (b.id === id ? { ...b, status: previous.status } : b))
+      );
       setMsg({
         type: "error",
         text: `تعذر تحديث حالة الحجز: ${err?.message || err}`,
+      });
+    } finally {
+      setStatusUpdating((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
       });
     }
   }
@@ -525,6 +582,8 @@ function App() {
                   ) : (
                     bookings.map((booking) => {
                       const statusClass = `status-badge status-${booking.status || "pending"}`;
+                      const rowLoading = Boolean(statusUpdating[booking.id]);
+                      const loadingTarget = statusUpdating[booking.id];
                       return (
                         <article key={booking.id} className="booking-item">
                           <div className="booking-head">
@@ -558,16 +617,18 @@ function App() {
                             <button
                               type="button"
                               className="action-btn confirm"
+                              disabled={rowLoading}
                               onClick={() => updateStatus(booking.id, "confirmed")}
                             >
-                              تأكيد
+                              {loadingTarget === "confirmed" ? "جاري التأكيد..." : "تأكيد"}
                             </button>
                             <button
                               type="button"
                               className="action-btn cancel"
+                              disabled={rowLoading}
                               onClick={() => updateStatus(booking.id, "cancelled")}
                             >
-                              إلغاء
+                              {loadingTarget === "cancelled" ? "جاري الإلغاء..." : "رفض"}
                             </button>
                           </div>
                         </article>

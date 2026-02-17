@@ -473,6 +473,11 @@
   color: #fff;
 }
 
+.action-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .action-btn.confirm {
   background: #66b88d;
 }
