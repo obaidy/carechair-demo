@@ -437,6 +437,16 @@
   border-color: #e2a4b2;
 }
 
+.slots-empty {
+  border: 1px dashed #e7ced4;
+  border-radius: 14px;
+  background: #fffafc;
+  color: var(--muted);
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+}
+
 .summary-card {
   border-radius: 14px;
   padding: 12px;
@@ -550,6 +560,13 @@
 
 .toolbar-actions {
   display: flex;
+  gap: 8px;
+}
+
+.admin-page-tabs {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
@@ -769,6 +786,105 @@
   background: #cf6679;
 }
 
+.settings-grid {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.settings-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 10px 24px rgba(179, 137, 146, 0.1);
+  padding: 14px;
+}
+
+.settings-card h4 {
+  margin: 0 0 4px;
+}
+
+.hours-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.day-row {
+  border: 1px solid #ecd8dc;
+  border-radius: 14px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  background: #fffdfd;
+}
+
+.day-name {
+  font-weight: 800;
+}
+
+.day-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #6a575b;
+  font-weight: 700;
+}
+
+.time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.inline-form {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.service-form-grid {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.settings-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.settings-row {
+  border: 1px solid #ecd8dc;
+  border-radius: 14px;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: #fffdfd;
+}
+
+.settings-row .ghost-btn,
+.settings-row .primary-cta {
+  flex: 0 0 auto;
+}
+
+.loading-card {
+  max-width: 440px;
+  margin: 80px auto;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(179, 137, 146, 0.12);
+  text-align: center;
+  padding: 24px 14px;
+  font-weight: 800;
+  color: #6b545a;
+}
+
 .floating-toast {
   position: fixed;
   left: 50%;
@@ -865,5 +981,18 @@
 
   .analytics-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .settings-grid .settings-card:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .service-form-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: center;
   }
 }
