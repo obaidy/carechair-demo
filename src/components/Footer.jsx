@@ -1,31 +1,65 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { isValidE164WithoutPlus, normalizeIraqiPhone } from "../lib/utils";
 
 export default function Footer() {
+  const platformWhatsapp = normalizeIraqiPhone(
+    import.meta.env.VITE_PLATFORM_WHATSAPP_NUMBER || import.meta.env.VITE_WHATSAPP_NUMBER || ""
+  );
+  const hasWhatsapp = isValidE164WithoutPlus(platformWhatsapp);
+  const demoMessage = encodeURIComponent("مرحبا، اريد احجز ديمو CareChair لمركزي.");
+
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
-        <div className="footer-brand">
+        <section className="footer-col">
           <h4>CareChair</h4>
-          <p className="footer-en" dir="ltr">
-            CareChair is operated by Infraengineering s.r.o.
-          </p>
-          <p className="footer-ar">CareChair هو نظام حجوزات تديره شركة Infraengineering s.r.o.</p>
-        </div>
+          <p>CareChair منصة حجوزات للصالونات و مراكز التجميل</p>
+          {hasWhatsapp ? (
+            <a
+              href={`https://wa.me/${platformWhatsapp}?text=${demoMessage}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              اطلب ديمو
+            </a>
+          ) : null}
+        </section>
 
-        <nav className="footer-links" aria-label="روابط قانونية">
-          <Link to="/terms">شروط الخدمة</Link>
-          <Link to="/privacy">سياسة الخصوصية</Link>
+        <section className="footer-col">
+          <h5>روابط</h5>
+          <Link to="/explore">استكشف</Link>
+          <a href="/#for-centers">للمراكز</a>
+          <a href="/#pricing">الأسعار</a>
+          <a href="/#faq">الأسئلة</a>
+        </section>
+
+        <section className="footer-col">
+          <h5>قانوني</h5>
+          <Link to="/terms">الشروط</Link>
+          <Link to="/privacy">الخصوصية</Link>
           <Link to="/billing">الفوترة والاسترجاع</Link>
-          <Link to="/cancellation">الإلغاء والتعليق</Link>
-        </nav>
+          <Link to="/cancellation">الإلغاء والإيقاف</Link>
+        </section>
 
-        <div className="footer-meta" dir="ltr">
-          <p>Infraengineering s.r.o. | IČO: 24192953</p>
-          <p>Rybná 716/24, Staré Město, 110 00 Praha, Czech Republic</p>
-          <p>aka.obaidy@gmail.com</p>
-        </div>
+        <section className="footer-col">
+          <h5>تواصل</h5>
+          <a href="mailto:aka.obaidy@gmail.com">aka.obaidy@gmail.com</a>
+          {hasWhatsapp ? (
+            <a href={`https://wa.me/${platformWhatsapp}`} target="_blank" rel="noreferrer">
+              واتساب: {platformWhatsapp}
+            </a>
+          ) : (
+            <span>واتساب غير متوفر حالياً</span>
+          )}
+        </section>
+      </div>
+
+      <div className="site-footer-bottom">
+        <p>CareChair هو نظام حجوزات تديره شركة Infraengineering s.r.o.</p>
+        <small>Infraengineering s.r.o. | IČO: 24192953 | Praha</small>
       </div>
     </footer>
   );
 }
+

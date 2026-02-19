@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CareChair">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c97990"/>
+      <stop offset="100%" stop-color="#9f5d6f"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="#1f1518"/>
+  <path d="M20 24c0-4 3-7 7-7h12v6H28a1 1 0 0 0-1 1v4h10c4.4 0 8 3.6 8 8s-3.6 8-8 8H20v-6h17a2 2 0 1 0 0-4H20v-18z" fill="url(#g)"/>
+</svg>
+

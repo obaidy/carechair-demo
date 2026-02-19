@@ -2,94 +2,107 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Footer from "../components/Footer";
 import SafeImage from "../components/SafeImage";
-import { Badge, Button, Card } from "../components/ui";
-import { getDefaultGallery, getDefaultSalonImages } from "../lib/media";
+import { Badge, Button, Card, Skeleton } from "../components/ui";
+import { getDefaultSalonImages } from "../lib/media";
 import { supabase } from "../lib/supabase";
 import { isValidE164WithoutPlus, normalizeIraqiPhone } from "../lib/utils";
 import "../styles/landing.css";
 
+// TODO: add real screenshots under /public/images/product/
 const PRODUCT_SHOTS = [
   {
     key: "admin",
     src: "/images/product/admin.png",
     title: "لوحة الإدارة",
-    caption: "تشوف الحجوزات وتقبل/ترفض بسرعة.",
+    caption: "كل الحجوزات والحالات بواجهة وحدة واضحة.",
   },
   {
     key: "booking",
     src: "/images/product/booking.png",
-    title: "رابط الحجز",
-    caption: "العميلة تختار الخدمة والوقت بخطوات قصيرة.",
+    title: "صفحة الحجز",
+    caption: "العميلة تختار الخدمة والموعد بثواني.",
   },
   {
     key: "explore",
     src: "/images/product/explore.png",
-    title: "إدارة الموظفين والخدمات",
-    caption: "تنظيم كامل للخدمات والموظفين وساعات الدوام.",
+    title: "الاستكشاف",
+    caption: "واجهة احترافية تعرض المراكز وتفاصيلها.",
   },
 ];
 
-const FEATURES = [
-  { icon: "🔗", title: "رابط حجز واحد", text: "كل الحجوزات تجي من رابط واضح وسهل." },
-  { icon: "🧩", title: "تنظيم الموظفين والخدمات", text: "كل خدمة مربوطة بالموظف المناسب." },
-  { icon: "✅", title: "قبول/رفض الحجوزات", text: "تحكم سريع بطلبات الحجز من نفس الشاشة." },
-  { icon: "🕒", title: "ساعات عمل", text: "تحدد أيام وأوقات الدوام بدقة." },
-  { icon: "🖼️", title: "صور للمركز", text: "تعرضين شغلج وصور المكان بشكل احترافي." },
-  { icon: "💬", title: "إشعارات (واتساب قريباً)", text: "إشعارات ذكية حتى ما يضيع أي موعد." },
+const QUICK_FEATURES = [
+  { icon: "🔗", title: "رابط حجز واحد", text: "تنشرين رابط واحد بكل منصاتك." },
+  { icon: "🧩", title: "تنظيم الموظفين والخدمات", text: "كل خدمة ويا الموظف المناسب." },
+  { icon: "✅", title: "قبول/رفض الحجوزات", text: "قرار سريع بدون ضياع محادثات." },
+  { icon: "🕒", title: "ساعات عمل", text: "تتحكمين بالدوام يوم بيوم." },
+  { icon: "🖼️", title: "صور للمركز", text: "تعرضين المكان والشغل بشكل جذاب." },
+  { icon: "💬", title: "إشعارات (واتساب قريباً)", text: "تنبيهات تساعدك ما يفوت موعد." },
+];
+
+const STEPS = [
+  { no: "01", title: "نسوي إعداد أولي", text: "خدمات، موظفين، وساعات عمل." },
+  { no: "02", title: "نشارك رابط الحجز", text: "على الانستغرام والواتساب." },
+  { no: "03", title: "تبدين تستقبلين الحجوزات", text: "وتديرينها من لوحة واضحة." },
 ];
 
 const FAQS = [
   {
     q: "برنامج لو تطبيق؟",
-    a: "نظام ويب يفتح كرابط، ما يحتاج تنزيل تطبيق.",
+    a: "يشتغل من الرابط على أي جهاز وما يحتاج تنزيل.",
   },
   {
     q: "ينفتح بأكثر من جهاز؟",
-    a: "نعم، يشتغل على الموبايل واللابتوب بنفس الوقت.",
+    a: "نعم، تگدرين تفتحينه من موبايل ولابتوب بنفس الوقت.",
   },
   {
     q: "شلون أضيفه بالإنستغرام؟",
-    a: "تحطين رابط الحجز بالبايو، والعميلات يحجزن مباشرة.",
+    a: "تحطين رابط الحجز بالبايو أو الستوري والعميلات يدخلن مباشرة.",
   },
   {
     q: "شلون يتم تأكيد الحجز؟",
-    a: "يوصل الطلب للوحة الإدارة، وتقدرين تقبلين أو ترفضين فوراً.",
+    a: "يوصل الطلب للوحة الإدارة وتقدرين تقبلين أو ترفضين فوراً.",
   },
 ];
 
 const TESTIMONIALS = [
   "رتبنا المواعيد وخفّت المكالمات.",
-  "الحجوزات صارت أوضح للموظفات والعميلات.",
-  "الرابط وحده خلّى الحجز أسرع واكثر ترتيب.",
+  "الحجز صار أسرع وواضح للعميلات.",
+  "يوم العمل صار أهدأ وأكثر ترتيب.",
 ];
 
 export default function HomePage() {
-  const [centersCount, setCentersCount] = useState(null);
-  const [bookingsThisMonth, setBookingsThisMonth] = useState(null);
+  const [centersCount, setCentersCount] = useState(0);
+  const [bookingsThisMonth, setBookingsThisMonth] = useState(0);
+  const [statsLoading, setStatsLoading] = useState(true);
 
-  const platformWhatsapp = normalizeIraqiPhone(import.meta.env.VITE_WHATSAPP_NUMBER || "");
+  const platformWhatsapp = normalizeIraqiPhone(
+    import.meta.env.VITE_PLATFORM_WHATSAPP_NUMBER || import.meta.env.VITE_WHATSAPP_NUMBER || ""
+  );
   const hasPlatformWhatsapp = isValidE164WithoutPlus(platformWhatsapp);
 
   const contactMessage = encodeURIComponent(
     "مرحبا، اريد نسخة CareChair لمركزي. ممكن نحجز ديمو سريع؟"
   );
+  const whatsappDemoLink = hasPlatformWhatsapp
+    ? `https://wa.me/${platformWhatsapp}?text=${contactMessage}`
+    : "/explore";
 
-  const heroImage = getDefaultSalonImages("carechair-landing").cover;
-  const heroGallery = getDefaultGallery("carechair-landing").slice(0, 3);
+  const heroImage = getDefaultSalonImages("carechair-premium-landing").cover;
 
   useEffect(() => {
     async function loadStats() {
-      if (!supabase) return;
+      if (!supabase) {
+        setStatsLoading(false);
+        return;
+      }
 
+      setStatsLoading(true);
       try {
         const salonsRes = await supabase
           .from("salons")
           .select("id", { count: "exact", head: true })
           .eq("is_active", true);
-
-        if (!salonsRes.error) {
-          setCentersCount(salonsRes.count || 0);
-        }
+        if (!salonsRes.error) setCentersCount(salonsRes.count || 0);
 
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -97,22 +110,19 @@ export default function HomePage() {
           .from("bookings")
           .select("id", { count: "exact", head: true })
           .gte("created_at", monthStart);
-
-        if (!bookingsRes.error) {
-          setBookingsThisMonth(bookingsRes.count || 0);
-        }
+        if (!bookingsRes.error) setBookingsThisMonth(bookingsRes.count || 0);
       } catch (err) {
-        // Keep the page conversion-focused even if stats fail.
         console.error("Landing stats load failed:", err);
+      } finally {
+        setStatsLoading(false);
       }
     }
 
     loadStats();
   }, []);
 
-  const proofLine = useMemo(() => {
-    if (centersCount == null) return "مراكز بدأت تستخدم CareChair لتنظيم المواعيد";
-    if (centersCount <= 8) return `مراكز بدأت تستخدم CareChair لتنظيم المواعيد (${centersCount})`;
+  const socialProofText = useMemo(() => {
+    if (centersCount <= 8) return `مراكز بدأت تستخدم CareChair (${centersCount})`;
     return `مراكز تستخدم CareChair لتنظيم المواعيد (${centersCount})`;
   }, [centersCount]);
 
@@ -131,89 +141,66 @@ export default function HomePage() {
             <a href="#faq">الأسئلة</a>
           </nav>
 
-          {hasPlatformWhatsapp ? (
-            <Button
-              as="a"
-              href={`https://wa.me/${platformWhatsapp}?text=${contactMessage}`}
-              target="_blank"
-              rel="noreferrer"
-              className="landing-nav-cta"
-            >
-              احجز ديمو واتساب
-            </Button>
-          ) : (
-            <Button as={Link} to="/explore" className="landing-nav-cta">
-              استعرض المراكز
-            </Button>
-          )}
+          <Button
+            as={hasPlatformWhatsapp ? "a" : Link}
+            to={!hasPlatformWhatsapp ? "/explore" : undefined}
+            href={hasPlatformWhatsapp ? whatsappDemoLink : undefined}
+            target={hasPlatformWhatsapp ? "_blank" : undefined}
+            rel={hasPlatformWhatsapp ? "noreferrer" : undefined}
+            className="landing-nav-cta"
+          >
+            احجز ديمو واتساب
+          </Button>
         </div>
       </header>
 
       <main className="landing-main">
         <section className="landing-hero">
-          <SafeImage
-            src={heroImage}
-            alt="صورة مركز تجميل"
-            className="landing-hero-bg"
-            fallbackIcon="✨"
-          />
+          <SafeImage src={heroImage} alt="صورة مركز تجميل" className="landing-hero-bg" fallbackIcon="✨" />
           <div className="landing-hero-overlay" />
           <div className="landing-hero-noise" />
 
           <div className="landing-hero-content">
-            <Badge variant="featured">منصّة حجوزات للصالونات في العراق</Badge>
+            <Badge variant="featured">منصّة حجوزات للصالونات و مراكز التجميل</Badge>
             <h1>حوّل فوضى الواتساب إلى نظام حجوزات مرتب</h1>
             <p>رابط حجز + لوحة إدارة + تذكير واتساب (قريباً) — خلال يوم واحد</p>
 
             <div className="landing-hero-cta">
-              {hasPlatformWhatsapp ? (
-                <Button
-                  as="a"
-                  href={`https://wa.me/${platformWhatsapp}?text=${contactMessage}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  اطلب نسخة لمركزك
-                </Button>
-              ) : (
-                <Button as={Link} to="/explore">
-                  استعرض المراكز
-                </Button>
-              )}
+              <Button
+                as={hasPlatformWhatsapp ? "a" : Link}
+                to={!hasPlatformWhatsapp ? "/explore" : undefined}
+                href={hasPlatformWhatsapp ? whatsappDemoLink : undefined}
+                target={hasPlatformWhatsapp ? "_blank" : undefined}
+                rel={hasPlatformWhatsapp ? "noreferrer" : undefined}
+              >
+                اطلب نسخة لمركزك
+              </Button>
               <Button as={Link} to="/explore" variant="secondary">
                 استعرض المراكز
               </Button>
             </div>
 
-            <div className="landing-chips">
-              <span>بدون تطبيق</span>
-              <span>يفتح على كل الأجهزة</span>
+            <div className="landing-proof-inline">
+              <span>يفتح على أكثر من جهاز</span>
+              <span>ترتيب المواعيد</span>
               <span>إلغاء بأي وقت</span>
-              <span>تركيب سريع</span>
             </div>
-          </div>
-
-          <div className="landing-hero-gallery">
-            {heroGallery.map((img, idx) => (
-              <SafeImage
-                key={`${img}-${idx}`}
-                src={img}
-                alt={`معاينة ${idx + 1}`}
-                className="landing-hero-thumb"
-                fallbackIcon="🌸"
-              />
-            ))}
           </div>
         </section>
 
         <section className="landing-proof">
           <Card className="landing-proof-head">
-            <b>{proofLine}</b>
-            <small>
-              {bookingsThisMonth != null
-                ? `${bookingsThisMonth} حجز مسجل هذا الشهر`
-                : "نساعد المراكز تبدأ الحجز المنظم بسرعة"}
-            </small>
+            {statsLoading ? (
+              <div className="landing-proof-skeleton">
+                <Skeleton className="skeleton-line" />
+                <Skeleton className="skeleton-line short" />
+              </div>
+            ) : (
+              <>
+                <b>{socialProofText}</b>
+                <small>{bookingsThisMonth} حجز مسجل هذا الشهر</small>
+              </>
+            )}
           </Card>
 
           <div className="landing-testimonials">
@@ -226,21 +213,25 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="for-centers" className="landing-section">
+        <section className="landing-section">
           <div className="landing-section-head">
-            <h2>واجهة تبين إن عندكم نظام حقيقي</h2>
-            <p>صور حقيقية، تجربة حجز سريعة، وإدارة مرتبة داخل المركز.</p>
+            <h2>شوف النظام</h2>
+            <p>واجهة حقيقية تبين إن مركزك منظم واحترافي.</p>
           </div>
 
           <div className="landing-product-grid">
             {PRODUCT_SHOTS.map((shot) => (
               <Card key={shot.key} className="landing-shot-card">
-                <SafeImage
-                  src={shot.src}
-                  alt={shot.title}
-                  className="landing-shot-image"
-                  fallbackIcon="🖥️"
-                />
+                <div className="device-frame">
+                  <div className="device-notch" />
+                  <SafeImage
+                    src={shot.src}
+                    alt={shot.title}
+                    className="landing-shot-image"
+                    fallbackIcon="🖥️"
+                    fallbackText="واجهة المنتج"
+                  />
+                </div>
                 <div className="landing-shot-meta">
                   <b>{shot.title}</b>
                   <p>{shot.caption}</p>
@@ -252,11 +243,30 @@ export default function HomePage() {
 
         <section className="landing-section">
           <div className="landing-section-head">
-            <h2>كل اللي تحتاجه لإدارة المركز</h2>
-            <p>أدوات يومية واضحة، مو تعقيد.</p>
+            <h2>شلون يشتغل؟</h2>
           </div>
+
+          <div className="landing-steps-modern">
+            {STEPS.map((step) => (
+              <article key={step.no} className="landing-step-pill">
+                <span>{step.no}</span>
+                <div>
+                  <b>{step.title}</b>
+                  <p>{step.text}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="for-centers" className="landing-section">
+          <div className="landing-section-head">
+            <h2>مميزات سريعة</h2>
+            <p>أدوات عملية تخدم يوم المركز من أول حجز لآخر حجز.</p>
+          </div>
+
           <div className="landing-features-grid">
-            {FEATURES.map((feature) => (
+            {QUICK_FEATURES.map((feature) => (
               <Card key={feature.title} className="landing-feature">
                 <span className="feature-icon">{feature.icon}</span>
                 <div>
@@ -271,7 +281,7 @@ export default function HomePage() {
         <section id="pricing" className="landing-section">
           <div className="landing-section-head">
             <h2>الأسعار</h2>
-            <p>واضحة من البداية وبدون مفاجآت.</p>
+            <p>واضحة من البداية ومناسبة للانطلاق.</p>
           </div>
 
           <div className="landing-pricing-grid">
@@ -313,22 +323,17 @@ export default function HomePage() {
         <section className="landing-final-cta">
           <Card className="landing-final-card">
             <h2>جاهز نخلي مركزك يستقبل حجوزات مرتبّة؟</h2>
-            <p>نرتبها وياك بخطوات سريعة، وتبدين تستقبلين حجوزات من نفس اليوم.</p>
+            <p>احجز ديمو سريع وشوف شلون يصير يومك أخف وترتيبك أعلى.</p>
             <div className="landing-final-actions">
-              {hasPlatformWhatsapp ? (
-                <Button
-                  as="a"
-                  href={`https://wa.me/${platformWhatsapp}?text=${contactMessage}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  احجز ديمو 5 دقائق
-                </Button>
-              ) : (
-                <Button as={Link} to="/explore">
-                  استعرض المراكز
-                </Button>
-              )}
+              <Button
+                as={hasPlatformWhatsapp ? "a" : Link}
+                to={!hasPlatformWhatsapp ? "/explore" : undefined}
+                href={hasPlatformWhatsapp ? whatsappDemoLink : undefined}
+                target={hasPlatformWhatsapp ? "_blank" : undefined}
+                rel={hasPlatformWhatsapp ? "noreferrer" : undefined}
+              >
+                احجز ديمو 5 دقائق
+              </Button>
               <Button as={Link} to="/explore" variant="secondary">
                 استعرض المراكز
               </Button>
@@ -336,6 +341,21 @@ export default function HomePage() {
           </Card>
         </section>
       </main>
+
+      <div className="mobile-sticky-cta">
+        <Button
+          as={hasPlatformWhatsapp ? "a" : Link}
+          to={!hasPlatformWhatsapp ? "/explore" : undefined}
+          href={hasPlatformWhatsapp ? whatsappDemoLink : undefined}
+          target={hasPlatformWhatsapp ? "_blank" : undefined}
+          rel={hasPlatformWhatsapp ? "noreferrer" : undefined}
+        >
+          احجز ديمو واتساب
+        </Button>
+        <Button as={Link} to="/explore" variant="secondary">
+          استعرض المراكز
+        </Button>
+      </div>
 
       <Footer />
     </div>
