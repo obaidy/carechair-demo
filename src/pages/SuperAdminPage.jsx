@@ -6,7 +6,9 @@ import { supabase } from "../lib/supabase";
 import { DEFAULT_HOURS, DEFAULT_SERVICES, DEFAULT_STAFF } from "../lib/utils";
 import { useToast } from "../lib/useToast";
 
-const SUPER_ADMIN_CODE = import.meta.env.VITE_SUPER_ADMIN_CODE || "";
+const SUPER_ADMIN_CODE = String(
+  import.meta.env.VITE_SUPER_ADMIN_CODE || import.meta.env.VITE_SUPER_ADMIN || ""
+).trim();
 
 function slugify(value) {
   return String(value || "")
@@ -215,11 +217,11 @@ export default function SuperAdminPage() {
             onSubmit={(e) => {
               e.preventDefault();
               if (!SUPER_ADMIN_CODE) {
-                showToast("error", "متغير VITE_SUPER_ADMIN_CODE غير موجود.");
+                showToast("error", "متغير السوبر أدمن غير موجود (VITE_SUPER_ADMIN_CODE).");
                 return;
               }
 
-              if (codeInput === SUPER_ADMIN_CODE) {
+              if (codeInput.trim() === SUPER_ADMIN_CODE) {
                 setUnlocked(true);
                 showToast("success", "تم فتح لوحة السوبر أدمن.");
               } else {
