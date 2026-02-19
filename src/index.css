@@ -9,11 +9,57 @@ body,
   min-height: 100%;
 }
 
+html {
+  color-scheme: light;
+}
+
 body {
-  font-family: ui-sans-serif, system-ui, "Tajawal", "Cairo", "Noto Kufi Arabic", "Noto Sans Arabic", sans-serif;
-  background: var(--cc-bg);
-  color: var(--cc-text);
-  line-height: 1.65;
+  font-family: "IBM Plex Sans Arabic", "Cairo", "Noto Sans Arabic", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  font-size: var(--type-body);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin-block: 0;
+  color: var(--text);
+  line-height: 1.14;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: var(--type-h1);
+  font-weight: 800;
+}
+
+h2 {
+  font-size: var(--type-h2);
+  font-weight: 800;
+}
+
+h3 {
+  font-size: var(--type-h3);
+  font-weight: 700;
+}
+
+p,
+li,
+small,
+label,
+input,
+select,
+textarea,
+button {
+  line-height: 1.7;
 }
 
 button,
@@ -21,4 +67,14 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(46, 107, 255, 0.22);
+  border-radius: 10px;
 }

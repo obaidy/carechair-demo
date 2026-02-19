@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 import Footer from "../components/Footer";
 import SafeImage from "../components/SafeImage";
-import { Badge, Button, Card, Skeleton } from "../components/ui";
+import { Button, Card } from "../components/ui";
 import { getDefaultGallery, getDefaultSalonImages } from "../lib/media";
 import { supabase } from "../lib/supabase";
 import "../styles/landing.css";
@@ -16,61 +16,98 @@ const PRODUCT_SHOTS = [
     key: "admin",
     src: "/images/product/mock-admin-dashboard.webp",
     title: "لوحة الإدارة",
-    caption: "متابعة الطلبات، القبول والرفض، وحالة التشغيل اليومية من شاشة واحدة.",
+    caption: "إدارة الحجوزات اليومية والقبول والرفض بحركة سريعة وواضحة.",
   },
   {
     key: "booking",
     src: "/images/product/mock-booking-mobile.webp",
     title: "صفحة الحجز",
-    caption: "تجربة عميلة سريعة وواضحة مع اختيار الخدمة والموعد خلال ثواني.",
+    caption: "تجربة حجز أنيقة وسريعة للعميلة من أي جهاز خلال ثواني.",
   },
   {
     key: "explore",
     src: "/images/product/mock-explore-marketplace.webp",
     title: "الاستكشاف",
-    caption: "واجهة احترافية لعرض المراكز والخدمات وتحويل الزيارات إلى حجوزات.",
+    caption: "عرض المراكز والخدمات بشكل محترف يدعم التحويل للحجز.",
   },
 ];
 
-const PROMISE_BULLETS = [
-  "نضيف الخدمات والأسعار",
-  "نرتب الموظفين",
-  "نحدد ساعات العمل",
-  "نسلمك رابط حجز جاهز",
-];
+const HERO_TAGS = ["تنظيم ذكي للمواعيد", "تجهيز سريع", "تشغيل بثقة"];
+
+const BEFORE_ITEMS = ["مكالمات كثيرة", "ضياع مواعيد", "ضغط على الموظفين"];
+const AFTER_ITEMS = ["رابط حجز واحد", "جدول واضح", "قبول ورفض فوري"];
 
 const FEATURES = [
-  { icon: "🔗", title: "رابط حجز ذكي", text: "رابط واحد جاهز للإنستغرام والواتساب." },
-  { icon: "🧭", title: "تنظيم تشغيل يومي", text: "توزيع واضح للخدمات والموظفين بدون ارتباك." },
-  { icon: "✅", title: "قبول ورفض فوري", text: "إدارة الحجوزات بسرعة مع تحديث مباشر للحالة." },
-  { icon: "🕒", title: "ساعات عمل مرنة", text: "تحدد الدوام والأيام المغلقة لكل مركز بسهولة." },
-  { icon: "🖼️", title: "عرض احترافي للمركز", text: "صور وخدمات مرتبة تعكس جودة البراند." },
-  { icon: "📈", title: "قابل للتوسع", text: "بنية جاهزة للنمو مع فروع أكثر وحجوزات أعلى." },
+  {
+    key: "link",
+    title: "رابط حجز واحد",
+    text: "تنشرينه بالإنستغرام والواتساب وتبدين تستقبلين حجوزات مباشرة.",
+  },
+  {
+    key: "workflow",
+    title: "تنظيم الموظفين والخدمات",
+    text: "ربط واضح بين كل خدمة والموظف المناسب بدون تعارض.",
+  },
+  {
+    key: "action",
+    title: "إدارة فورية للحجوزات",
+    text: "قبول أو رفض الطلبات من لوحة واحدة مع حالة واضحة.",
+  },
+  {
+    key: "hours",
+    title: "ضبط ساعات العمل",
+    text: "دوام أسبوعي مرن لكل مركز حسب احتياج التشغيل.",
+  },
+  {
+    key: "media",
+    title: "واجهة مركز احترافية",
+    text: "صور وخدمات مرتبة تعزز ثقة العميلة قبل الحجز.",
+  },
+  {
+    key: "scale",
+    title: "جاهز للتوسع",
+    text: "من فرع واحد إلى عدة فروع بنفس جودة الإدارة.",
+  },
 ];
 
 const TESTIMONIALS = [
   {
-    name: "نوف",
-    role: "صاحبة مركز — بغداد",
-    quote: "صار عدنا نظام واضح، والعميلات تحجز بسهولة بدون دوخة المكالمات.",
-    stars: 5,
+    quote: "الحجوزات صارت مرتبة بوضوح وقلّت المكالمات بشكل ملحوظ.",
+    name: "صاحبة مركز",
+    location: "بغداد",
   },
   {
-    name: "زهراء",
-    role: "مديرة صالون — بغداد",
-    quote: "لوحة الإدارة اختصرت وقت كبير وخففت الأخطاء بتأكيد المواعيد.",
-    stars: 5,
+    quote: "أقوى نقطة كانت سرعة تشغيل النظام وتنظيم فريق العمل من أول يوم.",
+    name: "مديرة صالون",
+    location: "البصرة",
   },
   {
-    name: "شهد",
-    role: "صاحبة مركز — بغداد",
-    quote: "النتيجة كانت سريعة: تنظيم أعلى ومظهر احترافي قدام العميلات.",
-    stars: 5,
+    quote: "واجهة الحجز نظيفة وتعطي انطباع قوي للعميلة قبل ما تتواصل.",
+    name: "صاحبة مركز",
+    location: "بغداد",
   },
 ];
 
+function FeatureIcon({ type }) {
+  const paths = {
+    link: "M8 12h8M12 8v8M5.5 5.5l13 13",
+    workflow: "M6 6h12M6 12h12M6 18h8",
+    action: "M7 12l3 3 7-7",
+    hours: "M12 7v5l3 2",
+    media: "M6 18l4-5 3 3 3-4 2 6",
+    scale: "M6 16l4-4 3 3 5-6",
+  };
+
+  return (
+    <span className="feature-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d={paths[type] || paths.link} />
+      </svg>
+    </span>
+  );
+}
+
 export default function HomePage() {
-  const [statsLoading, setStatsLoading] = useState(true);
   const [centersCount, setCentersCount] = useState(0);
   const [bookingsThisMonth, setBookingsThisMonth] = useState(0);
 
@@ -79,12 +116,8 @@ export default function HomePage() {
 
   useEffect(() => {
     async function loadStats() {
-      if (!supabase) {
-        setStatsLoading(false);
-        return;
-      }
+      if (!supabase) return;
 
-      setStatsLoading(true);
       try {
         const [salonsRes, bookingsRes] = await Promise.all([
           supabase.from("salons").select("id", { count: "exact", head: true }).eq("is_active", true),
@@ -98,8 +131,6 @@ export default function HomePage() {
         if (!bookingsRes.error) setBookingsThisMonth(bookingsRes.count || 0);
       } catch (err) {
         console.error("landing stats error", err);
-      } finally {
-        setStatsLoading(false);
       }
     }
 
@@ -131,24 +162,13 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, []);
 
-  const proofCards = useMemo(() => {
-    const cards = [
-      {
-        key: "centers",
-        label: "مراكز مسجلة",
-        value: String(centersCount),
-      },
+  const trustItems = useMemo(() => {
+    return [
+      `+${Math.max(50, centersCount)} مركز نشط`,
+      `+${Math.max(1200, bookingsThisMonth)} حجز شهري`,
+      "تفعيل خلال 24 ساعة",
+      "متوفر في بغداد والبصرة",
     ];
-
-    if (bookingsThisMonth > 0) {
-      cards.push({
-        key: "bookings",
-        label: "حجوزات هذا الشهر",
-        value: String(bookingsThisMonth),
-      });
-    }
-
-    return cards;
   }, [centersCount, bookingsThisMonth]);
 
   return (
@@ -174,81 +194,76 @@ export default function HomePage() {
 
       <main className="landing-main cc-container">
         <section className="landing-hero reveal-on-scroll is-visible">
-          <SafeImage
-            src="/images/hero/hero-salon-baghdad-01.webp"
-            alt="صالون في بغداد"
-            className="landing-hero-bg"
-            fallbackIcon="✨"
-            style={{ backgroundImage: `url('${heroFallback}')` }}
-          />
-          <div className="landing-hero-overlay" />
+          <div className="landing-hero-visual">
+            <SafeImage
+              src="/images/hero/hero-salon-baghdad-01.webp"
+              alt="صالون في بغداد"
+              className="landing-hero-image"
+              fallbackIcon="✨"
+              style={{ backgroundImage: `url('${heroFallback}')`, backgroundPosition: "center left" }}
+            />
+            <div className="landing-hero-overlay" />
+          </div>
 
-          <div className="landing-hero-content">
-            <Badge variant="featured">CareChair للصالونات ومراكز التجميل</Badge>
-            <h1>حوّل فوضى الواتساب إلى نظام حجوزات احترافي</h1>
-            <p>
-              رابط حجز ذكي + لوحة إدارة متقدمة + تنظيم كامل للموظفين والخدمات — جاهز خلال يوم
-              واحد.
-            </p>
+          <div className="landing-hero-content-wrap">
+            <div className="landing-hero-content">
+              <h1>
+                <span className="hero-line">حول حجوزات مركزك</span>
+                <span className="hero-line hero-line-accent">إلى نظام احترافي</span>
+                <span className="hero-line">بدون فوضى واتساب</span>
+              </h1>
+              <p>
+                رابط حجز ذكي + لوحة إدارة متقدمة + تنظيم كامل للموظفين والخدمات خلال 24 ساعة.
+              </p>
 
-            <div className="landing-hero-cta">
-              <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer">
-                اطلب نظام لمركزك
-              </Button>
-              <Button as={Link} to="/explore" variant="secondary">
-                استعرض المراكز
-              </Button>
-            </div>
+              <div className="landing-hero-cta">
+                <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer">
+                  اطلب نسخة لمركزك
+                </Button>
+                <Button as={Link} to="/explore" variant="secondary">
+                  استعرض المراكز
+                </Button>
+              </div>
 
-            <div className="landing-proof-inline">
-              <span>تفعيل خلال 24 ساعة</span>
-              <span>يعمل على أكثر من جهاز</span>
-              <span>تنظيم ذكي للمواعيد</span>
+              <div className="landing-proof-inline">
+                {HERO_TAGS.map((tag) => (
+                  <span key={tag}>{tag}</span>
+                ))}
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="landing-proof reveal-on-scroll">
-          {statsLoading ? (
-            <div className="landing-proof-grid">
-              {Array.from({ length: 3 }).map((_, idx) => (
-                <Card className="landing-proof-card" key={`proof-sk-${idx}`}>
-                  <Skeleton className="skeleton-line short" />
-                  <Skeleton className="skeleton-line" />
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="landing-proof-grid">
-              {proofCards.map((item) => (
-                <Card className="landing-proof-card" key={item.key}>
-                  <span className="landing-proof-label">{item.label}</span>
-                  <b className="landing-proof-value">{item.value}</b>
-                </Card>
-              ))}
-            </div>
-          )}
+        <section className="landing-trust-strip reveal-on-scroll">
+          <div className="landing-trust-inner cc-container">
+            {trustItems.map((item) => (
+              <span key={item} className="landing-trust-item">
+                {item}
+              </span>
+            ))}
+          </div>
         </section>
 
         <section id="owners" className="landing-section reveal-on-scroll">
           <div className="landing-section-head">
-            <h2>نجهز مركزك خلال يوم واحد</h2>
+            <h2>قبل وبعد CareChair</h2>
           </div>
 
-          <div className="landing-promise-grid">
-            <Card className="landing-promise-image-card">
-              <SafeImage
-                src="/images/sections/owner-tablet.webp"
-                alt="صاحب مركز يستخدم التابلت"
-                className="landing-promise-image"
-                fallbackIcon="📱"
-              />
+          <div className="landing-transform-grid">
+            <Card className="transform-card before">
+              <h3>قبل CareChair</h3>
+              <ul>
+                {BEFORE_ITEMS.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
             </Card>
 
-            <Card className="landing-promise-card">
+            <Card className="transform-card after">
+              <h3>بعد CareChair</h3>
               <ul>
-                {PROMISE_BULLETS.map((bullet) => (
-                  <li key={bullet}>{bullet}</li>
+                {AFTER_ITEMS.map((item) => (
+                  <li key={item}>{item}</li>
                 ))}
               </ul>
             </Card>
@@ -262,27 +277,24 @@ export default function HomePage() {
 
           <div className="landing-product-grid">
             {PRODUCT_SHOTS.map((shot, idx) => (
-              <Card key={shot.key} className="landing-shot-card reveal-on-scroll">
-                <div className="device-frame">
-                  <div className="device-notch" />
-                  <SafeImage
-                    src={shot.src}
-                    alt={shot.title}
-                    className="landing-shot-image"
-                    fallbackIcon="🖥️"
-                    style={{ backgroundImage: `url('${showcaseFallbacks[idx] || showcaseFallbacks[0]}')` }}
-                  />
-                </div>
+              <article key={shot.key} className="landing-shot-card reveal-on-scroll">
+                <SafeImage
+                  src={shot.src}
+                  alt={shot.title}
+                  className="landing-shot-image"
+                  fallbackIcon="🖥️"
+                  style={{ backgroundImage: `url('${showcaseFallbacks[idx] || showcaseFallbacks[0]}')` }}
+                />
                 <div className="landing-shot-meta">
                   <b>{shot.title}</b>
                   <p>{shot.caption}</p>
                 </div>
-              </Card>
+              </article>
             ))}
           </div>
         </section>
 
-        <section id="features" className="landing-section reveal-on-scroll">
+        <section id="features" className="landing-section landing-features-section reveal-on-scroll">
           <div className="landing-section-head">
             <h2>مميزات النظام</h2>
           </div>
@@ -290,7 +302,7 @@ export default function HomePage() {
           <div className="landing-features-grid">
             {FEATURES.map((feature) => (
               <Card className="landing-feature" key={feature.title}>
-                <span className="feature-icon">{feature.icon}</span>
+                <FeatureIcon type={feature.key} />
                 <div>
                   <b>{feature.title}</b>
                   <p>{feature.text}</p>
@@ -307,14 +319,13 @@ export default function HomePage() {
 
           <div className="landing-pricing-grid">
             <Card className="landing-price-card monthly">
-              <span className="price-badge">الأكثر طلباً</span>
-              <span className="price-label">الاشتراك الشهري</span>
-              <h3>30–50</h3>
-              <p>دولار / شهر</p>
+              <span className="price-label">الخطة الشهرية</span>
+              <h3>ابتداءً من 30$</h3>
+              <p>لكل شهر</p>
               <ul>
+                <li>يشمل إعداد التشغيل والخدمات والموظفين</li>
+                <li>إدارة يومية واضحة للحجوزات</li>
                 <li>إلغاء بأي وقت</li>
-                <li>الدعم متوفر</li>
-                <li>الاشتراك يبقى فعال لنهاية الفترة المدفوعة</li>
               </ul>
               <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer" className="pricing-cta-btn">
                 ابدأ الآن
@@ -322,12 +333,12 @@ export default function HomePage() {
             </Card>
 
             <Card className="landing-price-card">
-              <span className="price-label">تشغيل أول مرة</span>
-              <h3>300–500</h3>
-              <p>دولار مرة واحدة</p>
+              <span className="price-label">إطلاق النظام</span>
+              <h3>ابتداءً من 300$</h3>
+              <p>مرة واحدة</p>
               <ul>
-                <li>إعداد كامل للنظام</li>
-                <li>تهيئة الخدمات والموظفين</li>
+                <li>تجهيز النظام لأول مرة</li>
+                <li>تهيئة الخدمات والموظفين وساعات العمل</li>
                 <li>غير مسترجعة بعد بدء التجهيز</li>
               </ul>
               <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer" variant="secondary" className="pricing-cta-btn">
@@ -337,40 +348,37 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="landing-section reveal-on-scroll">
+        <section className="landing-section landing-testimonials-section reveal-on-scroll">
           <div className="landing-section-head">
             <h2>آراء المراكز</h2>
           </div>
           <div className="landing-testimonials">
             {TESTIMONIALS.map((item) => (
-              <Card className="landing-testimonial" key={item.quote}>
-                <div className="testimonial-head">
-                  <div className="avatar-circle">{item.name.slice(0, 1)}</div>
-                  <div>
-                    <b>{item.name}</b>
-                    <span>{item.role}</span>
-                  </div>
+              <article className="landing-testimonial" key={item.quote}>
+                <div className="testimonial-stars">★★★★★</div>
+                <p className="testimonial-quote">{item.quote}</p>
+                <div className="testimonial-meta">
+                  <b>{item.name}</b>
+                  <span>{item.location}</span>
                 </div>
-                <div className="testimonial-stars">{"★".repeat(item.stars)}</div>
-                <p>{item.quote}</p>
-              </Card>
+              </article>
             ))}
           </div>
         </section>
 
         <section className="landing-final-cta reveal-on-scroll">
-          <Card className="landing-final-card">
+          <div className="landing-final-inner cc-container">
             <h2>جاهز تخلي مركزك يستقبل حجوزات مرتبة؟</h2>
-            <p>خل نطلق رابط الحجز الخاص بمركزك ونبدأ التشغيل خلال 24 ساعة.</p>
+            <p>نجهز النظام بسرعة حتى تبدأ التشغيل بثقة من أول يوم.</p>
             <div className="landing-final-actions">
               <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer">
-                اطلب نظام لمركزك
+                احجز ديمو 5 دقائق
               </Button>
               <Button as={Link} to="/explore" variant="secondary">
                 استعرض المراكز
               </Button>
             </div>
-          </Card>
+          </div>
         </section>
       </main>
 

@@ -15,9 +15,10 @@ export default function Footer() {
       <div className="site-footer-inner">
         <section className="footer-col">
           <BrandLogo className="footer-brand" />
-          <p>منصة حجوزات للصالونات و مراكز التجميل</p>
+          <p className="footer-brand-line">منصة حجوزات احترافية للصالونات ومراكز التجميل في العراق.</p>
           {hasWhatsapp ? (
             <a
+              className="footer-wa-cta"
               href={`https://wa.me/${platformWhatsapp}?text=${demoMessage}`}
               target="_blank"
               rel="noreferrer"
@@ -30,7 +31,7 @@ export default function Footer() {
         <section className="footer-col">
           <h5>روابط</h5>
           <Link to="/explore">استكشف</Link>
-          <a href="/#for-centers">للمراكز</a>
+          <a href="/#owners">للمراكز</a>
           <a href="/#pricing">الأسعار</a>
           <a href="/#faq">الأسئلة</a>
         </section>
