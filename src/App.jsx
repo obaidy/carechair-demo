@@ -25,6 +25,7 @@ export default function App() {
         <Route path="/cancellation" element={<Cancellation />} />
         <Route path="/s/:slug" element={<SalonBookingPage />} />
         <Route path="/s/:slug/admin" element={<SalonAdminPage />} />
+        <Route path="/s/:slug/admin/:module" element={<SalonAdminPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>

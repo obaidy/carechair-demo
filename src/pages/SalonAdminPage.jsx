@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import SafeImage from "../components/SafeImage";
 import Toast from "../components/Toast";
@@ -33,20 +33,42 @@ import {
 const MEDIA_BUCKET = "carechair-media";
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-const ADMIN_SECTIONS = [
+const ADMIN_SIDEBAR_ITEMS = [
+  { key: "dashboard", label: "لوحة التحكم" },
   { key: "bookings", label: "الحجوزات" },
+  { key: "calendar", label: "التقويم" },
+  { key: "clients", label: "العملاء" },
+  { key: "employees", label: "الموظفين" },
   { key: "services", label: "الخدمات" },
-  { key: "staff", label: "الموظفين" },
+  { key: "schedules", label: "جداول الدوام" },
+  { key: "commissions", label: "العمولات" },
+  { key: "expenses", label: "المصروفات" },
+  { key: "reports", label: "التقارير" },
+  { key: "settings", label: "الإعدادات" },
+];
+
+const SETTINGS_SECTIONS = [
   { key: "assign", label: "ربط الخدمات بالموظفين" },
-  { key: "hours", label: "ساعات العمل" },
   { key: "media", label: "الصور" },
   { key: "salon", label: "إعدادات المركز" },
 ];
 
+const CHART_COLORS = ["#2563eb", "#1d4ed8", "#0ea5e9", "#14b8a6", "#22c55e", "#f59e0b", "#ef4444"];
+
+function formatMonthLabel(monthKey) {
+  const [year, month] = String(monthKey || "")
+    .split("-")
+    .map((x) => Number(x));
+  if (!year || !month) return monthKey;
+  const date = new Date(year, month - 1, 1);
+  return new Intl.DateTimeFormat("ar-IQ", { month: "long", year: "numeric" }).format(date);
+}
+
 const BOOKINGS_PAGE_SIZE = 20;
 
 export default function SalonAdminPage() {
-  const { slug } = useParams();
+  const { slug, module } = useParams();
+  const navigate = useNavigate();
   const { toast, showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -65,12 +87,23 @@ export default function SalonAdminPage() {
   const [services, setServices] = useState([]);
   const [staff, setStaff] = useState([]);
   const [staffServices, setStaffServices] = useState([]);
+  const [employeeHours, setEmployeeHours] = useState([]);
+  const [employeeTimeOff, setEmployeeTimeOff] = useState([]);
 
   const [hoursDraft, setHoursDraft] = useState({});
   const [saveHoursLoading, setSaveHoursLoading] = useState(false);
   const [savingSalonFlags, setSavingSalonFlags] = useState(false);
 
-  const [activeSection, setActiveSection] = useState("bookings");
+  const [activeSection, setActiveSection] = useState("dashboard");
+  const [activeSettingsSection, setActiveSettingsSection] = useState("assign");
+  const [analyticsPeriod, setAnalyticsPeriod] = useState("last30");
+  const [calendarDate, setCalendarDate] = useState(formatDateKey(new Date()));
+  const [scheduleStaffId, setScheduleStaffId] = useState("");
+  const [scheduleDraft, setScheduleDraft] = useState({});
+  const [saveScheduleLoading, setSaveScheduleLoading] = useState(false);
+  const [timeOffForm, setTimeOffForm] = useState({ start_at: "", end_at: "", reason: "" });
+  const [savingTimeOff, setSavingTimeOff] = useState(false);
+  const [deletingTimeOffId, setDeletingTimeOffId] = useState("");
 
   const [serviceForm, setServiceForm] = useState({ name: "", duration_minutes: "45", price: "20000", sort_order: "0" });
   const [staffForm, setStaffForm] = useState({ name: "", sort_order: "0", photo_url: "" });
@@ -109,6 +142,16 @@ export default function SalonAdminPage() {
   const [staffImageLoading, setStaffImageLoading] = useState({});
   const [staffImageCompressing, setStaffImageCompressing] = useState({});
   const [copyingLink, setCopyingLink] = useState(false);
+
+  useEffect(() => {
+    const validKeys = new Set(ADMIN_SIDEBAR_ITEMS.map((x) => x.key));
+    const target = module || "dashboard";
+    if (!validKeys.has(target)) {
+      navigate(`/s/${slug}/admin/dashboard`, { replace: true });
+      return;
+    }
+    setActiveSection(target);
+  }, [module, navigate, slug]);
 
   useEffect(() => {
     async function loadSalon() {
@@ -150,12 +193,19 @@ export default function SalonAdminPage() {
 
     setBookingsLoading(true);
     try {
-      const [bookingsRes, servicesRes, staffRes, staffServicesRes, hoursRes] = await Promise.all([
+      const [bookingsRes, servicesRes, staffRes, staffServicesRes, hoursRes, employeeHoursRes, employeeTimeOffRes] = await Promise.all([
         supabase.from("bookings").select("*").eq("salon_id", salonId).order("appointment_start", { ascending: true }).limit(2000),
         supabase.from("services").select("*").eq("salon_id", salonId),
         supabase.from("staff").select("*").eq("salon_id", salonId),
         supabase.from("staff_services").select("*").eq("salon_id", salonId),
         supabase.from("salon_hours").select("*").eq("salon_id", salonId),
+        supabase.from("employee_hours").select("*").eq("salon_id", salonId),
+        supabase
+          .from("employee_time_off")
+          .select("*")
+          .eq("salon_id", salonId)
+          .order("start_at", { ascending: true })
+          .limit(800),
       ]);
 
       if (bookingsRes.error) throw bookingsRes.error;
@@ -163,11 +213,15 @@ export default function SalonAdminPage() {
       if (staffRes.error) throw staffRes.error;
       if (staffServicesRes.error) throw staffServicesRes.error;
       if (hoursRes.error) throw hoursRes.error;
+      if (employeeHoursRes.error) throw employeeHoursRes.error;
+      if (employeeTimeOffRes.error) throw employeeTimeOffRes.error;
 
       setBookings(bookingsRes.data || []);
       setServices((servicesRes.data || []).sort(sortByOrderThenName));
       setStaff((staffRes.data || []).sort(sortByOrderThenName));
       setStaffServices(staffServicesRes.data || []);
+      setEmployeeHours(employeeHoursRes.data || []);
+      setEmployeeTimeOff(employeeTimeOffRes.data || []);
 
       const dayMap = {};
       for (const day of DAYS) {
@@ -199,6 +253,10 @@ export default function SalonAdminPage() {
 
       const firstStaff = (staffRes.data || []).sort(sortByOrderThenName)[0];
       setAssignStaffId((prev) => {
+        if (prev && (staffRes.data || []).some((x) => x.id === prev)) return prev;
+        return firstStaff?.id || "";
+      });
+      setScheduleStaffId((prev) => {
         if (prev && (staffRes.data || []).some((x) => x.id === prev)) return prev;
         return firstStaff?.id || "";
       });
@@ -234,6 +292,36 @@ export default function SalonAdminPage() {
         .map((x) => x.service_id)
     );
   }, [assignStaffId, staffServices]);
+
+  useEffect(() => {
+    if (!scheduleStaffId) {
+      setScheduleDraft({});
+      return;
+    }
+
+    const base = {};
+    for (const day of DAYS) {
+      base[day.index] = {
+        is_off: false,
+        start_time: "10:00",
+        end_time: "20:00",
+        break_start: "",
+        break_end: "",
+      };
+    }
+
+    for (const row of employeeHours.filter((x) => x.staff_id === scheduleStaffId)) {
+      base[row.day_of_week] = {
+        is_off: Boolean(row.is_off),
+        start_time: toHHMM(row.start_time),
+        end_time: toHHMM(row.end_time),
+        break_start: row.break_start ? toHHMM(row.break_start) : "",
+        break_end: row.break_end ? toHHMM(row.break_end) : "",
+      };
+    }
+
+    setScheduleDraft(base);
+  }, [scheduleStaffId, employeeHours]);
 
   const todayKey = formatDateKey(new Date());
 
@@ -286,6 +374,264 @@ export default function SalonAdminPage() {
     return { today, pending, confirmed, cancelled };
   }, [bookings, todayKey]);
 
+  const calendarGroups = useMemo(() => {
+    const targetDate = calendarDate || formatDateKey(new Date());
+    const rows = bookings
+      .filter((b) => formatDateKey(b.appointment_start) === targetDate)
+      .sort((a, b) => new Date(a.appointment_start).getTime() - new Date(b.appointment_start).getTime());
+
+    const map = {};
+    for (const member of staff) {
+      map[member.id] = { staff: member, items: [] };
+    }
+    for (const row of rows) {
+      if (!map[row.staff_id]) {
+        map[row.staff_id] = { staff: { id: row.staff_id, name: "غير محدد" }, items: [] };
+      }
+      map[row.staff_id].items.push(row);
+    }
+    return Object.values(map).sort((a, b) => String(a.staff?.name || "").localeCompare(String(b.staff?.name || ""), "ar"));
+  }, [bookings, calendarDate, staff]);
+
+  const analyticsMonthOptions = useMemo(() => {
+    if (!salon?.created_at) return [];
+
+    const created = new Date(salon.created_at);
+    const start = new Date(created.getFullYear(), created.getMonth(), 1);
+    const end = new Date();
+    const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+    const rows = [];
+
+    const cursor = new Date(start);
+    while (cursor <= endMonth) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
+      rows.push({ value: key, label: formatMonthLabel(key) });
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+
+    return rows.reverse();
+  }, [salon?.created_at]);
+
+  useEffect(() => {
+    if (analyticsPeriod === "last30") return;
+    if (analyticsMonthOptions.some((x) => x.value === analyticsPeriod)) return;
+    setAnalyticsPeriod("last30");
+  }, [analyticsMonthOptions, analyticsPeriod]);
+
+  const analyticsRange = useMemo(() => {
+    const now = new Date();
+    if (analyticsPeriod === "last30") {
+      const end = new Date(now);
+      end.setHours(0, 0, 0, 0);
+      end.setDate(end.getDate() + 1);
+      const start = new Date(end);
+      start.setDate(start.getDate() - 30);
+      return { start, end, label: "آخر 30 يوم" };
+    }
+
+    const [year, month] = String(analyticsPeriod).split("-").map((x) => Number(x));
+    if (!year || !month) {
+      const end = new Date(now);
+      end.setHours(0, 0, 0, 0);
+      end.setDate(end.getDate() + 1);
+      const start = new Date(end);
+      start.setDate(start.getDate() - 30);
+      return { start, end, label: "آخر 30 يوم" };
+    }
+
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 1);
+    return { start, end, label: formatMonthLabel(analyticsPeriod) };
+  }, [analyticsPeriod]);
+
+  const analytics = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const { start: periodStart, end: periodEnd, label: periodLabel } = analyticsRange;
+    const dayKeys = [];
+    const dayRevenueMap = {};
+
+    const cursor = new Date(periodStart);
+    while (cursor < periodEnd) {
+      const d = new Date(cursor);
+      d.setHours(0, 0, 0, 0);
+      const key = formatDateKey(d);
+      dayKeys.push({ key, date: d });
+      dayRevenueMap[key] = 0;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const todayBookings = bookings.filter((x) => formatDateKey(x.appointment_start) === todayKey);
+    const confirmedBookings = bookings.filter((x) => x.status === "confirmed");
+    const bookingsInPeriod = bookings.filter((x) => {
+      const date = new Date(x.appointment_start || x.created_at);
+      return date >= periodStart && date < periodEnd;
+    });
+    const confirmedInPeriod = confirmedBookings.filter((x) => {
+      const date = new Date(x.appointment_start || x.created_at);
+      return date >= periodStart && date < periodEnd;
+    });
+
+    const revenueFor = (booking) =>
+      Number(servicesById[booking.service_id]?.price || booking.price || booking.service_price || 0);
+
+    let todayRevenue = 0;
+    let monthRevenue = 0;
+    const serviceRevenueMap = {};
+    const employeeMap = {};
+
+    for (const member of staff) {
+      employeeMap[member.id] = {
+        id: member.id,
+        name: member.name,
+        bookings: 0,
+        revenue: 0,
+        minutes: 0,
+      };
+    }
+
+    for (const booking of confirmedBookings) {
+      const amount = revenueFor(booking);
+      const bookingDate = new Date(booking.appointment_start);
+      const bookingKey = formatDateKey(bookingDate);
+
+      if (bookingKey === todayKey) todayRevenue += amount;
+      if (bookingDate >= monthStart) monthRevenue += amount;
+    }
+
+    for (const booking of confirmedInPeriod) {
+      const amount = revenueFor(booking);
+      const bookingDate = new Date(booking.appointment_start);
+      const bookingKey = formatDateKey(bookingDate);
+
+      if (Object.prototype.hasOwnProperty.call(dayRevenueMap, bookingKey)) {
+        dayRevenueMap[bookingKey] += amount;
+      }
+
+      const serviceName = servicesById[booking.service_id]?.name || "خدمة غير معروفة";
+      serviceRevenueMap[serviceName] = (serviceRevenueMap[serviceName] || 0) + amount;
+
+      const employee = employeeMap[booking.staff_id];
+      if (employee) {
+        employee.bookings += 1;
+        employee.revenue += amount;
+        const start = booking.appointment_start ? new Date(booking.appointment_start).getTime() : 0;
+        const end = booking.appointment_end ? new Date(booking.appointment_end).getTime() : 0;
+        const derivedMinutes =
+          Number(servicesById[booking.service_id]?.duration_minutes || 0) ||
+          Math.max(0, Math.round((end - start) / 60000));
+        employee.minutes += Number.isFinite(derivedMinutes) ? derivedMinutes : 0;
+      }
+    }
+
+    const openMinutesByDay = DAYS.reduce((acc, day) => {
+      const row = hoursDraft[day.index];
+      if (!row || row.is_closed) return { ...acc, [day.index]: 0 };
+      const open = String(row.open_time || "10:00").split(":").map(Number);
+      const close = String(row.close_time || "20:00").split(":").map(Number);
+      const minutes = Math.max(0, (close[0] * 60 + close[1]) - (open[0] * 60 + open[1]));
+      return { ...acc, [day.index]: minutes };
+    }, {});
+
+    let totalAvailableMinutes = 0;
+    for (const row of dayKeys) {
+      totalAvailableMinutes += openMinutesByDay[row.date.getDay()] || 0;
+    }
+
+    const employeesPerformance = Object.values(employeeMap)
+      .map((row) => {
+        const utilization = totalAvailableMinutes > 0 ? (row.minutes / totalAvailableMinutes) * 100 : 0;
+        const baseRating = 4 + Math.min(1, row.bookings / 35);
+        return {
+          ...row,
+          utilization: Math.max(0, Math.min(100, utilization)),
+          rating: Math.min(5, baseRating).toFixed(1),
+        };
+      })
+      .sort((a, b) => b.revenue - a.revenue);
+
+    const servicesBreakdown = Object.entries(serviceRevenueMap)
+      .map(([name, revenue]) => ({ name, revenue }))
+      .sort((a, b) => b.revenue - a.revenue);
+
+    const totalServiceRevenue = servicesBreakdown.reduce((sum, x) => sum + x.revenue, 0);
+    const pieSegments = servicesBreakdown.map((item, idx) => {
+      const pct = totalServiceRevenue > 0 ? (item.revenue / totalServiceRevenue) * 100 : 0;
+      return { ...item, color: CHART_COLORS[idx % CHART_COLORS.length], pct };
+    });
+
+    let startPct = 0;
+    const pieGradient = pieSegments.length
+      ? `conic-gradient(${pieSegments
+          .map((segment) => {
+            const from = startPct;
+            startPct += segment.pct;
+            return `${segment.color} ${from}% ${startPct}%`;
+          })
+          .join(",")})`
+      : "conic-gradient(#e2e8f0 0% 100%)";
+
+    const revenueSeries = dayKeys.map((row) => ({ ...row, revenue: dayRevenueMap[row.key] || 0 }));
+    const seriesMax = Math.max(1, ...revenueSeries.map((x) => x.revenue));
+    const chartWidth = 920;
+    const chartHeight = 260;
+    const padX = 30;
+    const padY = 22;
+    const stepX = revenueSeries.length > 1 ? (chartWidth - padX * 2) / (revenueSeries.length - 1) : 0;
+    const points = revenueSeries.map((row, idx) => {
+      const x = padX + idx * stepX;
+      const y = chartHeight - padY - (row.revenue / seriesMax) * (chartHeight - padY * 2);
+      return { x, y, ...row };
+    });
+    const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(" ");
+    const areaPath = points.length
+      ? `M ${points[0].x} ${chartHeight - padY} L ${points
+          .map((p) => `${p.x} ${p.y}`)
+          .join(" L ")} L ${points[points.length - 1].x} ${chartHeight - padY} Z`
+      : "";
+
+    const clientsMap = {};
+    for (const b of bookingsInPeriod) {
+      const key = String(b.customer_phone || b.customer_name || b.id);
+      if (!clientsMap[key]) {
+        clientsMap[key] = {
+          name: b.customer_name || "عميلة",
+          phone: b.customer_phone || "-",
+          bookings: 0,
+          revenue: 0,
+          lastVisit: b.appointment_start || b.created_at,
+        };
+      }
+      clientsMap[key].bookings += 1;
+      if (b.status === "confirmed") clientsMap[key].revenue += revenueFor(b);
+      if (new Date(b.appointment_start || b.created_at) > new Date(clientsMap[key].lastVisit)) {
+        clientsMap[key].lastVisit = b.appointment_start || b.created_at;
+      }
+    }
+    const clients = Object.values(clientsMap).sort((a, b) => b.bookings - a.bookings);
+
+    return {
+      todayRevenue,
+      monthRevenue,
+      totalBookingsToday: todayBookings.length,
+      activeEmployees: staff.filter((x) => x.is_active).length,
+      revenueSeries,
+      seriesMax,
+      polylinePoints,
+      areaPath,
+      chartWidth,
+      chartHeight,
+      padX,
+      padY,
+      employeesPerformance,
+      pieSegments,
+      pieGradient,
+      clients,
+      totalServiceRevenue,
+      periodLabel,
+    };
+  }, [analyticsRange, bookings, hoursDraft, servicesById, staff, todayKey]);
+
   useEffect(() => {
     setVisibleBookingCount(BOOKINGS_PAGE_SIZE);
   }, [bookingStatusFilter, bookingDateFilter, bookingSearch, bookings]);
@@ -320,6 +666,14 @@ export default function SalonAdminPage() {
       { key: "media", label: "إضافة صور المركز (اختياري)", done: hasMedia },
     ];
   }, [services, staff, staffServices, hoursDraft, salon?.logo_url, salon?.cover_image_url, galleryUrls.length]);
+
+  const selectedStaffTimeOff = useMemo(
+    () =>
+      employeeTimeOff
+        .filter((row) => row.staff_id === scheduleStaffId)
+        .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()),
+    [employeeTimeOff, scheduleStaffId]
+  );
 
   function validateImageFile(file) {
     if (!file) {
@@ -665,6 +1019,104 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       showToast("error", `تعذر حفظ ساعات العمل: ${err?.message || err}`);
     } finally {
       setSaveHoursLoading(false);
+    }
+  }
+
+  async function saveEmployeeSchedule() {
+    if (!supabase || !salon?.id || !scheduleStaffId) return;
+
+    for (const day of DAYS) {
+      const row = scheduleDraft[day.index];
+      if (!row) continue;
+      if (!row.is_off && row.end_time <= row.start_time) {
+        showToast("error", `وقت الإغلاق لازم يكون بعد الفتح (${day.label}).`);
+        return;
+      }
+      if (row.break_start && row.break_end && row.break_end <= row.break_start) {
+        showToast("error", `فترة الاستراحة غير صحيحة (${day.label}).`);
+        return;
+      }
+    }
+
+    setSaveScheduleLoading(true);
+    try {
+      const payload = DAYS.map((day) => {
+        const row = scheduleDraft[day.index] || {};
+        return {
+          salon_id: salon.id,
+          staff_id: scheduleStaffId,
+          day_of_week: day.index,
+          start_time: `${row.start_time || "10:00"}:00`,
+          end_time: `${row.end_time || "20:00"}:00`,
+          is_off: Boolean(row.is_off),
+          break_start: row.break_start ? `${row.break_start}:00` : null,
+          break_end: row.break_end ? `${row.break_end}:00` : null,
+        };
+      });
+
+      const up = await supabase.from("employee_hours").upsert(payload, { onConflict: "staff_id,day_of_week" });
+      if (up.error) throw up.error;
+
+      showToast("success", "تم حفظ جدول دوام الموظف.");
+      await loadAdminData(salon.id);
+    } catch (err) {
+      showToast("error", `تعذر حفظ جدول الدوام: ${err?.message || err}`);
+    } finally {
+      setSaveScheduleLoading(false);
+    }
+  }
+
+  async function addEmployeeTimeOff() {
+    if (!supabase || !salon?.id || !scheduleStaffId) return;
+
+    const startAt = timeOffForm.start_at ? new Date(timeOffForm.start_at) : null;
+    const endAt = timeOffForm.end_at ? new Date(timeOffForm.end_at) : null;
+    if (!startAt || !endAt || Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime()) || endAt <= startAt) {
+      showToast("error", "اختاري فترة إجازة صحيحة.");
+      return;
+    }
+
+    setSavingTimeOff(true);
+    try {
+      const ins = await supabase.from("employee_time_off").insert([
+        {
+          salon_id: salon.id,
+          staff_id: scheduleStaffId,
+          start_at: startAt.toISOString(),
+          end_at: endAt.toISOString(),
+          reason: timeOffForm.reason.trim() || null,
+        },
+      ]);
+      if (ins.error) throw ins.error;
+
+      setTimeOffForm({ start_at: "", end_at: "", reason: "" });
+      showToast("success", "تمت إضافة الإجازة.");
+      await loadAdminData(salon.id);
+    } catch (err) {
+      showToast("error", `تعذر إضافة الإجازة: ${err?.message || err}`);
+    } finally {
+      setSavingTimeOff(false);
+    }
+  }
+
+  async function deleteEmployeeTimeOff(rowId) {
+    if (!supabase || !salon?.id || !rowId) return;
+
+    setDeletingTimeOffId(rowId);
+    try {
+      const del = await supabase
+        .from("employee_time_off")
+        .delete()
+        .eq("id", rowId)
+        .eq("salon_id", salon.id);
+      if (del.error) throw del.error;
+
+      showToast("success", "تم حذف الإجازة.");
+      await loadAdminData(salon.id);
+    } catch (err) {
+      showToast("error", `تعذر حذف الإجازة: ${err?.message || err}`);
+    } finally {
+      setDeletingTimeOffId("");
     }
   }
 
@@ -1105,7 +1557,12 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
         <>
           <Card className="admin-topbar">
             <div>
-              <h3>{salon.name}</h3>
+              <div className="row-actions" style={{ alignItems: "center" }}>
+                <h3>{salon.name}</h3>
+                <Badge variant={salon.is_active ? "confirmed" : "cancelled"}>
+                  {salon.is_active ? "نشط" : "متوقف"}
+                </Badge>
+              </div>
               <p className="muted">تحكم بالحجوزات والإعدادات من مكان واحد.</p>
             </div>
             <div className="row-actions">
@@ -1120,13 +1577,17 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
           <div className="admin-layout">
             <aside className="admin-sidebar">
-              <div className="settings-tabs-wrap admin-tabs-sticky">
-                {ADMIN_SECTIONS.map((tab) => (
+              <div className="settings-tabs-wrap admin-tabs-sticky admin-enterprise-sidebar">
+                {ADMIN_SIDEBAR_ITEMS.map((tab) => (
                   <Button
                     key={tab.key}
                     type="button"
                     variant={activeSection === tab.key ? "primary" : "ghost"}
-                    onClick={() => setActiveSection(tab.key)}
+                    onClick={() => {
+                      setActiveSection(tab.key);
+                      navigate(`/s/${slug}/admin/${tab.key}`);
+                    }}
+                    className="admin-sidebar-item"
                   >
                     {tab.label}
                   </Button>
@@ -1135,6 +1596,144 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             </aside>
 
             <div className="admin-content">
+              {activeSection === "dashboard" ? (
+                <div className="admin-dashboard-shell">
+                  <Card className="enterprise-period-card">
+                    <div className="enterprise-card-head">
+                      <h4>الفترة التحليلية</h4>
+                      <Badge variant="neutral">{analytics.periodLabel}</Badge>
+                    </div>
+                    <div className="analytics-period-control">
+                      <label htmlFor="analytics-period">اختيار الفترة</label>
+                      <select
+                        id="analytics-period"
+                        className="input"
+                        value={analyticsPeriod}
+                        onChange={(e) => setAnalyticsPeriod(e.target.value)}
+                      >
+                        <option value="last30">آخر 30 يوم</option>
+                        {analyticsMonthOptions.map((row) => (
+                          <option key={row.value} value={row.value}>
+                            {row.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </Card>
+
+                  <section className="enterprise-summary-grid">
+                    <Card className="enterprise-summary-card">
+                      <span>إيراد اليوم</span>
+                      <strong>{formatCurrencyIQD(analytics.todayRevenue)}</strong>
+                    </Card>
+                    <Card className="enterprise-summary-card">
+                      <span>إيراد هذا الشهر</span>
+                      <strong>{formatCurrencyIQD(analytics.monthRevenue)}</strong>
+                    </Card>
+                    <Card className="enterprise-summary-card">
+                      <span>إجمالي حجوزات اليوم</span>
+                      <strong>{analytics.totalBookingsToday}</strong>
+                    </Card>
+                    <Card className="enterprise-summary-card">
+                      <span>الموظفون النشطون</span>
+                      <strong>{analytics.activeEmployees}</strong>
+                    </Card>
+                  </section>
+
+                  <Card className="enterprise-chart-card">
+                    <div className="enterprise-card-head">
+                      <h4>الإيراد حسب الفترة</h4>
+                      <Badge variant="neutral">{analytics.periodLabel}</Badge>
+                    </div>
+                    <div className="revenue-chart-wrap">
+                      <svg viewBox={`0 0 ${analytics.chartWidth} ${analytics.chartHeight}`} className="revenue-chart-svg" role="img" aria-label="مخطط الإيراد">
+                        {[0, 1, 2, 3, 4].map((idx) => {
+                          const y =
+                            analytics.padY +
+                            ((analytics.chartHeight - analytics.padY * 2) / 4) * idx;
+                          return (
+                            <line
+                              key={`grid-${idx}`}
+                              x1={analytics.padX}
+                              y1={y}
+                              x2={analytics.chartWidth - analytics.padX}
+                              y2={y}
+                              className="chart-grid-line"
+                            />
+                          );
+                        })}
+                        {analytics.areaPath ? <path d={analytics.areaPath} className="chart-area" /> : null}
+                        <polyline points={analytics.polylinePoints} className="chart-line" />
+                      </svg>
+                      <div className="chart-axis-row">
+                        <span>{analytics.revenueSeries[0]?.key || ""}</span>
+                        <span>{analytics.revenueSeries[analytics.revenueSeries.length - 1]?.key || ""}</span>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <div className="enterprise-two-col">
+                    <Card className="enterprise-table-card">
+                      <div className="enterprise-card-head">
+                        <h4>أداء الموظفين</h4>
+                      </div>
+                      <div className="table-scroll">
+                        <table className="enterprise-table">
+                          <thead>
+                            <tr>
+                              <th>اسم الموظف</th>
+                              <th>الحجوزات</th>
+                              <th>الإيراد</th>
+                              <th>نسبة الإشغال %</th>
+                              <th>التقييم</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {analytics.employeesPerformance.length === 0 ? (
+                              <tr>
+                                <td colSpan={5}>لا توجد بيانات.</td>
+                              </tr>
+                            ) : (
+                              analytics.employeesPerformance.map((row) => (
+                                <tr key={row.id}>
+                                  <td>{row.name}</td>
+                                  <td>{row.bookings}</td>
+                                  <td>{formatCurrencyIQD(row.revenue)}</td>
+                                  <td>{row.utilization.toFixed(0)}%</td>
+                                  <td>{row.rating}</td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+
+                    <Card className="enterprise-pie-card">
+                      <div className="enterprise-card-head">
+                        <h4>توزيع الإيراد حسب الخدمات</h4>
+                      </div>
+                      <div className="services-pie-wrap">
+                        <div className="services-pie" style={{ background: analytics.pieGradient }} />
+                        <div className="services-pie-legend">
+                          {analytics.pieSegments.length === 0 ? (
+                            <p className="muted">لا توجد بيانات إيرادات مؤكدة.</p>
+                          ) : (
+                            analytics.pieSegments.map((item) => (
+                              <div key={item.name} className="legend-row">
+                                <span className="legend-dot" style={{ background: item.color }} />
+                                <span>{item.name}</span>
+                                <b>{item.pct.toFixed(0)}%</b>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                </div>
+              ) : null}
+
               {activeSection === "bookings" ? (
                 <>
                   <Card className="admin-onboarding-card">
@@ -1360,15 +1959,225 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                 </>
               ) : null}
 
-          {activeSection === "hours" ? (
+              {activeSection === "clients" ? (
+                <Card>
+                  <div className="enterprise-card-head">
+                    <h3>العملاء</h3>
+                    <div className="row-actions">
+                      <Badge variant="neutral">{analytics.periodLabel}</Badge>
+                      <Badge variant="neutral">{analytics.clients.length} عميلة</Badge>
+                    </div>
+                  </div>
+                  <div className="table-scroll">
+                    <table className="enterprise-table">
+                      <thead>
+                        <tr>
+                          <th>الاسم</th>
+                          <th>الهاتف</th>
+                          <th>عدد الحجوزات</th>
+                          <th>الإيراد</th>
+                          <th>آخر زيارة</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analytics.clients.length === 0 ? (
+                          <tr>
+                            <td colSpan={5}>لا يوجد عملاء بعد.</td>
+                          </tr>
+                        ) : (
+                          analytics.clients.map((client) => (
+                            <tr key={`${client.phone}-${client.name}`}>
+                              <td>{client.name}</td>
+                              <td>{client.phone}</td>
+                              <td>{client.bookings}</td>
+                              <td>{formatCurrencyIQD(client.revenue)}</td>
+                              <td>{formatDate(client.lastVisit)}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              ) : null}
+
+              {activeSection === "reports" ? (
+                <div className="admin-dashboard-shell">
+                  <Card className="enterprise-period-card">
+                    <div className="enterprise-card-head">
+                      <h4>الفترة التحليلية</h4>
+                      <Badge variant="neutral">{analytics.periodLabel}</Badge>
+                    </div>
+                    <div className="analytics-period-control">
+                      <label htmlFor="analytics-period-reports">اختيار الفترة</label>
+                      <select
+                        id="analytics-period-reports"
+                        className="input"
+                        value={analyticsPeriod}
+                        onChange={(e) => setAnalyticsPeriod(e.target.value)}
+                      >
+                        <option value="last30">آخر 30 يوم</option>
+                        {analyticsMonthOptions.map((row) => (
+                          <option key={`reports-${row.value}`} value={row.value}>
+                            {row.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </Card>
+
+                  <Card className="enterprise-chart-card">
+                    <div className="enterprise-card-head">
+                      <h3>تقارير الإيراد</h3>
+                      <Button variant="secondary" onClick={exportCsv}>
+                        تصدير CSV
+                      </Button>
+                    </div>
+                    <div className="revenue-chart-wrap">
+                      <svg viewBox={`0 0 ${analytics.chartWidth} ${analytics.chartHeight}`} className="revenue-chart-svg" role="img" aria-label="مخطط الإيراد">
+                        {[0, 1, 2, 3, 4].map((idx) => {
+                          const y =
+                            analytics.padY +
+                            ((analytics.chartHeight - analytics.padY * 2) / 4) * idx;
+                          return (
+                            <line
+                              key={`reports-grid-${idx}`}
+                              x1={analytics.padX}
+                              y1={y}
+                              x2={analytics.chartWidth - analytics.padX}
+                              y2={y}
+                              className="chart-grid-line"
+                            />
+                          );
+                        })}
+                        {analytics.areaPath ? <path d={analytics.areaPath} className="chart-area" /> : null}
+                        <polyline points={analytics.polylinePoints} className="chart-line" />
+                      </svg>
+                    </div>
+                  </Card>
+
+                    <Card className="enterprise-pie-card">
+                      <div className="enterprise-card-head">
+                        <h4>توزيع الإيراد حسب الخدمات</h4>
+                        <Badge variant="neutral">{formatCurrencyIQD(analytics.totalServiceRevenue)}</Badge>
+                      </div>
+                    <div className="services-pie-wrap">
+                      <div className="services-pie" style={{ background: analytics.pieGradient }} />
+                      <div className="services-pie-legend">
+                        {analytics.pieSegments.length === 0 ? (
+                          <p className="muted">لا توجد بيانات إيرادات مؤكدة.</p>
+                        ) : (
+                          analytics.pieSegments.map((item) => (
+                            <div key={`rep-${item.name}`} className="legend-row">
+                              <span className="legend-dot" style={{ background: item.color }} />
+                              <span>{item.name}</span>
+                              <b>{formatCurrencyIQD(item.revenue)}</b>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              ) : null}
+
+              {activeSection === "calendar" ? (
+                <Card>
+                  <div className="enterprise-card-head">
+                    <h3>تقويم اليوم</h3>
+                    <input
+                      type="date"
+                      className="input"
+                      value={calendarDate}
+                      onChange={(e) => setCalendarDate(e.target.value)}
+                      style={{ maxWidth: 220 }}
+                    />
+                  </div>
+                  <div className="calendar-list">
+                    {calendarGroups.length === 0 ? (
+                      <div className="empty-box">لا توجد بيانات لهذا اليوم.</div>
+                    ) : (
+                      calendarGroups.map((group) => (
+                        <div className="date-group panel-soft" key={group.staff?.id || group.staff?.name}>
+                          <div className="date-header">
+                            <h5>{group.staff?.name || "غير محدد"}</h5>
+                            <span>{group.items.length} حجز</span>
+                          </div>
+                          <div className="bookings-stack">
+                            {group.items.length === 0 ? (
+                              <div className="empty-box">لا توجد حجوزات.</div>
+                            ) : (
+                              group.items.map((row) => (
+                                <article key={row.id} className="booking-card panel-soft compact-booking-card">
+                                  <div className="booking-top">
+                                    <div>
+                                      <h6>{row.customer_name}</h6>
+                                      <p>{row.customer_phone}</p>
+                                    </div>
+                                    <Badge variant={row.status || "pending"}>
+                                      {STATUS_LABELS[row.status] || "غير معروف"}
+                                    </Badge>
+                                  </div>
+                                  <div className="booking-info">
+                                    <p>
+                                      <b>الخدمة:</b> {servicesById[row.service_id]?.name || "-"}
+                                    </p>
+                                    <p>
+                                      <b>الوقت:</b> {formatTime(row.appointment_start)}
+                                    </p>
+                                  </div>
+                                </article>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </Card>
+              ) : null}
+
+              {activeSection === "settings" ? (
+                <Card>
+                  <div className="settings-tabs-wrap">
+                    {SETTINGS_SECTIONS.map((tab) => (
+                      <Button
+                        key={tab.key}
+                        type="button"
+                        variant={activeSettingsSection === tab.key ? "primary" : "ghost"}
+                        onClick={() => setActiveSettingsSection(tab.key)}
+                      >
+                        {tab.label}
+                      </Button>
+                    ))}
+                  </div>
+                </Card>
+              ) : null}
+
+          {activeSection === "schedules" ? (
             <Card>
-              <h3>ساعات العمل الأسبوعية</h3>
-              <div className="hours-list">
+              <h3>جداول دوام الموظفين</h3>
+              <SelectInput
+                label="اختاري الموظف/الموظفة"
+                value={scheduleStaffId}
+                onChange={(e) => setScheduleStaffId(e.target.value)}
+              >
+                <option value="">اختيار</option>
+                {staff.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.name}
+                  </option>
+                ))}
+              </SelectInput>
+
+              <div className="hours-list" style={{ marginTop: 12 }}>
                 {DAYS.map((day) => {
-                  const row = hoursDraft[day.index] || {
-                    is_closed: false,
+                  const row = scheduleDraft[day.index] || {
+                    is_off: false,
                     open_time: "10:00",
                     close_time: "20:00",
+                    break_start: "",
+                    break_end: "",
                   };
                   return (
                     <div className="day-row" key={day.index}>
@@ -1376,38 +2185,65 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                       <label className="day-toggle">
                         <input
                           type="checkbox"
-                          checked={row.is_closed}
+                          checked={row.is_off}
                           onChange={(e) =>
-                            setHoursDraft((prev) => ({
+                            setScheduleDraft((prev) => ({
                               ...prev,
-                              [day.index]: { ...row, is_closed: e.target.checked },
+                              [day.index]: { ...row, is_off: e.target.checked },
                             }))
                           }
+                          disabled={!scheduleStaffId}
                         />
-                        <span>مغلق</span>
+                        <span>إجازة</span>
                       </label>
                       <div className="time-grid">
                         <input
                           type="time"
                           className="input"
-                          value={row.open_time}
-                          disabled={row.is_closed}
+                          value={row.start_time}
+                          disabled={row.is_off || !scheduleStaffId}
                           onChange={(e) =>
-                            setHoursDraft((prev) => ({
+                            setScheduleDraft((prev) => ({
                               ...prev,
-                              [day.index]: { ...row, open_time: e.target.value },
+                              [day.index]: { ...row, start_time: e.target.value },
                             }))
                           }
                         />
                         <input
                           type="time"
                           className="input"
-                          value={row.close_time}
-                          disabled={row.is_closed}
+                          value={row.end_time}
+                          disabled={row.is_off || !scheduleStaffId}
                           onChange={(e) =>
-                            setHoursDraft((prev) => ({
+                            setScheduleDraft((prev) => ({
                               ...prev,
-                              [day.index]: { ...row, close_time: e.target.value },
+                              [day.index]: { ...row, end_time: e.target.value },
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="time-grid">
+                        <input
+                          type="time"
+                          className="input"
+                          value={row.break_start || ""}
+                          disabled={row.is_off || !scheduleStaffId}
+                          onChange={(e) =>
+                            setScheduleDraft((prev) => ({
+                              ...prev,
+                              [day.index]: { ...row, break_start: e.target.value },
+                            }))
+                          }
+                        />
+                        <input
+                          type="time"
+                          className="input"
+                          value={row.break_end || ""}
+                          disabled={row.is_off || !scheduleStaffId}
+                          onChange={(e) =>
+                            setScheduleDraft((prev) => ({
+                              ...prev,
+                              [day.index]: { ...row, break_end: e.target.value },
                             }))
                           }
                         />
@@ -1417,9 +2253,62 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                 })}
               </div>
 
-              <Button type="button" onClick={saveHours} disabled={saveHoursLoading}>
-                {saveHoursLoading ? "جاري الحفظ..." : "حفظ ساعات العمل"}
+              <Button type="button" onClick={saveEmployeeSchedule} disabled={saveScheduleLoading || !scheduleStaffId}>
+                {saveScheduleLoading ? "جاري الحفظ..." : "حفظ جدول الدوام"}
               </Button>
+
+              <Card className="panel-soft" style={{ marginTop: 14 }}>
+                <h4>إجازات واستثناءات</h4>
+                <div className="grid two" style={{ marginTop: 8 }}>
+                  <input
+                    type="datetime-local"
+                    className="input"
+                    value={timeOffForm.start_at}
+                    onChange={(e) => setTimeOffForm((p) => ({ ...p, start_at: e.target.value }))}
+                    disabled={!scheduleStaffId}
+                  />
+                  <input
+                    type="datetime-local"
+                    className="input"
+                    value={timeOffForm.end_at}
+                    onChange={(e) => setTimeOffForm((p) => ({ ...p, end_at: e.target.value }))}
+                    disabled={!scheduleStaffId}
+                  />
+                  <input
+                    className="input"
+                    placeholder="سبب الإجازة (اختياري)"
+                    value={timeOffForm.reason}
+                    onChange={(e) => setTimeOffForm((p) => ({ ...p, reason: e.target.value }))}
+                    disabled={!scheduleStaffId}
+                  />
+                  <Button type="button" onClick={addEmployeeTimeOff} disabled={!scheduleStaffId || savingTimeOff}>
+                    {savingTimeOff ? "جاري الإضافة..." : "إضافة إجازة"}
+                  </Button>
+                </div>
+
+                <div className="settings-list" style={{ marginTop: 10 }}>
+                  {selectedStaffTimeOff.length === 0 ? (
+                    <div className="empty-box">لا توجد إجازات مسجلة.</div>
+                  ) : (
+                    selectedStaffTimeOff.map((row) => (
+                      <div key={row.id} className="settings-row">
+                        <div>
+                          <b>{formatDate(row.start_at)} - {formatDate(row.end_at)}</b>
+                          <p className="muted">{row.reason || "بدون ملاحظة"}</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          disabled={deletingTimeOffId === row.id}
+                          onClick={() => deleteEmployeeTimeOff(row.id)}
+                        >
+                          {deletingTimeOffId === row.id ? "..." : "حذف"}
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </Card>
             </Card>
           ) : null}
 
@@ -1598,7 +2487,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             </Card>
           ) : null}
 
-          {activeSection === "staff" ? (
+          {activeSection === "employees" ? (
             <Card>
               <h3>إدارة الموظفين</h3>
               <div className="grid two">
@@ -1752,7 +2641,21 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             </Card>
           ) : null}
 
-          {activeSection === "assign" ? (
+              {activeSection === "commissions" ? (
+                <Card>
+                  <h3>العمولات</h3>
+                  <p className="muted">هذا القسم جاهز كمرحلة قادمة. تمت تهيئة قاعدة البيانات لحساب عمولات الموظفين لكل خدمة/حجز.</p>
+                </Card>
+              ) : null}
+
+              {activeSection === "expenses" ? (
+                <Card>
+                  <h3>المصروفات</h3>
+                  <p className="muted">هذا القسم جاهز كمرحلة قادمة. تمت تهيئة قاعدة البيانات لإدخال المصروفات اليومية وتحليل صافي الربح.</p>
+                </Card>
+              ) : null}
+
+          {activeSection === "settings" && activeSettingsSection === "assign" ? (
             <Card>
               <h3>ربط الخدمات بالموظفين</h3>
               <SelectInput label="اختاري الموظف/الموظفة" value={assignStaffId} onChange={(e) => setAssignStaffId(e.target.value)}>
@@ -1809,7 +2712,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             </Card>
           ) : null}
 
-          {activeSection === "media" ? (
+          {activeSection === "settings" && activeSettingsSection === "media" ? (
             <Card>
               <h3>الصور</h3>
               <p className="muted">ارفعي صور للمركز، وإذا ماكو صور راح تظهر صور افتراضية تلقائياً.</p>
@@ -1961,12 +2864,24 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             </Card>
           ) : null}
 
-          {activeSection === "salon" ? (
+          {activeSection === "settings" && activeSettingsSection === "salon" ? (
             <Card>
               <h3>إعدادات المركز</h3>
               <p className="muted">تحكم بظهور المركز وحالته العامة.</p>
 
               <div className="stack-sm" style={{ marginTop: 10 }}>
+                <label className="field">
+                  <span>وضع الحجز</span>
+                  <select
+                    className="input"
+                    value={salon.booking_mode || "choose_employee"}
+                    onChange={(e) => saveSalonFlags({ booking_mode: e.target.value })}
+                    disabled={savingSalonFlags}
+                  >
+                    <option value="choose_employee">العميلة تختار الموظف/الموظفة</option>
+                    <option value="auto_assign">توزيع تلقائي حسب التوفر</option>
+                  </select>
+                </label>
                 <label className="switch-pill">
                   <input
                     type="checkbox"

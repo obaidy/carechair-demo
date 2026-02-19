@@ -44,12 +44,14 @@ export default function SalonBookingPage() {
   const [staff, setStaff] = useState([]);
   const [staffServices, setStaffServices] = useState([]);
   const [hours, setHours] = useState([]);
+  const [employeeHours, setEmployeeHours] = useState([]);
 
   const [serviceId, setServiceId] = useState("");
   const [staffId, setStaffId] = useState("");
   const [dateValue, setDateValue] = useState(() => toDateInput(new Date()));
   const [slotIso, setSlotIso] = useState("");
   const [dayBookings, setDayBookings] = useState([]);
+  const [dayTimeOff, setDayTimeOff] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
 
   const [customerName, setCustomerName] = useState("");
@@ -82,7 +84,7 @@ export default function SalonBookingPage() {
         const salonRow = salonRes.data;
         setSalon(salonRow);
 
-        const [servicesRes, staffRes, staffServicesRes, hoursRes] = await Promise.all([
+        const [servicesRes, staffRes, staffServicesRes, hoursRes, employeeHoursRes] = await Promise.all([
           supabase
             .from("services")
             .select("*")
@@ -97,12 +99,17 @@ export default function SalonBookingPage() {
             .from("salon_hours")
             .select("day_of_week, open_time, close_time, is_closed")
             .eq("salon_id", salonRow.id),
+          supabase
+            .from("employee_hours")
+            .select("staff_id, day_of_week, start_time, end_time, is_off, break_start, break_end")
+            .eq("salon_id", salonRow.id),
         ]);
 
         if (servicesRes.error) throw servicesRes.error;
         if (staffRes.error) throw staffRes.error;
         if (staffServicesRes.error) throw staffServicesRes.error;
         if (hoursRes.error) throw hoursRes.error;
+        if (employeeHoursRes.error) throw employeeHoursRes.error;
 
         const serviceRows = (servicesRes.data || []).sort(sortByOrderThenName);
         const staffRows = (staffRes.data || []).sort(sortByOrderThenName);
@@ -111,6 +118,7 @@ export default function SalonBookingPage() {
         setStaff(staffRows);
         setStaffServices(staffServicesRes.data || []);
         setHours(hoursRes.data || []);
+        setEmployeeHours(employeeHoursRes.data || []);
 
         setServiceId(serviceRows[0]?.id || "");
         setStaffId(staffRows[0]?.id || "");
@@ -131,6 +139,7 @@ export default function SalonBookingPage() {
     [staffServices]
   );
 
+  const bookingMode = salon?.booking_mode === "auto_assign" ? "auto_assign" : "choose_employee";
   const selectedService = servicesById[serviceId] || null;
   const selectedStaff = staffById[staffId] || null;
   const media = useMemo(() => getSalonMedia(salon), [salon]);
@@ -142,9 +151,10 @@ export default function SalonBookingPage() {
   }, [serviceId, staff, assignmentSet]);
 
   const filteredServices = useMemo(() => {
+    if (bookingMode === "auto_assign") return services;
     if (!staffId) return services;
     return services.filter((row) => assignmentSet.has(`${staffId}:${row.id}`));
-  }, [staffId, services, assignmentSet]);
+  }, [bookingMode, staffId, services, assignmentSet]);
 
   useEffect(() => {
     if (serviceId && !filteredServices.some((x) => x.id === serviceId)) {
@@ -153,20 +163,31 @@ export default function SalonBookingPage() {
   }, [serviceId, filteredServices]);
 
   useEffect(() => {
+    if (bookingMode === "auto_assign") return;
     if (staffId && !filteredStaff.some((x) => x.id === staffId)) {
       setStaffId(filteredStaff[0]?.id || "");
     }
-  }, [staffId, filteredStaff]);
+  }, [bookingMode, staffId, filteredStaff]);
 
-  const isValidPair = Boolean(serviceId && staffId && assignmentSet.has(`${staffId}:${serviceId}`));
+  const eligibleStaffIds = useMemo(() => filteredStaff.map((x) => x.id), [filteredStaff]);
+  const isValidPair =
+    bookingMode === "auto_assign"
+      ? Boolean(serviceId && eligibleStaffIds.length > 0)
+      : Boolean(serviceId && staffId && assignmentSet.has(`${staffId}:${serviceId}`));
 
   useEffect(() => {
     setSlotIso("");
-  }, [serviceId, staffId, dateValue]);
+  }, [serviceId, staffId, dateValue, bookingMode]);
 
   useEffect(() => {
     async function loadDayBookings() {
-      if (!supabase || !salon?.id || !staffId || !dateValue || !isValidPair) {
+      if (!supabase || !salon?.id || !dateValue || !isValidPair) {
+        setDayBookings([]);
+        return;
+      }
+
+      const targetStaffIds = bookingMode === "auto_assign" ? eligibleStaffIds : [staffId].filter(Boolean);
+      if (targetStaffIds.length === 0) {
         setDayBookings([]);
         return;
       }
@@ -179,9 +200,9 @@ export default function SalonBookingPage() {
 
         const res = await supabase
           .from("bookings")
-          .select("id, appointment_start, appointment_end, status")
+          .select("id, staff_id, appointment_start, appointment_end, status")
           .eq("salon_id", salon.id)
-          .eq("staff_id", staffId)
+          .in("staff_id", targetStaffIds)
           .in("status", ["pending", "confirmed"])
           .lt("appointment_start", dayEnd.toISOString())
           .gt("appointment_end", dayStart.toISOString())
@@ -197,7 +218,42 @@ export default function SalonBookingPage() {
     }
 
     loadDayBookings();
-  }, [salon?.id, staffId, dateValue, showToast, isValidPair]);
+  }, [salon?.id, staffId, eligibleStaffIds, dateValue, showToast, isValidPair, bookingMode]);
+
+  useEffect(() => {
+    async function loadDayTimeOff() {
+      if (!supabase || !salon?.id || !dateValue || !isValidPair) {
+        setDayTimeOff([]);
+        return;
+      }
+      const targetStaffIds = bookingMode === "auto_assign" ? eligibleStaffIds : [staffId].filter(Boolean);
+      if (targetStaffIds.length === 0) {
+        setDayTimeOff([]);
+        return;
+      }
+
+      try {
+        const dayStart = combineDateTime(dateValue, "00:00");
+        const dayEnd = new Date(dayStart);
+        dayEnd.setDate(dayEnd.getDate() + 1);
+
+        const res = await supabase
+          .from("employee_time_off")
+          .select("id, staff_id, start_at, end_at")
+          .eq("salon_id", salon.id)
+          .in("staff_id", targetStaffIds)
+          .lt("start_at", dayEnd.toISOString())
+          .gt("end_at", dayStart.toISOString())
+          .order("start_at", { ascending: true });
+        if (res.error) throw res.error;
+        setDayTimeOff(res.data || []);
+      } catch (err) {
+        showToast("error", `تعذر تحميل إجازات الموظفين: ${err?.message || err}`);
+      }
+    }
+
+    loadDayTimeOff();
+  }, [salon?.id, staffId, eligibleStaffIds, dateValue, showToast, isValidPair, bookingMode]);
 
   const hoursByDay = useMemo(() => {
     const map = {};
@@ -205,21 +261,70 @@ export default function SalonBookingPage() {
     return map;
   }, [hours]);
 
+  const employeeHoursByStaffDay = useMemo(() => {
+    const map = {};
+    for (const row of employeeHours) {
+      map[`${row.staff_id}:${row.day_of_week}`] = row;
+    }
+    return map;
+  }, [employeeHours]);
+
   const availableSlots = useMemo(() => {
-    if (!selectedService || !dateValue || !staffId || !isValidPair) return [];
+    if (!selectedService || !dateValue || !isValidPair) return [];
 
     const dateObj = new Date(`${dateValue}T00:00:00`);
     if (Number.isNaN(dateObj.getTime())) return [];
 
     const dayRule = hoursByDay[dateObj.getDay()];
+    const dayIndex = dateObj.getDay();
+    const nowMs = Date.now();
+
+    if (bookingMode === "auto_assign") {
+      const byStart = new Map();
+      for (const st of filteredStaff) {
+        const staffBookings = dayBookings.filter((b) => b.staff_id === st.id);
+        const staffTimeOff = dayTimeOff.filter((x) => x.staff_id === st.id);
+        const employeeRule = employeeHoursByStaffDay[`${st.id}:${dayIndex}`];
+        const generated = generateSlots({
+          date: dateValue,
+          dayRule,
+          employeeRule,
+          durationMinutes: selectedService.duration_minutes,
+          bookings: staffBookings,
+          timeOff: staffTimeOff,
+          nowMs,
+        });
+        for (const slot of generated) {
+          if (!byStart.has(slot.startIso)) {
+            byStart.set(slot.startIso, { ...slot, staffId: st.id });
+          }
+        }
+      }
+      return Array.from(byStart.values()).sort((a, b) => a.startIso.localeCompare(b.startIso));
+    }
+
+    const employeeRule = employeeHoursByStaffDay[`${staffId}:${dayIndex}`];
     return generateSlots({
       date: dateValue,
       dayRule,
+      employeeRule,
       durationMinutes: selectedService.duration_minutes,
-      bookings: dayBookings,
-      nowMs: Date.now(),
-    });
-  }, [selectedService, dateValue, staffId, isValidPair, hoursByDay, dayBookings]);
+      bookings: dayBookings.filter((b) => b.staff_id === staffId),
+      timeOff: dayTimeOff.filter((x) => x.staff_id === staffId),
+      nowMs,
+    }).map((slot) => ({ ...slot, staffId }));
+  }, [
+    selectedService,
+    dateValue,
+    staffId,
+    isValidPair,
+    bookingMode,
+    filteredStaff,
+    hoursByDay,
+    employeeHoursByStaffDay,
+    dayBookings,
+    dayTimeOff,
+  ]);
 
   useEffect(() => {
     if (slotIso && !availableSlots.some((s) => s.startIso === slotIso)) {
@@ -240,11 +345,27 @@ export default function SalonBookingPage() {
     });
   }, []);
 
-  const currentStep = slotIso ? 3 : staffId ? 2 : serviceId ? 1 : 1;
+  const currentStep =
+    bookingMode === "auto_assign"
+      ? slotIso
+        ? 3
+        : serviceId
+          ? 2
+          : 1
+      : slotIso
+        ? 3
+        : staffId
+          ? 2
+          : serviceId
+            ? 1
+            : 1;
 
   const summary = {
     service: selectedService?.name || "لم يتم الاختيار",
-    staff: selectedStaff?.name || "لم يتم الاختيار",
+    staff:
+      bookingMode === "auto_assign"
+        ? "توزيع تلقائي حسب التوفر"
+        : selectedStaff?.name || "لم يتم الاختيار",
     price: selectedService ? formatCurrencyIQD(selectedService.price) : "-",
     time: slotIso ? formatDateTime(slotIso) : "اختاري الموعد",
   };
@@ -268,12 +389,17 @@ export default function SalonBookingPage() {
       return;
     }
 
-    if (!selectedService || !selectedStaff || !slotIso) {
-      showToast("error", "اختاري الخدمة والموظفة والموعد.");
+    if (!selectedService || !slotIso) {
+      showToast("error", "اختاري الخدمة والموعد.");
       return;
     }
 
-    if (!assignmentSet.has(`${selectedStaff.id}:${selectedService.id}`)) {
+    if (bookingMode === "choose_employee" && !selectedStaff) {
+      showToast("error", "اختاري الموظفة/الموظف.");
+      return;
+    }
+
+    if (bookingMode === "choose_employee" && !assignmentSet.has(`${selectedStaff.id}:${selectedService.id}`)) {
       showToast("error", "هاي الموظفة ما تقدم هالخدمة.");
       return;
     }
@@ -284,9 +410,33 @@ export default function SalonBookingPage() {
       return;
     }
 
+    const assignedStaff = staffById[selectedSlot.staffId] || selectedStaff || null;
+    if (!assignedStaff) {
+      showToast("error", "تعذر تحديد الموظف لهذا الموعد.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const salonWhatsapp = normalizeIraqiPhone(salon.whatsapp || import.meta.env.VITE_WHATSAPP_NUMBER || "");
+      let clientId = null;
+
+      const clientRes = await supabase
+        .from("clients")
+        .upsert(
+          [
+            {
+              salon_id: salon.id,
+              phone: normalizedPhone,
+              name: customerName.trim(),
+            },
+          ],
+          { onConflict: "salon_id,phone" }
+        )
+        .select("id")
+        .single();
+      if (clientRes.error) throw clientRes.error;
+      clientId = clientRes.data?.id || null;
 
       const ins = await supabase
         .from("bookings")
@@ -295,18 +445,21 @@ export default function SalonBookingPage() {
             // New schema fields
             salon_id: salon.id,
             service_id: selectedService.id,
-            staff_id: selectedStaff.id,
+            staff_id: assignedStaff.id,
+            client_id: clientId,
             customer_name: customerName.trim(),
             customer_phone: normalizedPhone,
             notes: notes.trim() || null,
             status: "pending",
             appointment_start: selectedSlot.startIso,
             appointment_end: selectedSlot.endIso,
+            price_amount: Number(selectedService.price || 0),
+            currency: "IQD",
             // Backward-compat fields for older migrations/schemas
             salon_slug: salon.slug || salon.name || "",
             salon_whatsapp: salonWhatsapp || normalizedPhone,
             service: selectedService.name,
-            staff: selectedStaff.name,
+            staff: assignedStaff.name,
             appointment_at: selectedSlot.startIso,
           },
         ])
@@ -331,7 +484,7 @@ export default function SalonBookingPage() {
       setSuccessData({
         id: ins.data.id,
         service: selectedService.name,
-        staff: selectedStaff.name,
+        staff: assignedStaff.name,
         time: ins.data.appointment_start || ins.data.appointment_at || selectedSlot.startIso,
         phone: normalizedPhone,
         whatsappHref: manualWhatsappHref,
@@ -478,7 +631,12 @@ export default function SalonBookingPage() {
           <form onSubmit={submitBooking} className="booking-form-modern">
             <div className="steps-wrap full">
               <Step index={1} label="اختاري الخدمة" active={currentStep === 1} done={Boolean(serviceId)} />
-              <Step index={2} label="اختاري الموظفة/الموظف" active={currentStep === 2} done={Boolean(staffId)} />
+              <Step
+                index={2}
+                label={bookingMode === "auto_assign" ? "توزيع تلقائي للموظف" : "اختاري الموظفة/الموظف"}
+                active={currentStep === 2}
+                done={bookingMode === "auto_assign" ? Boolean(serviceId) : Boolean(staffId)}
+              />
               <Step index={3} label="اختاري الوقت" active={currentStep === 3} done={Boolean(slotIso)} />
             </div>
 
@@ -528,34 +686,41 @@ export default function SalonBookingPage() {
               )}
             </div>
 
-            <div className="field full">
-              <span>الموظفة/الموظف</span>
-              {filteredStaff.length === 0 ? (
-                <div className="empty-box">لا يوجد موظف/موظفة مخصص(ة) لهذه الخدمة حالياً.</div>
-              ) : (
-                <div className="staff-avatar-grid">
-                  {filteredStaff.map((st) => {
-                    const active = staffId === st.id;
-                    return (
-                      <button
-                        type="button"
-                        key={st.id}
-                        className={`staff-avatar-card${active ? " active" : ""}`}
-                        onClick={() => setStaffId(st.id)}
-                      >
-                        <SafeImage
-                          src={st.photo_url || getDefaultAvatar(st.id || st.name)}
-                          alt={st.name}
-                          className="staff-avatar-image"
-                          fallbackText={getInitials(st.name)}
-                        />
-                        <b>{st.name}</b>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            {bookingMode === "choose_employee" ? (
+              <div className="field full">
+                <span>الموظفة/الموظف</span>
+                {filteredStaff.length === 0 ? (
+                  <div className="empty-box">لا يوجد موظف/موظفة مخصص(ة) لهذه الخدمة حالياً.</div>
+                ) : (
+                  <div className="staff-avatar-grid">
+                    {filteredStaff.map((st) => {
+                      const active = staffId === st.id;
+                      return (
+                        <button
+                          type="button"
+                          key={st.id}
+                          className={`staff-avatar-card${active ? " active" : ""}`}
+                          onClick={() => setStaffId(st.id)}
+                        >
+                          <SafeImage
+                            src={st.photo_url || getDefaultAvatar(st.id || st.name)}
+                            alt={st.name}
+                            className="staff-avatar-image"
+                            fallbackText={getInitials(st.name)}
+                          />
+                          <b>{st.name}</b>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="field full">
+                <span>توزيع الموظف</span>
+                <div className="empty-box">راح يتم اختيار الموظف/الموظفة تلقائياً حسب أول وقت متاح.</div>
+              </div>
+            )}
 
             <div className="field full">
               <span>اختاري اليوم</span>
@@ -576,8 +741,12 @@ export default function SalonBookingPage() {
 
             <div className="field full">
               <span>المواعيد المتاحة ({SLOT_STEP_MINUTES} دقيقة)</span>
-              {!isValidPair && selectedService && selectedStaff ? (
-                <div className="empty-box">اختيار الخدمة مع الموظفة غير متوافق.</div>
+              {!isValidPair && selectedService ? (
+                <div className="empty-box">
+                  {bookingMode === "auto_assign"
+                    ? "لا يوجد موظف متاح لهذه الخدمة حالياً."
+                    : "اختيار الخدمة مع الموظفة غير متوافق."}
+                </div>
               ) : slotsLoading ? (
                 <div className="slots-wrap">
                   {Array.from({ length: 4 }).map((_, i) => (
