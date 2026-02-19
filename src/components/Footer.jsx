@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { isValidE164WithoutPlus, normalizeIraqiPhone } from "../lib/utils";
+import BrandLogo from "./BrandLogo";
 
 export default function Footer() {
   const platformWhatsapp = normalizeIraqiPhone(
@@ -13,7 +14,7 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="site-footer-inner">
         <section className="footer-col">
-          <h4>CareChair</h4>
+          <BrandLogo />
           <p>CareChair منصة حجوزات للصالونات و مراكز التجميل</p>
           {hasWhatsapp ? (
             <a
@@ -62,4 +63,3 @@ export default function Footer() {
     </footer>
   );
 }
-

@@ -5,7 +5,7 @@ import SafeImage from "../components/SafeImage";
 import Toast from "../components/Toast";
 import { Badge, Button, Card, SelectInput, Skeleton, TextInput } from "../components/ui";
 import { supabase } from "../lib/supabase";
-import { getSalonMedia, hashStringToIndex } from "../lib/media";
+import { getInitials, getSalonMedia, hashStringToIndex } from "../lib/media";
 import {
   formatCurrencyIQD,
   isValidE164WithoutPlus,
@@ -233,7 +233,15 @@ export default function ExplorePage() {
 
                 <Card className="explore-card-body">
                   <div className="explore-head">
-                    <h3>{salon.name}</h3>
+                    <div className="explore-head-main">
+                      <SafeImage
+                        src={salon.logo_url || ""}
+                        alt={`شعار ${salon.name}`}
+                        className="explore-logo"
+                        fallbackText={getInitials(salon.name)}
+                      />
+                      <h3>{salon.name}</h3>
+                    </div>
                     <span className="area-badge">{salon.area || "بغداد"}</span>
                   </div>
 

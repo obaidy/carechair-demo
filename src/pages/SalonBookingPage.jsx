@@ -413,8 +413,18 @@ export default function SalonBookingPage() {
         <div className="salon-hero-overlay">
           <div className="salon-hero-content">
             <Badge variant="featured">★ 4.8 (تجريبي)</Badge>
-            <h2>{salon.name}</h2>
-            <p>{salon.area ? `${salon.area} - بغداد` : "بغداد"}</p>
+            <div className="salon-hero-brand">
+              <SafeImage
+                src={salon.logo_url || ""}
+                alt={`شعار ${salon.name}`}
+                className="salon-hero-logo"
+                fallbackText={getInitials(salon.name)}
+              />
+              <div>
+                <h2>{salon.name}</h2>
+                <p>{salon.area ? `${salon.area} - بغداد` : "بغداد"}</p>
+              </div>
+            </div>
             <div className="row-actions">
               <Button as="a" href="#booking-form" variant="primary">
                 احجزي الآن

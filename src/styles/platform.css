@@ -1,18 +1,18 @@
 .platform-page {
-  --bg: #fffaf7;
-  --card: #ffffff;
-  --line: #ecd8dc;
-  --muted: #7e686d;
-  --text: #3e3034;
-  --pink: #cf8597;
-  --pink-soft: #fff2f6;
-  --success: #48a16d;
-  --danger: #bf4f65;
+  --bg: var(--cc-bg);
+  --card: var(--cc-surface);
+  --line: var(--cc-border);
+  --muted: var(--cc-muted);
+  --text: var(--cc-text);
+  --pink: var(--cc-primary-500);
+  --pink-soft: #eaf2ff;
+  --success: var(--cc-success);
+  --danger: var(--cc-danger);
   min-height: 100vh;
   color: var(--text);
   background:
-    radial-gradient(circle at 10% 0%, #ffe8ee, transparent 30%),
-    radial-gradient(circle at 90% 0%, #fff3e8, transparent 30%),
+    radial-gradient(circle at 10% 0%, rgba(79, 134, 255, 0.12), transparent 30%),
+    radial-gradient(circle at 90% 0%, rgba(49, 184, 227, 0.12), transparent 30%),
     var(--bg);
 }
 
@@ -25,20 +25,13 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 10px;
-  background: rgba(255, 250, 247, 0.92);
+  background: rgba(246, 248, 252, 0.92);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
 }
 
-.mini-badge {
-  display: inline-flex;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  border: 1px solid #f3ddc3;
-  color: #9a7241;
-  background: #fff1e3;
+.platform-brand {
+  margin-bottom: 2px;
 }
 
 .platform-header h1 {
@@ -397,8 +390,23 @@ select:disabled {
   gap: 8px;
 }
 
+.explore-head-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .explore-head h3 {
   margin: 0;
+}
+
+.explore-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #bfd3f5;
+  background: #eef4ff;
 }
 
 .area-badge {
@@ -1139,8 +1147,8 @@ select:disabled {
 
 .explore-hero {
   background:
-    radial-gradient(circle at 80% -10%, rgba(255, 228, 211, 0.9), transparent 42%),
-    radial-gradient(circle at 0% 50%, rgba(255, 232, 239, 0.92), transparent 45%),
+    radial-gradient(circle at 80% -10%, rgba(79, 134, 255, 0.24), transparent 42%),
+    radial-gradient(circle at 0% 50%, rgba(49, 184, 227, 0.2), transparent 45%),
     #fff;
 }
 
@@ -1213,6 +1221,20 @@ select:disabled {
 .salon-hero-content p {
   margin: 0;
   opacity: 0.95;
+}
+
+.salon-hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.salon-hero-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .trust-grid {
@@ -1706,6 +1728,88 @@ select:disabled {
   }
 }
 
+/* ---------- CareChair Brand Refresh ---------- */
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.brand-logo img {
+  display: block;
+  height: 30px;
+  width: auto;
+}
+
+.brand-logo.compact img {
+  height: 28px;
+  width: 28px;
+  object-fit: contain;
+}
+
+.brand-fallback-text {
+  font-weight: 900;
+  font-size: 18px;
+  color: var(--cc-primary-600);
+}
+
+.brand-fallback-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(135deg, var(--cc-primary-600), var(--cc-accent-400));
+}
+
+.ui-card {
+  box-shadow: var(--cc-shadow);
+  border-color: var(--cc-border);
+}
+
+.ui-btn-primary {
+  background: linear-gradient(135deg, var(--cc-primary-600), var(--cc-primary-400));
+  box-shadow: 0 8px 18px rgba(32, 85, 204, 0.26);
+}
+
+.ui-btn-secondary {
+  background: #f2f7ff;
+  border-color: #ccdbf6;
+  color: #204f9a;
+}
+
+.ui-btn-ghost {
+  border-color: #cedcf5;
+  color: #365789;
+}
+
+.ui-badge-featured {
+  background: #e9f2ff;
+  color: #2758a8;
+  border-color: #bfd3f6;
+}
+
+.safe-image-fallback {
+  border-color: #cfdbf1;
+  color: #3a5f94;
+  background: linear-gradient(135deg, #e8f1ff, #edfaff 52%, #e6f2ff);
+}
+
+.input:focus {
+  border-color: #89aef7;
+  box-shadow: 0 0 0 3px rgba(58, 109, 240, 0.16);
+}
+
+.site-footer {
+  border-top-color: #d8e2f4;
+}
+
+.site-footer-bottom {
+  border-top-color: #dae3f4;
+}
+
 .explore-social-proof {
   background: linear-gradient(135deg, #fff8e7, #fff2f6);
   border-color: #ecd9c2;
@@ -1924,4 +2028,152 @@ select:disabled {
   .pricing-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+
+/* ---------- Final Brand Color Overrides ---------- */
+.panel,
+.panel-soft,
+.kpi-card,
+.booking-card,
+.ui-card,
+.settings-row,
+.assign-item,
+.day-row,
+.media-block,
+.summary-card,
+.empty-box,
+.trust-item,
+.faq-list article,
+.pricing-item,
+.landing-steps article,
+.landing-benefits p,
+.admin-checklist-item {
+  border-color: #d7e3f7;
+}
+
+.empty-box,
+.summary-card,
+.admin-pricing-mini {
+  background: #f8fbff;
+}
+
+.svc .i {
+  background: #eef5ff;
+  border-color: #d2e1f8;
+}
+
+.svc.active,
+.staff-chip.active,
+.tab-btn.active,
+.service-mini-card.active,
+.staff-avatar-card.active,
+.date-pill.active,
+.category-chip.active,
+.assign-staff button.active,
+.step-item.active {
+  border-color: #90b5f8;
+  background: #edf4ff;
+  color: #194793;
+}
+
+.area-badge,
+.service-tag,
+.switch-pill,
+.date-pill,
+.category-chip,
+.ui-btn-ghost {
+  border-color: #d1def4;
+  color: #35598d;
+}
+
+.area-badge {
+  background: #eef5ff;
+}
+
+.service-mini-meta span,
+.starting-price {
+  color: #2152a6;
+}
+
+.slot-pill.active {
+  border-color: #90b5f8;
+  background: #edf4ff;
+}
+
+.status-cancelled,
+.ui-badge-cancelled {
+  background: #ffeef2;
+  color: #a33c54;
+}
+
+.status-confirmed,
+.ui-badge-confirmed {
+  background: #eaf8ef;
+  color: #28794f;
+}
+
+.status-pending,
+.ui-badge-pending {
+  background: #fff6e6;
+  color: #8d6530;
+}
+
+.explore-cover,
+.salon-hero,
+.service-row-image,
+.staff-row-avatar,
+.staff-avatar-image,
+.explore-logo,
+.salon-hero-logo {
+  border-color: #c7d9f6;
+}
+
+.salon-hero-overlay {
+  background: linear-gradient(180deg, rgba(10, 31, 74, 0.34), rgba(10, 31, 74, 0.72));
+}
+
+.upload-main,
+.upload-mini {
+  border-color: #9ec0fb;
+  background: #eff5ff;
+  color: #1f4d9f;
+}
+
+.inline-spinner {
+  border-color: #bfd4f8;
+  border-top-color: #2a63c8;
+}
+
+.site-footer {
+  background: rgba(247, 250, 255, 0.9);
+}
+
+.site-footer-bottom p {
+  color: #2f4f81;
+}
+
+.footer-col p,
+.footer-col span {
+  color: #56709a;
+}
+
+.footer-col a {
+  color: #2a5db5;
+}
+
+.modal-bg {
+  background: rgba(8, 22, 52, 0.5);
+}
+
+.modal {
+  box-shadow: 0 22px 46px rgba(13, 33, 76, 0.34);
+}
+
+.logo-preview {
+  width: 108px;
+  height: 108px;
+  border-radius: 16px;
+  object-fit: cover;
+  border: 1px solid #c7d9f6;
+  background: #eef5ff;
 }

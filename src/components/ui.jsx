@@ -27,6 +27,22 @@ export function Card({ className = "", children, ...props }) {
   );
 }
 
+export function Container({ className = "", children, ...props }) {
+  return (
+    <div className={`cc-container ${className}`.trim()} {...props}>
+      {children}
+    </div>
+  );
+}
+
+export function Section({ className = "", children, ...props }) {
+  return (
+    <section className={`cc-section ${className}`.trim()} {...props}>
+      {children}
+    </section>
+  );
+}
+
 export function Badge({ variant = "neutral", className = "", children }) {
   return <span className={`ui-badge ui-badge-${variant} ${className}`.trim()}>{children}</span>;
 }

@@ -85,10 +85,13 @@ export default function SalonAdminPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [mediaDraft, setMediaDraft] = useState({
+    logo_url: "",
     cover_image_url: "",
     gallery_text: "",
   });
   const [savingMedia, setSavingMedia] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoCompressing, setLogoCompressing] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverCompressing, setCoverCompressing] = useState(false);
   const [galleryUploading, setGalleryUploading] = useState(false);
@@ -121,6 +124,7 @@ export default function SalonAdminPage() {
 
         setSalon(salonRes.data);
         setMediaDraft({
+          logo_url: String(salonRes.data.logo_url || ""),
           cover_image_url: String(salonRes.data.cover_image_url || ""),
           gallery_text: galleryToTextareaValue(salonRes.data.gallery_image_urls),
         });
@@ -277,6 +281,7 @@ export default function SalonAdminPage() {
       (row) => row && !row.is_closed && row.open_time && row.close_time
     );
     const hasMedia =
+      Boolean(String(salon?.logo_url || "").trim()) ||
       Boolean(String(salon?.cover_image_url || "").trim()) ||
       galleryUrls.length > 0;
     return [
@@ -286,7 +291,7 @@ export default function SalonAdminPage() {
       { key: "hours", label: "تحديد ساعات العمل", done: hasHours },
       { key: "media", label: "إضافة صور المركز (اختياري)", done: hasMedia },
     ];
-  }, [services, staff, staffServices, hoursDraft, salon?.cover_image_url, galleryUrls.length]);
+  }, [services, staff, staffServices, hoursDraft, salon?.logo_url, salon?.cover_image_url, galleryUrls.length]);
 
   function validateImageFile(file) {
     if (!file) {
@@ -347,6 +352,37 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
     setSalon(up.data);
     setMediaDraft((prev) => ({ ...prev, gallery_text: (nextUrls || []).join("\n") }));
     return up.data;
+  }
+
+  async function handleLogoUpload(file) {
+    if (!supabase || !salon?.id) return;
+    if (!validateImageFile(file)) return;
+
+    setLogoCompressing(true);
+    try {
+      const compressed = await prepareCompressedImage(file);
+      setLogoCompressing(false);
+      setLogoUploading(true);
+
+      const path = `salons/${salon.id}/logo.png`;
+      const publicUrl = await uploadToStorage(path, compressed.blob, compressed.contentType);
+      const up = await supabase
+        .from("salons")
+        .update({ logo_url: publicUrl })
+        .eq("id", salon.id)
+        .select("*")
+        .single();
+      if (up.error) throw up.error;
+
+      setSalon(up.data);
+      setMediaDraft((prev) => ({ ...prev, logo_url: publicUrl }));
+      showToast("success", "تم رفع شعار المركز.");
+    } catch (err) {
+      showToast("error", `تعذر رفع الشعار بعد الضغط: ${err?.message || err}`);
+    } finally {
+      setLogoCompressing(false);
+      setLogoUploading(false);
+    }
   }
 
   async function handleCoverUpload(file) {
@@ -631,6 +667,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
     setSavingMedia(true);
     try {
       const payload = {
+        logo_url: mediaDraft.logo_url.trim() || null,
         cover_image_url: mediaDraft.cover_image_url.trim() || null,
         gallery_image_urls: textareaToGalleryArray(mediaDraft.gallery_text),
       };
@@ -1687,6 +1724,41 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
               <div className="media-admin-grid">
                 <div className="media-block">
+                  <h4>شعار المركز</h4>
+                  <SafeImage
+                    src={mediaDraft.logo_url}
+                    alt="شعار الصالون"
+                    className="logo-preview"
+                    fallbackText={getInitials(salon.name)}
+                  />
+                  <label className={`upload-main ${logoUploading || logoCompressing ? "disabled" : ""}`}>
+                    {logoCompressing ? (
+                      <>
+                        <span className="inline-spinner" />
+                        جاري ضغط الصورة...
+                      </>
+                    ) : logoUploading ? (
+                      <>
+                        <span className="inline-spinner" />
+                        جاري رفع الشعار...
+                      </>
+                    ) : (
+                      "رفع/تبديل الشعار"
+                    )}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      disabled={logoUploading || logoCompressing}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleLogoUpload(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <div className="media-block">
                   <h4>صورة الغلاف</h4>
                   <SafeImage src={mediaDraft.cover_image_url} alt="غلاف الصالون" className="cover-preview" fallbackIcon="✨" />
                   <label className={`upload-main ${coverUploading || coverCompressing ? "disabled" : ""}`}>
@@ -1789,6 +1861,12 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
               </div>
 
               <div className="grid">
+                <TextInput
+                  label="رابط شعار المركز (اختياري)"
+                  value={mediaDraft.logo_url}
+                  onChange={(e) => setMediaDraft((p) => ({ ...p, logo_url: e.target.value }))}
+                  placeholder="https://..."
+                />
                 <TextInput
                   label="رابط صورة الغلاف (اختياري)"
                   value={mediaDraft.cover_image_url}

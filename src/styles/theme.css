@@ -1,0 +1,40 @@
+:root {
+  --cc-primary-600: #0f4fd8;
+  --cc-primary-500: #2a67ec;
+  --cc-primary-400: #4f86ff;
+  --cc-accent-400: #31b8e3;
+  --cc-bg: #f6f8fc;
+  --cc-surface: #ffffff;
+  --cc-border: #dce4f2;
+  --cc-text: #0f1a2f;
+  --cc-muted: #5f6d86;
+  --cc-success: #18a957;
+  --cc-warning: #f0a32e;
+  --cc-danger: #d9415f;
+  --cc-shadow: 0 14px 30px rgba(15, 49, 119, 0.12);
+  --cc-radius-lg: 20px;
+  --cc-radius-md: 14px;
+  --cc-space-1: 8px;
+  --cc-space-2: 12px;
+  --cc-space-3: 16px;
+  --cc-space-4: 24px;
+}
+
+.cc-container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-inline: 14px;
+}
+
+.cc-section {
+  display: grid;
+  gap: var(--cc-space-2);
+  margin-block: var(--cc-space-2);
+}
+
+@media (min-width: 760px) {
+  .cc-container {
+    padding-inline: 16px;
+  }
+}
+

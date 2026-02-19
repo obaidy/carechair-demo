@@ -1,13 +1,14 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Footer from "./Footer";
+import BrandLogo from "./BrandLogo";
 
 export default function PageShell({ title, subtitle, right, children }) {
   return (
     <div className="platform-page" dir="rtl">
       <header className="platform-header">
         <div>
-          <div className="mini-badge">CareChair</div>
+          <BrandLogo className="platform-brand" />
           <h1>{title}</h1>
           {subtitle ? <p>{subtitle}</p> : null}
         </div>
