@@ -46,7 +46,6 @@ export default function ExplorePage() {
         const salonsRes = await supabase
           .from("salons")
           .select("*")
-          .eq("is_active", true)
           .eq("is_listed", true)
           .order("name", { ascending: true });
 
@@ -221,6 +220,7 @@ export default function ExplorePage() {
             const phone = normalizeIraqiPhone(salon.whatsapp || "");
             const hasWhats = isValidE164WithoutPlus(phone);
             const media = getSalonMedia(salon);
+            const salonActive = Boolean(salon.is_active);
 
             return (
               <article className="explore-card" key={salon.id}>
@@ -249,6 +249,7 @@ export default function ExplorePage() {
                     <Badge variant="neutral">تأكيد سريع</Badge>
                     <Badge variant="neutral">حجز سهل</Badge>
                     {hasWhats ? <Badge variant="featured">واتساب متوفر</Badge> : null}
+                    {!salonActive ? <Badge variant="pending">بانتظار التفعيل</Badge> : null}
                   </div>
 
                   {Number.isFinite(minPrice) ? (
@@ -268,7 +269,11 @@ export default function ExplorePage() {
                   </div>
 
                   <div className="row-actions">
-                    <Button as={Link} to={`/s/${salon.slug}`} variant="primary">
+                    <Button
+                      as={Link}
+                      to={`/s/${salon.slug}`}
+                      variant="primary"
+                    >
                       احجز الآن
                     </Button>
                     {hasWhats ? (

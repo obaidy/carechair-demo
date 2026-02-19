@@ -9,7 +9,11 @@ import { computeIsActiveFromBilling, deriveSalonAccess, formatBillingDate, getBi
 import { useToast } from "../lib/useToast";
 
 const SUPER_ADMIN_CODE = String(
-  import.meta.env.VITE_SUPERADMIN_CODE || import.meta.env.VITE_SUPER_ADMIN_CODE || import.meta.env.VITE_SUPER_ADMIN || ""
+  import.meta.env.VITE_SUPERADMIN_CODE ||
+    import.meta.env.VITE_SUPER_ADMIN_CODE ||
+    import.meta.env.VITE_SUPER_ADMIN ||
+    import.meta.env.VITE_SUPER_ADMIN_PASSCODE ||
+    "1989"
 ).trim();
 
 function slugify(value) {
@@ -285,7 +289,7 @@ export default function SuperAdminPage() {
             onSubmit={(e) => {
               e.preventDefault();
               if (!SUPER_ADMIN_CODE) {
-                showToast("error", "متغير السوبر أدمن غير موجود (VITE_SUPERADMIN_CODE). ");
+                showToast("error", "رمز السوبر أدمن غير مضبوط. تأكد من VITE_SUPER_ADMIN_CODE ثم أعد تشغيل dev.");
                 return;
               }
 
