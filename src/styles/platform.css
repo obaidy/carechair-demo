@@ -2073,118 +2073,6 @@ select:disabled {
   }
 }
 
-.landing-hero {
-  background:
-    radial-gradient(circle at 90% -10%, rgba(255, 226, 209, 0.9), transparent 42%),
-    radial-gradient(circle at 10% 90%, rgba(255, 227, 236, 0.95), transparent 48%),
-    #fff;
-  display: grid;
-  gap: 10px;
-}
-
-.landing-hero h2 {
-  margin: 2px 0 0;
-  font-size: 28px;
-}
-
-.landing-hero p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.7;
-}
-
-.landing-steps {
-  display: grid;
-  gap: 8px;
-}
-
-.landing-steps article {
-  border: 1px solid #ecd9de;
-  border-radius: 14px;
-  padding: 10px;
-  background: #fff;
-}
-
-.landing-steps b {
-  display: block;
-  margin-bottom: 3px;
-}
-
-.landing-steps p,
-.faq-list p {
-  margin: 0;
-  color: var(--muted);
-}
-
-.landing-benefits {
-  display: grid;
-  gap: 6px;
-}
-
-.landing-benefits p {
-  margin: 0;
-  border: 1px solid #ecdbdf;
-  border-radius: 12px;
-  padding: 10px;
-  background: #fff;
-  color: #614d52;
-  font-weight: 700;
-}
-
-.pricing-grid {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.pricing-item {
-  border: 1px solid #ecdcdf;
-  border-radius: 12px;
-  padding: 10px;
-  background: #fff;
-}
-
-.pricing-item b {
-  display: block;
-  margin-bottom: 4px;
-}
-
-.pricing-item p {
-  margin: 0;
-  color: var(--muted);
-}
-
-.faq-list {
-  display: grid;
-  gap: 8px;
-}
-
-.faq-list article {
-  border: 1px solid #ecd9de;
-  border-radius: 12px;
-  padding: 10px;
-  background: #fff;
-}
-
-.faq-list b {
-  display: block;
-  margin-bottom: 3px;
-}
-
-.landing-cta {
-  display: grid;
-  gap: 8px;
-}
-
-.landing-cta h3 {
-  margin: 0;
-}
-
-.landing-cta p {
-  margin: 0;
-  color: var(--muted);
-}
-
 .success-screen .ui-btn {
   min-width: min(100%, 260px);
   min-height: 44px;
@@ -2194,13 +2082,76 @@ select:disabled {
   .admin-onboarding-grid {
     grid-template-columns: 1fr 1fr;
   }
+}
 
-  .landing-steps {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+/* ---------- Final Authority Overrides ---------- */
+.platform-page .platform-header {
+  min-height: 90px;
+  align-items: center;
+  box-shadow: 0 10px 24px rgba(12, 39, 95, 0.08);
+}
+
+.platform-page .platform-brand {
+  min-height: 44px;
+}
+
+.brand-logo img {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
+}
+
+.brand-fallback-mark,
+.brand-fallback-inline img {
+  width: 52px;
+  height: 52px;
+}
+
+.brand-fallback-text {
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.site-footer .footer-brand {
+  margin-bottom: 16px;
+  opacity: 0.95;
+}
+
+.site-footer .footer-brand img {
+  height: 60px;
+  width: auto;
+  object-fit: contain;
+}
+
+.ui-card {
+  border-radius: 16px;
+}
+
+.ui-btn {
+  border-radius: 14px;
+}
+
+@media (min-width: 760px) {
+  .platform-page .platform-header {
+    min-height: 90px;
   }
 
-  .pricing-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .platform-page .platform-brand {
+    min-height: 64px;
+  }
+
+  .brand-logo img {
+    height: 64px;
+  }
+
+  .brand-fallback-mark,
+  .brand-fallback-inline img {
+    width: 60px;
+    height: 60px;
+  }
+
+  .site-footer .footer-brand img {
+    height: 64px;
   }
 }
 
@@ -2217,10 +2168,6 @@ select:disabled {
 .summary-card,
 .empty-box,
 .trust-item,
-.faq-list article,
-.pricing-item,
-.landing-steps article,
-.landing-benefits p,
 .admin-checklist-item {
   border-color: #d7e3f7;
 }

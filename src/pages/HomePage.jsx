@@ -9,26 +9,26 @@ import { supabase } from "../lib/supabase";
 import "../styles/landing.css";
 
 const PLATFORM_WHATSAPP_LINK =
-  "https://wa.me/9647700603080?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%20%D8%A7%D8%B1%D9%8A%D8%AF%20%D8%A7%D8%B9%D8%B1%D9%81%20%D8%A7%D9%83%D8%AB%D8%B1%20%D8%B9%D9%86%20CareChair%20%D9%84%D9%85%D8%B1%D9%83%D8%B2%D9%8A";
+  "https://wa.me/9647700603080?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%20%D8%A7%D8%B1%D9%8A%D8%AF%20%D8%A7%D8%B9%D8%B1%D9%81%20%D8%B9%D9%86%20CareChair";
 
 const PRODUCT_SHOTS = [
   {
     key: "admin",
     src: "/images/product/mock-admin-dashboard.webp",
     title: "لوحة الإدارة",
-    caption: "حالة الحجوزات، القبول والرفض، وكل شي واضح.",
+    caption: "متابعة الطلبات، القبول والرفض، وحالة التشغيل اليومية من شاشة واحدة.",
   },
   {
     key: "booking",
     src: "/images/product/mock-booking-mobile.webp",
     title: "صفحة الحجز",
-    caption: "تجربة سريعة للعميلة من أول ضغطه.",
+    caption: "تجربة عميلة سريعة وواضحة مع اختيار الخدمة والموعد خلال ثواني.",
   },
   {
     key: "explore",
     src: "/images/product/mock-explore-marketplace.webp",
     title: "الاستكشاف",
-    caption: "واجهة حديثة تعرض المراكز بطريقة احترافية.",
+    caption: "واجهة احترافية لعرض المراكز والخدمات وتحويل الزيارات إلى حجوزات.",
   },
 ];
 
@@ -40,31 +40,33 @@ const PROMISE_BULLETS = [
 ];
 
 const FEATURES = [
-  { icon: "🔗", title: "رابط حجز واحد", text: "رابط واضح لكل منصاتك." },
-  { icon: "🧩", title: "تنظيم الموظفين والخدمات", text: "توزيع ذكي لكل خدمة." },
-  { icon: "✅", title: "قبول/رفض الحجوزات", text: "تأكيد سريع من لوحة الإدارة." },
-  { icon: "🕒", title: "ساعات عمل", text: "تتحكم بالدوام حسب أيام الأسبوع." },
-  { icon: "🖼️", title: "صور للمركز", text: "تعرض الشغل والمكان بشكل جذاب." },
-  { icon: "💬", title: "إشعارات (واتساب قريباً)", text: "تنبيهات أسهل لتنظيم اليوم." },
-];
-
-const STEPS = [
-  { no: "1", title: "إعداد المركز", text: "الخدمات، الموظفين، وساعات العمل." },
-  { no: "2", title: "نشر رابط الحجز", text: "بالإنستغرام، الواتساب، والبايو." },
-  { no: "3", title: "بدء الحجوزات", text: "طلبات مرتبة وقرارات أسرع." },
-];
-
-const FAQS = [
-  { q: "برنامج لو تطبيق؟", a: "يشتغل من الرابط على أي جهاز." },
-  { q: "ينفتح بأكثر من جهاز؟", a: "نعم، موبايل + لابتوب بنفس الوقت." },
-  { q: "شلون أضيف رابط الحجز بالإنستغرام؟", a: "ينضاف مباشرة بالبايو والستوري." },
-  { q: "شلون يتم تأكيد الحجز؟", a: "من لوحة الإدارة: قبول أو رفض فوراً." },
+  { icon: "🔗", title: "رابط حجز ذكي", text: "رابط واحد جاهز للإنستغرام والواتساب." },
+  { icon: "🧭", title: "تنظيم تشغيل يومي", text: "توزيع واضح للخدمات والموظفين بدون ارتباك." },
+  { icon: "✅", title: "قبول ورفض فوري", text: "إدارة الحجوزات بسرعة مع تحديث مباشر للحالة." },
+  { icon: "🕒", title: "ساعات عمل مرنة", text: "تحدد الدوام والأيام المغلقة لكل مركز بسهولة." },
+  { icon: "🖼️", title: "عرض احترافي للمركز", text: "صور وخدمات مرتبة تعكس جودة البراند." },
+  { icon: "📈", title: "قابل للتوسع", text: "بنية جاهزة للنمو مع فروع أكثر وحجوزات أعلى." },
 ];
 
 const TESTIMONIALS = [
-  "رتبنا المواعيد وخفّت المكالمات.",
-  "الحجز صار أسرع للعميلات.",
-  "يوم المركز صار منظم وواضح.",
+  {
+    name: "نوف",
+    role: "صاحبة مركز — بغداد",
+    quote: "صار عدنا نظام واضح، والعميلات تحجز بسهولة بدون دوخة المكالمات.",
+    stars: 5,
+  },
+  {
+    name: "زهراء",
+    role: "مديرة صالون — بغداد",
+    quote: "لوحة الإدارة اختصرت وقت كبير وخففت الأخطاء بتأكيد المواعيد.",
+    stars: 5,
+  },
+  {
+    name: "شهد",
+    role: "صاحبة مركز — بغداد",
+    quote: "النتيجة كانت سريعة: تنظيم أعلى ومظهر احترافي قدام العميلات.",
+    stars: 5,
+  },
 ];
 
 export default function HomePage() {
@@ -104,10 +106,50 @@ export default function HomePage() {
     loadStats();
   }, []);
 
-  const socialText = useMemo(() => {
-    if (centersCount <= 8) return `عدد المراكز المسجله معنا (${centersCount})`;
-    return `مراكز تستخدم CareChair لتنظيم المواعيد (${centersCount})`;
-  }, [centersCount]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const nodes = Array.from(document.querySelectorAll(".reveal-on-scroll"));
+    if (nodes.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        }
+      },
+      {
+        threshold: 0.14,
+        rootMargin: "0px 0px -30px 0px",
+      }
+    );
+
+    for (const node of nodes) observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  const proofCards = useMemo(() => {
+    const cards = [
+      {
+        key: "centers",
+        label: "مراكز مسجلة",
+        value: String(centersCount),
+      },
+    ];
+
+    if (bookingsThisMonth > 0) {
+      cards.push({
+        key: "bookings",
+        label: "حجوزات هذا الشهر",
+        value: String(bookingsThisMonth),
+      });
+    }
+
+    return cards;
+  }, [centersCount, bookingsThisMonth]);
 
   return (
     <div className="landing-page" dir="rtl">
@@ -116,10 +158,12 @@ export default function HomePage() {
           <BrandLogo className="landing-logo-main" />
 
           <nav className="landing-links" aria-label="روابط الصفحة">
-            <Link to="/explore">استكشف</Link>
-            <a href="#for-centers">للمراكز</a>
+            <Link to="/explore" className="active">
+              استكشف
+            </Link>
+            <a href="#owners">للمراكز</a>
+            <a href="#features">المزايا</a>
             <a href="#pricing">الأسعار</a>
-            <a href="#faq">الأسئلة</a>
           </nav>
 
           <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer" className="landing-nav-cta">
@@ -129,7 +173,7 @@ export default function HomePage() {
       </header>
 
       <main className="landing-main cc-container">
-        <section className="landing-hero">
+        <section className="landing-hero reveal-on-scroll is-visible">
           <SafeImage
             src="/images/hero/hero-salon-baghdad-01.webp"
             alt="صالون في بغداد"
@@ -138,16 +182,18 @@ export default function HomePage() {
             style={{ backgroundImage: `url('${heroFallback}')` }}
           />
           <div className="landing-hero-overlay" />
-          <div className="landing-hero-noise" />
 
           <div className="landing-hero-content">
-            <Badge variant="featured">منصّة حجوزات للصالونات و مراكز التجميل</Badge>
-            <h1>حوّل فوضى الواتساب إلى نظام حجوزات مرتب</h1>
-            <p>رابط حجز + لوحة إدارة + تذكير واتساب (قريباً) — خلال يوم واحد</p>
+            <Badge variant="featured">CareChair للصالونات ومراكز التجميل</Badge>
+            <h1>حوّل فوضى الواتساب إلى نظام حجوزات احترافي</h1>
+            <p>
+              رابط حجز ذكي + لوحة إدارة متقدمة + تنظيم كامل للموظفين والخدمات — جاهز خلال يوم
+              واحد.
+            </p>
 
             <div className="landing-hero-cta">
               <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer">
-                اطلب نسخة لمركزك
+                اطلب نظام لمركزك
               </Button>
               <Button as={Link} to="/explore" variant="secondary">
                 استعرض المراكز
@@ -155,52 +201,41 @@ export default function HomePage() {
             </div>
 
             <div className="landing-proof-inline">
-              <span>يفتح على أكثر من جهاز</span>
-              <span>ترتيب المواعيد</span>
-              <span>إلغاء بأي وقت</span>
+              <span>تفعيل خلال 24 ساعة</span>
+              <span>يعمل على أكثر من جهاز</span>
+              <span>تنظيم ذكي للمواعيد</span>
             </div>
           </div>
         </section>
 
-        <section className="landing-proof">
-          <Card className="landing-proof-head">
-            {statsLoading ? (
-              <div className="landing-proof-skeleton">
-                <Skeleton className="skeleton-line" />
-                <Skeleton className="skeleton-line short" />
-              </div>
-            ) : (
-              <>
-                <b>{socialText}</b>
-                <small>{bookingsThisMonth} حجز مسجل هذا الشهر</small>
-              </>
-            )}
-          </Card>
-
-          <div className="landing-testimonials">
-            {TESTIMONIALS.map((line, idx) => (
-              <Card className="landing-testimonial" key={idx}>
-                <p>{line}</p>
-                <span>مركز تجميل — بغداد</span>
-              </Card>
-            ))}
-          </div>
+        <section className="landing-proof reveal-on-scroll">
+          {statsLoading ? (
+            <div className="landing-proof-grid">
+              {Array.from({ length: 3 }).map((_, idx) => (
+                <Card className="landing-proof-card" key={`proof-sk-${idx}`}>
+                  <Skeleton className="skeleton-line short" />
+                  <Skeleton className="skeleton-line" />
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="landing-proof-grid">
+              {proofCards.map((item) => (
+                <Card className="landing-proof-card" key={item.key}>
+                  <span className="landing-proof-label">{item.label}</span>
+                  <b className="landing-proof-value">{item.value}</b>
+                </Card>
+              ))}
+            </div>
+          )}
         </section>
 
-        <section id="for-centers" className="landing-section landing-promise">
+        <section id="owners" className="landing-section reveal-on-scroll">
           <div className="landing-section-head">
-            <h2>للمراكز — نجهز مركزك خلال يوم واحد</h2>
+            <h2>نجهز مركزك خلال يوم واحد</h2>
           </div>
 
           <div className="landing-promise-grid">
-            <Card className="landing-promise-card">
-              <ul>
-                {PROMISE_BULLETS.map((bullet) => (
-                  <li key={bullet}>{bullet}</li>
-                ))}
-              </ul>
-            </Card>
-
             <Card className="landing-promise-image-card">
               <SafeImage
                 src="/images/sections/owner-tablet.webp"
@@ -209,17 +244,25 @@ export default function HomePage() {
                 fallbackIcon="📱"
               />
             </Card>
+
+            <Card className="landing-promise-card">
+              <ul>
+                {PROMISE_BULLETS.map((bullet) => (
+                  <li key={bullet}>{bullet}</li>
+                ))}
+              </ul>
+            </Card>
           </div>
         </section>
 
-        <section className="landing-section">
+        <section className="landing-section reveal-on-scroll">
           <div className="landing-section-head">
             <h2>شوف النظام</h2>
           </div>
 
           <div className="landing-product-grid">
             {PRODUCT_SHOTS.map((shot, idx) => (
-              <Card key={shot.key} className="landing-shot-card">
+              <Card key={shot.key} className="landing-shot-card reveal-on-scroll">
                 <div className="device-frame">
                   <div className="device-notch" />
                   <SafeImage
@@ -239,26 +282,9 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="landing-section">
+        <section id="features" className="landing-section reveal-on-scroll">
           <div className="landing-section-head">
-            <h2>شلون يشتغل؟</h2>
-          </div>
-          <div className="landing-steps-modern">
-            {STEPS.map((step) => (
-              <article key={step.no} className="landing-step-pill">
-                <span>{step.no}</span>
-                <div>
-                  <b>{step.title}</b>
-                  <p>{step.text}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="landing-section">
-          <div className="landing-section-head">
-            <h2>مميزات سريعة</h2>
+            <h2>مميزات النظام</h2>
           </div>
 
           <div className="landing-features-grid">
@@ -274,68 +300,71 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="pricing" className="landing-section">
+        <section id="pricing" className="landing-section reveal-on-scroll">
           <div className="landing-section-head">
             <h2>الأسعار</h2>
           </div>
 
           <div className="landing-pricing-grid">
+            <Card className="landing-price-card monthly">
+              <span className="price-badge">الأكثر طلباً</span>
+              <span className="price-label">الاشتراك الشهري</span>
+              <h3>30–50</h3>
+              <p>دولار / شهر</p>
+              <ul>
+                <li>إلغاء بأي وقت</li>
+                <li>الدعم متوفر</li>
+                <li>الاشتراك يبقى فعال لنهاية الفترة المدفوعة</li>
+              </ul>
+              <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer" className="pricing-cta-btn">
+                ابدأ الآن
+              </Button>
+            </Card>
+
             <Card className="landing-price-card">
               <span className="price-label">تشغيل أول مرة</span>
-              <h3>$300–$500</h3>
-              <p>مرة واحدة، غير مسترجعة</p>
-            </Card>
-
-            <Card className="landing-price-card">
-              <span className="price-label">اشتراك شهري</span>
-              <h3>$30–$50</h3>
-              <p>/ شهر</p>
+              <h3>300–500</h3>
+              <p>دولار مرة واحدة</p>
+              <ul>
+                <li>إعداد كامل للنظام</li>
+                <li>تهيئة الخدمات والموظفين</li>
+                <li>غير مسترجعة بعد بدء التجهيز</li>
+              </ul>
+              <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer" variant="secondary" className="pricing-cta-btn">
+                اطلب التجهيز
+              </Button>
             </Card>
           </div>
-
-          <Card className="landing-pricing-notes">
-            <ul>
-              <li>إلغاء بأي وقت</li>
-              <li>الدعم متوفر</li>
-              <li>الاشتراك يبقى فعال لحد نهاية الشهر المدفوع</li>
-            </ul>
-            <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer" className="pricing-cta-btn">
-              تواصل معنا على واتساب
-            </Button>
-          </Card>
         </section>
 
-        <section className="landing-section">
-          <Card className="landing-future-app">
-            <div className="future-icon">📲</div>
-            <div>
-              <h3>قريباً تطبيق للعملاء</h3>
-              <p>بعد ما يكبر عدد المراكز، راح نطلق تطبيق لاكتشاف المراكز والحجز بسهولة.</p>
-            </div>
-          </Card>
-        </section>
-
-        <section id="faq" className="landing-section">
+        <section className="landing-section reveal-on-scroll">
           <div className="landing-section-head">
-            <h2>الأسئلة الشائعة</h2>
+            <h2>آراء المراكز</h2>
           </div>
-          <div className="landing-faq-grid">
-            {FAQS.map((item) => (
-              <Card className="landing-faq-item" key={item.q}>
-                <b>{item.q}</b>
-                <p>{item.a}</p>
+          <div className="landing-testimonials">
+            {TESTIMONIALS.map((item) => (
+              <Card className="landing-testimonial" key={item.quote}>
+                <div className="testimonial-head">
+                  <div className="avatar-circle">{item.name.slice(0, 1)}</div>
+                  <div>
+                    <b>{item.name}</b>
+                    <span>{item.role}</span>
+                  </div>
+                </div>
+                <div className="testimonial-stars">{"★".repeat(item.stars)}</div>
+                <p>{item.quote}</p>
               </Card>
             ))}
           </div>
         </section>
 
-        <section className="landing-final-cta">
+        <section className="landing-final-cta reveal-on-scroll">
           <Card className="landing-final-card">
-            <h2>جاهز نخلي مركزك يستقبل حجوزات مرتبّة؟</h2>
-            <p>نجهز النظام وياك بسرعة وتبدي تستقبل حجوزاتك بثقة.</p>
+            <h2>جاهز تخلي مركزك يستقبل حجوزات مرتبة؟</h2>
+            <p>خل نطلق رابط الحجز الخاص بمركزك ونبدأ التشغيل خلال 24 ساعة.</p>
             <div className="landing-final-actions">
               <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer">
-                احجز ديمو 5 دقائق
+                اطلب نظام لمركزك
               </Button>
               <Button as={Link} to="/explore" variant="secondary">
                 استعرض المراكز
@@ -347,7 +376,7 @@ export default function HomePage() {
 
       <div className="mobile-sticky-cta">
         <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer">
-          احجز ديمو واتساب
+          ديمو واتساب
         </Button>
         <Button as={Link} to="/explore" variant="secondary">
           استعرض المراكز
