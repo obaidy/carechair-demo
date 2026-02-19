@@ -1,0 +1,465 @@
+.landing-page {
+  --landing-bg: #f7f4f2;
+  --landing-card: #ffffff;
+  --landing-line: #e5dcda;
+  --landing-text: #1d1416;
+  --landing-muted: #6c5b5f;
+  --landing-gold: #c9a46d;
+  --landing-accent: #c97990;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 235, 214, 0.45), transparent 28%),
+    radial-gradient(circle at 90% 8%, rgba(255, 228, 238, 0.4), transparent 30%),
+    var(--landing-bg);
+  color: var(--landing-text);
+}
+
+.landing-nav {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  border-bottom: 1px solid rgba(229, 220, 218, 0.78);
+  backdrop-filter: blur(10px);
+  background: rgba(247, 244, 242, 0.9);
+}
+
+.landing-nav-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.landing-logo {
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 900;
+  color: #24171a;
+}
+
+.landing-links {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  margin-inline-start: auto;
+  padding-bottom: 2px;
+}
+
+.landing-links a {
+  text-decoration: none;
+  color: #4f3f44;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.landing-links a:hover {
+  background: #fff;
+  border-color: #e3d9d8;
+}
+
+.landing-nav-cta {
+  flex-shrink: 0;
+  font-size: 13px;
+  padding-inline: 10px;
+}
+
+.landing-main {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 12px 14px 22px;
+  display: grid;
+  gap: 12px;
+}
+
+.landing-hero {
+  position: relative;
+  border-radius: 24px;
+  border: 1px solid #2f2024;
+  overflow: hidden;
+  min-height: 430px;
+  box-shadow: 0 22px 40px rgba(25, 13, 16, 0.3);
+  background: #171113;
+}
+
+.landing-hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.landing-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(130deg, rgba(17, 10, 12, 0.92) 0%, rgba(28, 16, 19, 0.8) 40%, rgba(38, 24, 29, 0.42) 100%),
+    radial-gradient(circle at 90% -10%, rgba(194, 154, 97, 0.38), transparent 34%);
+}
+
+.landing-hero-noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.08;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.8) 0.45px, transparent 0.45px);
+  background-size: 3px 3px;
+  pointer-events: none;
+}
+
+.landing-hero-content {
+  position: relative;
+  z-index: 2;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  color: #fff;
+}
+
+.landing-hero-content h1 {
+  margin: 2px 0 0;
+  font-size: clamp(28px, 7.3vw, 56px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  max-width: 11.5ch;
+}
+
+.landing-hero-content p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.86);
+  max-width: 32ch;
+  font-size: 14px;
+}
+
+.landing-hero-cta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.landing-hero-cta .ui-btn {
+  min-height: 42px;
+  font-size: 14px;
+}
+
+.landing-chips {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.landing-chips span {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.landing-hero-gallery {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.landing-hero-thumb {
+  width: 100%;
+  height: 78px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: transform 0.22s ease;
+}
+
+.landing-hero-thumb:hover {
+  transform: translateY(-2px);
+}
+
+.landing-proof {
+  display: grid;
+  gap: 8px;
+}
+
+.landing-proof-head {
+  background:
+    linear-gradient(135deg, #fff7e8, #fff3f7);
+  border-color: #e8d8c4;
+}
+
+.landing-proof-head b {
+  display: block;
+  font-size: 15px;
+  color: #4c3a29;
+}
+
+.landing-proof-head small {
+  color: #745c45;
+}
+
+.landing-testimonials {
+  display: grid;
+  gap: 8px;
+}
+
+.landing-testimonial {
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.landing-testimonial p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.landing-testimonial span {
+  font-size: 12px;
+  color: var(--landing-muted);
+}
+
+.landing-section {
+  display: grid;
+  gap: 10px;
+}
+
+.landing-section-head h2 {
+  margin: 0;
+  font-size: clamp(21px, 4.8vw, 33px);
+}
+
+.landing-section-head p {
+  margin: 4px 0 0;
+  color: var(--landing-muted);
+  font-size: 14px;
+}
+
+.landing-product-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.landing-shot-card {
+  display: grid;
+  gap: 8px;
+}
+
+.landing-shot-image {
+  width: 100%;
+  height: 172px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid #e2d8d8;
+}
+
+.landing-shot-meta b {
+  font-size: 15px;
+}
+
+.landing-shot-meta p {
+  margin: 3px 0 0;
+  color: var(--landing-muted);
+  font-size: 13px;
+}
+
+.landing-features-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.landing-feature {
+  display: grid;
+  gap: 8px;
+}
+
+.feature-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  border: 1px solid #eadcdd;
+  background: linear-gradient(135deg, #fff6f8, #fff8ed);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+}
+
+.landing-feature b {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 14px;
+}
+
+.landing-feature p {
+  margin: 0;
+  color: var(--landing-muted);
+  font-size: 12px;
+}
+
+.landing-pricing-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.landing-price-card {
+  border-color: #eadfd6;
+  background:
+    linear-gradient(170deg, #ffffff, #fffaf5);
+}
+
+.price-label {
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  color: #87623b;
+  border: 1px solid #ecd5b8;
+  background: #fff4e4;
+  border-radius: 999px;
+  padding: 5px 9px;
+}
+
+.landing-price-card h3 {
+  margin: 8px 0 3px;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+}
+
+.landing-price-card p {
+  margin: 0;
+  color: var(--landing-muted);
+}
+
+.landing-pricing-notes ul {
+  margin: 0;
+  padding-inline-start: 18px;
+  display: grid;
+  gap: 6px;
+  color: #5a4a4d;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.landing-faq-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.landing-faq-item {
+  display: grid;
+  gap: 5px;
+}
+
+.landing-faq-item b {
+  font-size: 14px;
+}
+
+.landing-faq-item p {
+  margin: 0;
+  color: var(--landing-muted);
+  font-size: 13px;
+}
+
+.landing-final-card {
+  background:
+    linear-gradient(135deg, #201316 0%, #332026 100%);
+  color: #fff;
+  border-color: #39252b;
+}
+
+.landing-final-card h2 {
+  margin: 0;
+  font-size: clamp(22px, 5.7vw, 38px);
+}
+
+.landing-final-card p {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.landing-final-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.landing-final-actions .ui-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+.landing-page .ui-card,
+.landing-page .ui-btn {
+  transition: transform 0.18s ease, box-shadow 0.24s ease, border-color 0.2s ease;
+}
+
+.landing-page .ui-card:hover {
+  transform: translateY(-2px);
+}
+
+.landing-page .ui-btn:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+@media (min-width: 760px) {
+  .landing-nav-inner {
+    padding: 11px 16px;
+    gap: 12px;
+  }
+
+  .landing-main {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .landing-hero {
+    min-height: 480px;
+  }
+
+  .landing-hero-content {
+    max-width: 720px;
+    padding: 22px;
+    gap: 12px;
+  }
+
+  .landing-hero-gallery {
+    max-width: 520px;
+    padding: 0 22px 22px;
+  }
+
+  .landing-testimonials {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .landing-product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .landing-shot-image {
+    height: 190px;
+  }
+
+  .landing-features-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .landing-pricing-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .landing-faq-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+

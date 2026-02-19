@@ -2,23 +2,11 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 type TemplateName = "booking_created" | "booking_confirmed" | "booking_cancelled";
 
-type BookingData = {
-  id?: string | number;
-  salon_slug?: string;
-  customer_name?: string;
-  customer_phone?: string;
-  salon_whatsapp?: string;
-  service?: string;
-  staff?: string;
-  appointment_at?: string;
-  status?: string;
-  notes?: string | null;
-};
-
 type SendWhatsappRequest = {
   to: string;
   template: TemplateName;
-  data: BookingData;
+  params?: string[];
+  data?: Record<string, unknown>;
 };
 
 const corsHeaders = {
@@ -27,10 +15,18 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const WHATSAPP_TOKEN = Deno.env.get("WHATSAPP_TOKEN");
-const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
-const WHATSAPP_API_VERSION = Deno.env.get("WHATSAPP_API_VERSION") ?? "v20.0";
-const WHATSAPP_TEMPLATE_LANG = Deno.env.get("WHATSAPP_TEMPLATE_LANG") ?? "ar";
+const ALLOWED_TEMPLATES = new Set<TemplateName>([
+  "booking_created",
+  "booking_confirmed",
+  "booking_cancelled",
+]);
+
+// Deploy:
+// supabase functions deploy send-whatsapp
+// Secrets:
+// supabase secrets set WHATSAPP_TOKEN=xxx WHATSAPP_PHONE_NUMBER_ID=xxx WHATSAPP_API_VERSION=v20.0 WHATSAPP_TEMPLATE_LANG=ar
+// Logs:
+// supabase functions logs send-whatsapp
 
 function jsonResponse(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), {
@@ -42,105 +38,40 @@ function jsonResponse(status: number, body: Record<string, unknown>) {
   });
 }
 
-function asString(value: unknown, fallback = "-") {
-  if (value === null || value === undefined) return fallback;
-  const s = String(value).trim();
-  return s || fallback;
+function normalizePhone(value: unknown) {
+  return String(value ?? "").replace(/\D/g, "");
 }
 
-function normalizePhone(value: string) {
-  return String(value || "").replace(/\D/g, "");
+function normalizeParams(params: unknown) {
+  if (!Array.isArray(params)) return [];
+  return params.map((p) => String(p ?? ""));
 }
 
-function formatAppointment(value: unknown) {
-  try {
-    const d = new Date(String(value));
-    if (Number.isNaN(d.getTime())) return asString(value);
-    return d.toLocaleString("ar-IQ", { dateStyle: "medium", timeStyle: "short" });
-  } catch {
-    return asString(value);
-  }
+function asText(value: unknown, fallback = "-") {
+  const str = String(value ?? "").trim();
+  return str || fallback;
 }
 
-function buildTemplateParameters(template: TemplateName, data: BookingData): string[] {
-  const appointment = formatAppointment(data.appointment_at);
-
+function toParamsFromLegacyData(template: TemplateName, data: Record<string, unknown> = {}) {
+  const appointment = asText(data.appointment_at ?? data.appointment_start, "-");
   if (template === "booking_created") {
     return [
-      asString(data.id),
-      asString(data.customer_name),
-      asString(data.customer_phone),
-      asString(data.service),
-      asString(data.staff),
+      asText(data.customer_name),
+      asText(data.service),
       appointment,
-      asString(data.salon_slug),
+      asText(data.customer_phone),
     ];
   }
-
-  return [
-    asString(data.customer_name),
-    asString(data.service),
-    appointment,
-    asString(data.staff),
-    asString(data.id),
-  ];
+  return [asText(data.service), appointment];
 }
 
-function buildFallbackText(template: TemplateName, data: BookingData): string {
-  const appointment = formatAppointment(data.appointment_at);
-
-  if (template === "booking_created") {
-    return [
-      "طلب حجز جديد",
-      `رقم الحجز: ${asString(data.id)}`,
-      `اسم العميلة: ${asString(data.customer_name)}`,
-      `هاتف العميلة: ${asString(data.customer_phone)}`,
-      `الخدمة: ${asString(data.service)}`,
-      `الموظفة: ${asString(data.staff)}`,
-      `الموعد: ${appointment}`,
-      `الصالون: ${asString(data.salon_slug)}`,
-    ].join("\n");
-  }
-
-  if (template === "booking_confirmed") {
-    return [
-      `مرحباً ${asString(data.customer_name)}، تم تأكيد حجزك بنجاح.`,
-      `الخدمة: ${asString(data.service)}`,
-      `الموظفة: ${asString(data.staff)}`,
-      `الموعد: ${appointment}`,
-      `رقم الحجز: ${asString(data.id)}`,
-    ].join("\n");
-  }
-
-  return [
-    `مرحباً ${asString(data.customer_name)}، نعتذر تم إلغاء الحجز.`,
-    `الخدمة: ${asString(data.service)}`,
-    `الموظفة: ${asString(data.staff)}`,
-    `الموعد: ${appointment}`,
-    `رقم الحجز: ${asString(data.id)}`,
-  ].join("\n");
-}
-
-async function parseJsonSafe(response: Response) {
-  const raw = await response.text();
+async function parseJsonSafe(res: Response) {
+  const raw = await res.text();
   try {
     return JSON.parse(raw);
   } catch {
     return { raw };
   }
-}
-
-async function sendViaWhatsappApi(payload: Record<string, unknown>) {
-  const endpoint = `https://graph.facebook.com/${WHATSAPP_API_VERSION}/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
-
-  return fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${WHATSAPP_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
 }
 
 serve(async (req) => {
@@ -149,13 +80,18 @@ serve(async (req) => {
   }
 
   if (req.method !== "POST") {
-    return jsonResponse(405, { success: false, error: "Only POST is allowed." });
+    return jsonResponse(405, { ok: false, error: "Only POST is allowed." });
   }
+
+  const WHATSAPP_TOKEN = Deno.env.get("WHATSAPP_TOKEN");
+  const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
+  const WHATSAPP_API_VERSION = Deno.env.get("WHATSAPP_API_VERSION") || "v20.0";
+  const WHATSAPP_TEMPLATE_LANG = Deno.env.get("WHATSAPP_TEMPLATE_LANG") || "ar";
 
   if (!WHATSAPP_TOKEN || !WHATSAPP_PHONE_NUMBER_ID) {
     return jsonResponse(500, {
-      success: false,
-      error: "Missing WhatsApp secrets. Set WHATSAPP_TOKEN and WHATSAPP_PHONE_NUMBER_ID.",
+      ok: false,
+      error: "Missing WhatsApp secrets: WHATSAPP_TOKEN / WHATSAPP_PHONE_NUMBER_ID.",
     });
   }
 
@@ -163,92 +99,71 @@ serve(async (req) => {
   try {
     body = (await req.json()) as SendWhatsappRequest;
   } catch {
-    return jsonResponse(400, { success: false, error: "Invalid JSON body." });
+    return jsonResponse(400, { ok: false, error: "Invalid JSON body." });
   }
 
-  if (!body || !body.template || !body.to || !body.data) {
-    return jsonResponse(400, {
-      success: false,
-      error: "Payload must contain to, template, data.",
-    });
+  const to = normalizePhone(body?.to);
+  const template = body?.template;
+  const params = normalizeParams(body?.params);
+
+  if (!to) {
+    return jsonResponse(400, { ok: false, error: "Missing `to`." });
   }
-
-  const allowedTemplates: TemplateName[] = [
-    "booking_created",
-    "booking_confirmed",
-    "booking_cancelled",
-  ];
-
-  if (!allowedTemplates.includes(body.template)) {
-    return jsonResponse(400, { success: false, error: "Unsupported template value." });
-  }
-
-  const to = normalizePhone(body.to);
   if (!/^[1-9]\d{7,14}$/.test(to)) {
-    return jsonResponse(400, { success: false, error: "Invalid destination phone number." });
+    return jsonResponse(400, { ok: false, error: "Invalid `to` phone format." });
+  }
+  if (!template || !ALLOWED_TEMPLATES.has(template)) {
+    return jsonResponse(400, { ok: false, error: "Invalid `template`." });
   }
 
-  const templateParameters = buildTemplateParameters(body.template, body.data);
-  const templatePayload = {
+  const finalParams = params.length > 0 ? params : toParamsFromLegacyData(template, body?.data || {});
+
+  const payload = {
     messaging_product: "whatsapp",
     to,
     type: "template",
     template: {
-      name: body.template,
-      language: { code: WHATSAPP_TEMPLATE_LANG },
+      name: template,
+      language: {
+        code: WHATSAPP_TEMPLATE_LANG,
+      },
       components: [
         {
           type: "body",
-          parameters: templateParameters.map((value) => ({ type: "text", text: value })),
+          parameters: finalParams.map((value) => ({
+            type: "text",
+            text: value,
+          })),
         },
       ],
     },
   };
 
-  const templateResponse = await sendViaWhatsappApi(templatePayload);
-  const templateResponseJson = await parseJsonSafe(templateResponse);
+  try {
+    const endpoint = `https://graph.facebook.com/${WHATSAPP_API_VERSION}/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
+    const waRes = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
-  if (templateResponse.ok) {
-    return jsonResponse(200, {
-      success: true,
-      sent_with: "template",
-      template: body.template,
-      to,
-      provider_response: templateResponseJson,
+    const waJson = await parseJsonSafe(waRes);
+    if (!waRes.ok) {
+      return jsonResponse(502, {
+        ok: false,
+        error: "WhatsApp API error.",
+        provider_error: waJson,
+      });
+    }
+
+    return jsonResponse(200, { ok: true, provider_response: waJson });
+  } catch (err) {
+    return jsonResponse(500, {
+      ok: false,
+      error: err instanceof Error ? err.message : "Unexpected server error.",
     });
   }
-
-  const fallbackText = buildFallbackText(body.template, body.data);
-  const textPayload = {
-    messaging_product: "whatsapp",
-    to,
-    type: "text",
-    text: {
-      preview_url: false,
-      body: fallbackText,
-    },
-  };
-
-  const textResponse = await sendViaWhatsappApi(textPayload);
-  const textResponseJson = await parseJsonSafe(textResponse);
-
-  if (textResponse.ok) {
-    return jsonResponse(200, {
-      success: true,
-      sent_with: "text_fallback",
-      template: body.template,
-      to,
-      template_error: templateResponseJson,
-      provider_response: textResponseJson,
-    });
-  }
-
-  return jsonResponse(502, {
-    success: false,
-    error: "Failed to send WhatsApp template and text fallback.",
-    template_error: templateResponseJson,
-    text_error: textResponseJson,
-    template: body.template,
-    to,
-  });
 });
