@@ -25,6 +25,14 @@ import {
 } from "../lib/utils";
 import { useToast } from "../lib/useToast";
 
+function toMinutesOfDay(value) {
+  const [h, m] = String(value || "00:00")
+    .slice(0, 5)
+    .split(":")
+    .map((x) => Number(x || 0));
+  return h * 60 + m;
+}
+
 function Step({ index, label, active, done }) {
   return (
     <div className={`step-item${active ? " active" : ""}${done ? " done" : ""}`}>
@@ -53,6 +61,7 @@ export default function SalonBookingPage() {
   const [dayBookings, setDayBookings] = useState([]);
   const [dayTimeOff, setDayTimeOff] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [timeOffLoading, setTimeOffLoading] = useState(false);
 
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -224,14 +233,17 @@ export default function SalonBookingPage() {
     async function loadDayTimeOff() {
       if (!supabase || !salon?.id || !dateValue || !isValidPair) {
         setDayTimeOff([]);
+        setTimeOffLoading(false);
         return;
       }
       const targetStaffIds = bookingMode === "auto_assign" ? eligibleStaffIds : [staffId].filter(Boolean);
       if (targetStaffIds.length === 0) {
         setDayTimeOff([]);
+        setTimeOffLoading(false);
         return;
       }
 
+      setTimeOffLoading(true);
       try {
         const dayStart = combineDateTime(dateValue, "00:00");
         const dayEnd = new Date(dayStart);
@@ -249,6 +261,8 @@ export default function SalonBookingPage() {
         setDayTimeOff(res.data || []);
       } catch (err) {
         showToast("error", `تعذر تحميل إجازات الموظفين: ${err?.message || err}`);
+      } finally {
+        setTimeOffLoading(false);
       }
     }
 
@@ -264,7 +278,17 @@ export default function SalonBookingPage() {
   const employeeHoursByStaffDay = useMemo(() => {
     const map = {};
     for (const row of employeeHours) {
-      map[`${row.staff_id}:${row.day_of_week}`] = row;
+      const key = `${row.staff_id}:${row.day_of_week}`;
+      const prev = map[key];
+      if (!prev) {
+        map[key] = row;
+        continue;
+      }
+      if (prev.is_off || row.is_off) {
+        map[key] = { ...prev, ...row, is_off: true };
+        continue;
+      }
+      map[key] = prev;
     }
     return map;
   }, [employeeHours]);
@@ -326,6 +350,8 @@ export default function SalonBookingPage() {
     dayTimeOff,
   ]);
 
+  const availabilityLoading = slotsLoading || timeOffLoading;
+
   useEffect(() => {
     if (slotIso && !availableSlots.some((s) => s.startIso === slotIso)) {
       setSlotIso("");
@@ -369,6 +395,99 @@ export default function SalonBookingPage() {
     price: selectedService ? formatCurrencyIQD(selectedService.price) : "-",
     time: slotIso ? formatDateTime(slotIso) : "اختاري الموعد",
   };
+
+  async function verifySlotStillAvailable({ targetStaffId, selectedSlot }) {
+    if (!supabase || !salon?.id || !targetStaffId || !selectedSlot || !selectedService || !dateValue) {
+      return { ok: false, reason: "تعذر التحقق من الموعد." };
+    }
+
+    const dayDate = new Date(`${dateValue}T00:00:00`);
+    const dayIndex = dayDate.getDay();
+    const dayRule = hoursByDay[dayIndex];
+    if (!dayRule || dayRule.is_closed) {
+      return { ok: false, reason: "المركز مغلق بهذا اليوم." };
+    }
+
+    const slotStart = new Date(selectedSlot.startIso);
+    const slotEnd = new Date(selectedSlot.endIso);
+    if (Number.isNaN(slotStart.getTime()) || Number.isNaN(slotEnd.getTime()) || slotEnd <= slotStart) {
+      return { ok: false, reason: "وقت الموعد غير صالح." };
+    }
+
+    const slotStartMin = slotStart.getHours() * 60 + slotStart.getMinutes();
+    const slotEndMin = slotEnd.getHours() * 60 + slotEnd.getMinutes();
+    const salonOpen = toMinutesOfDay(dayRule.open_time);
+    const salonClose = toMinutesOfDay(dayRule.close_time);
+    if (slotStartMin < salonOpen || slotEndMin > salonClose) {
+      return { ok: false, reason: "الموعد خارج ساعات عمل المركز." };
+    }
+
+    const [employeeHoursRes, bookingsRes, timeOffRes] = await Promise.all([
+      supabase
+        .from("employee_hours")
+        .select("staff_id, day_of_week, start_time, end_time, is_off, break_start, break_end")
+        .eq("salon_id", salon.id)
+        .eq("staff_id", targetStaffId)
+        .eq("day_of_week", dayIndex),
+      supabase
+        .from("bookings")
+        .select("id")
+        .eq("salon_id", salon.id)
+        .eq("staff_id", targetStaffId)
+        .in("status", ["pending", "confirmed"])
+        .lt("appointment_start", selectedSlot.endIso)
+        .gt("appointment_end", selectedSlot.startIso)
+        .limit(1),
+      supabase
+        .from("employee_time_off")
+        .select("id")
+        .eq("salon_id", salon.id)
+        .eq("staff_id", targetStaffId)
+        .lt("start_at", selectedSlot.endIso)
+        .gt("end_at", selectedSlot.startIso)
+        .limit(1),
+    ]);
+
+    if (employeeHoursRes.error) throw employeeHoursRes.error;
+    if (bookingsRes.error) throw bookingsRes.error;
+    if (timeOffRes.error) throw timeOffRes.error;
+
+    const staffDayRules = employeeHoursRes.data || [];
+    if (staffDayRules.some((row) => Boolean(row.is_off))) {
+      return { ok: false, reason: "هذا الموظف بإجازة بهذا اليوم." };
+    }
+
+    const effectiveRule = staffDayRules[0];
+    if (effectiveRule) {
+      const empStart = toMinutesOfDay(effectiveRule.start_time || dayRule.open_time);
+      const empEnd = toMinutesOfDay(effectiveRule.end_time || dayRule.close_time);
+      if (slotStartMin < empStart || slotEndMin > empEnd) {
+        return { ok: false, reason: "الموعد خارج دوام الموظف." };
+      }
+
+      const breakStart = effectiveRule.break_start ? toMinutesOfDay(effectiveRule.break_start) : null;
+      const breakEnd = effectiveRule.break_end ? toMinutesOfDay(effectiveRule.break_end) : null;
+      if (
+        Number.isFinite(breakStart) &&
+        Number.isFinite(breakEnd) &&
+        breakEnd > breakStart &&
+        slotStartMin < breakEnd &&
+        slotEndMin > breakStart
+      ) {
+        return { ok: false, reason: "الموعد يقع ضمن وقت الاستراحة." };
+      }
+    }
+
+    if ((timeOffRes.data || []).length > 0) {
+      return { ok: false, reason: "هذا الموظف بإجازة في هذا الوقت." };
+    }
+
+    if ((bookingsRes.data || []).length > 0) {
+      return { ok: false, reason: "هذا الوقت انحجز قبل لحظات." };
+    }
+
+    return { ok: true };
+  }
 
   async function submitBooking(e) {
     e.preventDefault();
@@ -418,6 +537,15 @@ export default function SalonBookingPage() {
 
     setSubmitting(true);
     try {
+      const availabilityCheck = await verifySlotStillAvailable({
+        targetStaffId: assignedStaff.id,
+        selectedSlot,
+      });
+      if (!availabilityCheck.ok) {
+        showToast("error", availabilityCheck.reason || "الموعد لم يعد متاحاً.");
+        return;
+      }
+
       const salonWhatsapp = normalizeIraqiPhone(salon.whatsapp || import.meta.env.VITE_WHATSAPP_NUMBER || "");
       let clientId = null;
 
@@ -747,7 +875,7 @@ export default function SalonBookingPage() {
                     ? "لا يوجد موظف متاح لهذه الخدمة حالياً."
                     : "اختيار الخدمة مع الموظفة غير متوافق."}
                 </div>
-              ) : slotsLoading ? (
+              ) : availabilityLoading ? (
                 <div className="slots-wrap">
                   {Array.from({ length: 4 }).map((_, i) => (
                     <Skeleton key={`slot-sk-${i}`} className="skeleton-slot" />

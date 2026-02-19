@@ -120,6 +120,9 @@ export default function SalonAdminPage() {
   const [assignStaffId, setAssignStaffId] = useState("");
   const [assignDraft, setAssignDraft] = useState([]);
   const [saveAssignLoading, setSaveAssignLoading] = useState(false);
+  const [serviceAssignOpenId, setServiceAssignOpenId] = useState("");
+  const [serviceAssignDraft, setServiceAssignDraft] = useState([]);
+  const [serviceAssignSavingId, setServiceAssignSavingId] = useState("");
 
   const [deleteDialog, setDeleteDialog] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -281,6 +284,19 @@ export default function SalonAdminPage() {
     [staffServices]
   );
 
+  const staffByServiceId = useMemo(() => {
+    const map = {};
+    for (const row of staffServices) {
+      if (!map[row.service_id]) map[row.service_id] = [];
+      const member = staffById[row.staff_id];
+      if (member) map[row.service_id].push(member);
+    }
+    for (const key of Object.keys(map)) {
+      map[key] = [...map[key]].sort(sortByOrderThenName);
+    }
+    return map;
+  }, [staffServices, staffById]);
+
   useEffect(() => {
     if (!assignStaffId) {
       setAssignDraft([]);
@@ -322,6 +338,20 @@ export default function SalonAdminPage() {
 
     setScheduleDraft(base);
   }, [scheduleStaffId, employeeHours]);
+
+  useEffect(() => {
+    if (!serviceAssignOpenId) return;
+    const stillExists = services.some((row) => row.id === serviceAssignOpenId);
+    if (!stillExists) {
+      setServiceAssignOpenId("");
+      setServiceAssignDraft([]);
+      return;
+    }
+    const assignedIds = staffServices
+      .filter((row) => row.service_id === serviceAssignOpenId)
+      .map((row) => row.staff_id);
+    setServiceAssignDraft(assignedIds);
+  }, [serviceAssignOpenId, services, staffServices]);
 
   const todayKey = formatDateKey(new Date());
 
@@ -970,7 +1000,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
           });
         } catch (notifyErr) {
           console.error("Failed to send customer WhatsApp status notification:", notifyErr);
-          showToast("error", "تم الحفظ، لكن تعذر إرسال إشعار واتساب.");
+          showToast("success", "تم الحفظ ✅ (إشعار واتساب التلقائي غير مفعل حالياً)");
         }
       }
     } catch (err) {
@@ -1439,6 +1469,79 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       showToast("error", `تعذر حفظ التعيينات: ${err?.message || err}`);
     } finally {
       setSaveAssignLoading(false);
+    }
+  }
+
+  function toggleServiceAssignEditor(serviceId) {
+    if (!serviceId) return;
+    if (serviceAssignOpenId === serviceId) {
+      setServiceAssignOpenId("");
+      setServiceAssignDraft([]);
+      return;
+    }
+    const assignedIds = staffServices
+      .filter((row) => row.service_id === serviceId)
+      .map((row) => row.staff_id);
+    setServiceAssignOpenId(serviceId);
+    setServiceAssignDraft(assignedIds);
+  }
+
+  function toggleServiceAssignStaff(staffId) {
+    setServiceAssignDraft((prev) => {
+      if (prev.includes(staffId)) return prev.filter((x) => x !== staffId);
+      return [...prev, staffId];
+    });
+  }
+
+  function selectAllServiceAssignees() {
+    const activeStaffIds = staff.filter((row) => row.is_active).map((row) => row.id);
+    setServiceAssignDraft(activeStaffIds);
+  }
+
+  function clearServiceAssignees() {
+    setServiceAssignDraft([]);
+  }
+
+  async function saveServiceAssignments(serviceId) {
+    if (!supabase || !salon?.id || !serviceId) return;
+
+    setServiceAssignSavingId(serviceId);
+    try {
+      const currentRows = staffServices.filter((row) => row.service_id === serviceId);
+      const currentSet = new Set(currentRows.map((row) => row.staff_id));
+      const nextSet = new Set(serviceAssignDraft);
+
+      const toDelete = Array.from(currentSet).filter((staffId) => !nextSet.has(staffId));
+      const toInsert = Array.from(nextSet).filter((staffId) => !currentSet.has(staffId));
+
+      if (toDelete.length > 0) {
+        const del = await supabase
+          .from("staff_services")
+          .delete()
+          .eq("salon_id", salon.id)
+          .eq("service_id", serviceId)
+          .in("staff_id", toDelete);
+        if (del.error) throw del.error;
+      }
+
+      if (toInsert.length > 0) {
+        const payload = toInsert.map((staff_id) => ({
+          salon_id: salon.id,
+          staff_id,
+          service_id: serviceId,
+        }));
+        const ins = await supabase.from("staff_services").upsert(payload, { onConflict: "staff_id,service_id" });
+        if (ins.error) throw ins.error;
+      }
+
+      showToast("success", "تم حفظ الموظفين لهذه الخدمة.");
+      await loadAdminData(salon.id);
+      setServiceAssignOpenId("");
+      setServiceAssignDraft([]);
+    } catch (err) {
+      showToast("error", `تعذر حفظ تعيينات الخدمة: ${err?.message || err}`);
+    } finally {
+      setServiceAssignSavingId("");
     }
   }
 
@@ -2354,6 +2457,9 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                 ) : (
                   services.map((row) => {
                     const isEditing = editingServiceId === row.id;
+                    const assignedStaff = staffByServiceId[row.id] || [];
+                    const inlineAssignOpen = serviceAssignOpenId === row.id;
+                    const inlineAssignSaving = serviceAssignSavingId === row.id;
                     return (
                       <div className="settings-row" key={row.id}>
                         {isEditing ? (
@@ -2395,7 +2501,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                               />
                               {editingService.is_active ? "مرئية" : "مخفية"}
                             </label>
-                            <div className="row-actions">
+                            <div className="row-actions service-row-actions">
                               <Button
                                 type="button"
                                 variant="secondary"
@@ -2411,24 +2517,96 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                           </div>
                         ) : (
                           <>
-                            <div className="service-row-main">
-                              <SafeImage
-                                src={row.image_url || getServiceImage(row.name)}
-                                alt={row.name}
-                                className="service-row-image"
-                                fallbackIcon="✨"
-                              />
-                              <div>
-                                <b>{row.name}</b>
-                                <p className="muted">
-                                  {row.duration_minutes} دقيقة • {formatCurrencyIQD(row.price)}
-                                </p>
-                                <p className="muted">
-                                  {row.is_active ? "مرئية" : "مخفية"} • ترتيب: {row.sort_order || 0}
-                                </p>
+                            <div className="service-row-content">
+                              <div className="service-row-main">
+                                <SafeImage
+                                  src={row.image_url || getServiceImage(row.name)}
+                                  alt={row.name}
+                                  className="service-row-image"
+                                  fallbackIcon="✨"
+                                />
+                                <div>
+                                  <b>{row.name}</b>
+                                  <p className="muted">
+                                    {row.duration_minutes} دقيقة • {formatCurrencyIQD(row.price)}
+                                  </p>
+                                  <p className="muted">
+                                    {row.is_active ? "مرئية" : "مخفية"} • ترتيب: {row.sort_order || 0}
+                                  </p>
+                                </div>
                               </div>
+
+                              <div className="service-staff-meta">
+                                <small className="muted">الموظفين اللي يقدمون هالخدمة:</small>
+                                <div className="service-staff-badges">
+                                  {assignedStaff.length === 0 ? (
+                                    <span className="service-staff-empty">بدون تعيين</span>
+                                  ) : (
+                                    assignedStaff.map((member) => (
+                                      <span className="service-staff-badge" key={`${row.id}-${member.id}`}>
+                                        {member.name}
+                                      </span>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+
+                              {inlineAssignOpen ? (
+                                <div className="service-assign-inline">
+                                  <div className="row-actions" style={{ marginTop: 0 }}>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      onClick={selectAllServiceAssignees}
+                                      disabled={inlineAssignSaving || staff.length === 0}
+                                    >
+                                      اختيار الكل
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      onClick={clearServiceAssignees}
+                                      disabled={inlineAssignSaving}
+                                    >
+                                      مسح الكل
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      onClick={() => saveServiceAssignments(row.id)}
+                                      disabled={inlineAssignSaving}
+                                    >
+                                      {inlineAssignSaving ? "جاري الحفظ..." : "حفظ التعيين"}
+                                    </Button>
+                                  </div>
+                                  {staff.length === 0 ? (
+                                    <div className="empty-box" style={{ marginTop: 8 }}>
+                                      أضيفي موظفين أولاً حتى تربطينهم بالخدمة.
+                                    </div>
+                                  ) : (
+                                    <div className="service-assign-grid">
+                                      {staff.map((member) => {
+                                        const checked = serviceAssignDraft.includes(member.id);
+                                        return (
+                                          <label
+                                            key={`${row.id}-${member.id}`}
+                                            className={`service-assign-chip${member.is_active ? "" : " off"}`}
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              checked={checked}
+                                              disabled={!member.is_active || inlineAssignSaving}
+                                              onChange={() => toggleServiceAssignStaff(member.id)}
+                                            />
+                                            <span>{member.name}</span>
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : null}
                             </div>
-                            <div className="row-actions">
+                            <div className="row-actions service-row-actions">
                               <label
                                 className={`upload-mini ${
                                   serviceImageLoading[row.id] || serviceImageCompressing[row.id] ? "disabled" : ""
@@ -2460,6 +2638,13 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                               </label>
                               <Button type="button" variant="secondary" onClick={() => startEditService(row)}>
                                 تعديل
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={inlineAssignOpen ? "primary" : "ghost"}
+                                onClick={() => toggleServiceAssignEditor(row.id)}
+                              >
+                                {inlineAssignOpen ? "إغلاق التعيين" : "تعيين موظفين"}
                               </Button>
                               <Button
                                 type="button"
