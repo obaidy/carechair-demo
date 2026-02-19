@@ -2,12 +2,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import Toast from "../components/Toast";
+import { Badge, Button, Card, ConfirmModal } from "../components/ui";
 import { supabase } from "../lib/supabase";
 import { DEFAULT_HOURS, DEFAULT_SERVICES, DEFAULT_STAFF } from "../lib/utils";
+import { computeIsActiveFromBilling, deriveSalonAccess, formatBillingDate, getBillingStatusLabel } from "../lib/billing";
 import { useToast } from "../lib/useToast";
 
 const SUPER_ADMIN_CODE = String(
-  import.meta.env.VITE_SUPER_ADMIN_CODE || import.meta.env.VITE_SUPER_ADMIN || ""
+  import.meta.env.VITE_SUPERADMIN_CODE || import.meta.env.VITE_SUPER_ADMIN_CODE || import.meta.env.VITE_SUPER_ADMIN || ""
 ).trim();
 
 function slugify(value) {
@@ -41,6 +43,8 @@ export default function SuperAdminPage() {
   const [rowLoading, setRowLoading] = useState("");
   const [editingPasscodeSalonId, setEditingPasscodeSalonId] = useState("");
   const [newPasscode, setNewPasscode] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [confirmState, setConfirmState] = useState(null);
 
   async function loadSalons() {
     if (!supabase) {
@@ -53,7 +57,30 @@ export default function SuperAdminPage() {
     try {
       const res = await supabase
         .from("salons")
-        .select("id, slug, name, area, whatsapp, is_active, is_listed, created_at")
+        .select(
+          [
+            "id",
+            "slug",
+            "name",
+            "area",
+            "whatsapp",
+            "created_at",
+            "admin_passcode",
+            "setup_paid",
+            "setup_required",
+            "billing_status",
+            "stripe_customer_id",
+            "stripe_subscription_id",
+            "current_period_end",
+            "trial_enabled",
+            "trial_end",
+            "manual_override_active",
+            "manual_override_reason",
+            "suspended_reason",
+            "is_listed",
+            "is_active",
+          ].join(",")
+        )
         .order("created_at", { ascending: false });
       if (res.error) throw res.error;
       setSalons(res.data || []);
@@ -150,7 +177,10 @@ export default function SuperAdminPage() {
             area,
             whatsapp: form.whatsapp.trim() || null,
             admin_passcode: passcode,
-            is_active: true,
+            setup_required: true,
+            setup_paid: false,
+            billing_status: "inactive",
+            is_active: false,
             is_listed: false,
           },
         ])
@@ -181,23 +211,27 @@ export default function SuperAdminPage() {
     }
   }
 
-  async function toggleSalonFlag(row, key) {
-    if (!supabase) return;
+  async function patchSalon(row, patch, successMessage, options = { recomputeActive: true }) {
+    if (!supabase || !row?.id) return;
 
-    const loadingKey = `${key}-${row.id}`;
+    const loadingKey = `${row.id}-${Object.keys(patch).join("-")}`;
     setRowLoading(loadingKey);
     try {
+      const merged = { ...row, ...patch };
+      const finalPatch = options.recomputeActive
+        ? { ...patch, is_active: computeIsActiveFromBilling(merged) }
+        : patch;
+
       const up = await supabase
         .from("salons")
-        .update({ [key]: !row[key] })
-        .eq("id", row.id);
-
+        .update(finalPatch)
+        .eq("id", row.id)
+        .select("*")
+        .single();
       if (up.error) throw up.error;
 
-      setSalons((prev) =>
-        prev.map((x) => (x.id === row.id ? { ...x, [key]: !row[key] } : x))
-      );
-      showToast("success", "تم تحديث الصالون.");
+      setSalons((prev) => prev.map((x) => (x.id === row.id ? { ...x, ...up.data } : x)));
+      showToast("success", successMessage || "تم حفظ التحديث.");
     } catch (err) {
       showToast("error", `تعذر تحديث الصالون: ${err?.message || err}`);
     } finally {
@@ -230,13 +264,20 @@ export default function SuperAdminPage() {
     }
   }
 
-  const sortedSalons = useMemo(
-    () => [...salons].sort((a, b) => String(a.name).localeCompare(String(b.name), "ar")),
-    [salons]
-  );
+  const filteredSalons = useMemo(() => {
+    const sorted = [...salons].sort((a, b) => String(a.name).localeCompare(String(b.name), "ar"));
+    if (filter === "all") return sorted;
+    if (filter === "inactive") return sorted.filter((row) => !row.is_active);
+    if (filter === "active") return sorted.filter((row) => row.is_active);
+    if (filter === "suspended") return sorted.filter((row) => row.billing_status === "suspended");
+    if (filter === "trialing") {
+      return sorted.filter((row) => deriveSalonAccess(row).code === "trialing");
+    }
+    return sorted;
+  }, [salons, filter]);
 
   return (
-    <PageShell title="لوحة السوبر أدمن" subtitle="إدارة جميع الصالونات ضمن نفس المنصة">
+    <PageShell title="لوحة السوبر أدمن" subtitle="تحكم كامل بالتفعيل والفوترة لكل الصالونات">
       {!unlocked ? (
         <section className="panel">
           <form
@@ -244,7 +285,7 @@ export default function SuperAdminPage() {
             onSubmit={(e) => {
               e.preventDefault();
               if (!SUPER_ADMIN_CODE) {
-                showToast("error", "متغير السوبر أدمن غير موجود (VITE_SUPER_ADMIN_CODE).");
+                showToast("error", "متغير السوبر أدمن غير موجود (VITE_SUPERADMIN_CODE). ");
                 return;
               }
 
@@ -265,6 +306,11 @@ export default function SuperAdminPage() {
         </section>
       ) : (
         <>
+          <Card className="billing-warning-box">
+            <b>للاستخدام الداخلي فقط</b>
+            <p className="muted">هذه الشاشة خاصة بإدارة CareChair لتفعيل/تعليق الصالونات واختبار الفوترة.</p>
+          </Card>
+
           <section className="panel">
             <h3>إنشاء صالون جديد</h3>
             <form className="grid two" onSubmit={createSalon}>
@@ -333,110 +379,233 @@ export default function SuperAdminPage() {
 
           <section className="panel">
             <div className="row-actions space-between">
-              <h3>كل الصالونات</h3>
+              <h3>التحكم بالصالونات</h3>
               <button className="ghost-btn" type="button" onClick={loadSalons}>
                 {loading ? "جاري التحديث..." : "تحديث"}
               </button>
             </div>
 
+            <div className="tabs-inline" style={{ marginBottom: 10 }}>
+              <Button variant={filter === "all" ? "primary" : "ghost"} onClick={() => setFilter("all")}>الكل</Button>
+              <Button variant={filter === "inactive" ? "primary" : "ghost"} onClick={() => setFilter("inactive")}>غير مفعل</Button>
+              <Button variant={filter === "trialing" ? "primary" : "ghost"} onClick={() => setFilter("trialing")}>تجريبي</Button>
+              <Button variant={filter === "active" ? "primary" : "ghost"} onClick={() => setFilter("active")}>فعال</Button>
+              <Button variant={filter === "suspended" ? "primary" : "ghost"} onClick={() => setFilter("suspended")}>موقوف</Button>
+            </div>
+
             {loading ? (
               <p className="muted">جاري التحميل...</p>
-            ) : sortedSalons.length === 0 ? (
-              <p className="muted">لا توجد صالونات بعد.</p>
+            ) : filteredSalons.length === 0 ? (
+              <p className="muted">لا توجد صالونات ضمن هذا الفلتر.</p>
             ) : (
               <div className="settings-list">
-                {sortedSalons.map((row) => (
-                  <div className="settings-row" key={row.id}>
-                    <div>
-                      <b>{row.name}</b>
-                      <p className="muted">
-                        {row.area} • /s/{row.slug}
-                      </p>
-                      <div className="row-actions">
-                        <Link className="ghost-link" to={`/s/${row.slug}`}>
-                          صفحة الحجز
-                        </Link>
-                        <Link className="ghost-link" to={`/s/${row.slug}/admin`}>
-                          إدارة الصالون
-                        </Link>
-                        <button
-                          type="button"
-                          className="row-btn"
-                          onClick={() => {
-                            if (editingPasscodeSalonId === row.id) {
-                              setEditingPasscodeSalonId("");
+                {filteredSalons.map((row) => {
+                  const access = deriveSalonAccess(row);
+                  const loadingThisRow = rowLoading.includes(row.id);
+                  return (
+                    <div className="settings-row" key={row.id}>
+                      <div>
+                        <div className="row-actions" style={{ alignItems: "center" }}>
+                          <b>{row.name}</b>
+                          <Badge variant={access.badgeVariant}>{access.badgeLabel}</Badge>
+                          <Badge variant={row.setup_paid ? "confirmed" : "pending"}>
+                            {row.setup_paid ? "رسوم الإعداد مدفوعة" : "رسوم الإعداد غير مدفوعة"}
+                          </Badge>
+                          {row.is_listed ? <Badge variant="neutral">ظاهر بالاستكشاف</Badge> : null}
+                        </div>
+
+                        <p className="muted">{row.area} • /s/{row.slug}</p>
+                        <p className="muted">
+                          الاشتراك: {getBillingStatusLabel(row.billing_status)} • ينتهي: {formatBillingDate(row.current_period_end)}
+                        </p>
+                        {row.trial_enabled ? (
+                          <p className="muted">تجريبي حتى: {formatBillingDate(row.trial_end)}</p>
+                        ) : null}
+                        {row.suspended_reason ? <p className="muted">سبب الإيقاف: {row.suspended_reason}</p> : null}
+                        {row.manual_override_active ? (
+                          <p className="muted">Manual override: {row.manual_override_reason || "بدون سبب"}</p>
+                        ) : null}
+
+                        <div className="row-actions" style={{ marginTop: 8 }}>
+                          <Link className="ghost-link" to={`/s/${row.slug}`}>صفحة الحجز</Link>
+                          <Link className="ghost-link" to={`/s/${row.slug}/admin`}>إدارة الصالون</Link>
+                          <button
+                            type="button"
+                            className="row-btn"
+                            onClick={() => {
+                              if (editingPasscodeSalonId === row.id) {
+                                setEditingPasscodeSalonId("");
+                                setNewPasscode("");
+                                return;
+                              }
+                              setEditingPasscodeSalonId(row.id);
                               setNewPasscode("");
-                              return;
-                            }
-                            setEditingPasscodeSalonId(row.id);
-                            setNewPasscode("");
-                          }}
-                        >
-                          {editingPasscodeSalonId === row.id ? "إلغاء تغيير الرمز" : "تغيير رمز الإدارة"}
-                        </button>
+                            }}
+                          >
+                            {editingPasscodeSalonId === row.id ? "إلغاء تغيير الرمز" : "تغيير رمز الإدارة"}
+                          </button>
+                        </div>
+
+                        {editingPasscodeSalonId === row.id ? (
+                          <form
+                            className="row-actions"
+                            style={{ marginTop: 8 }}
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              updateSalonPasscode(row.id);
+                            }}
+                          >
+                            <input
+                              className="input"
+                              style={{ minWidth: 220 }}
+                              type="password"
+                              placeholder="الرمز الجديد"
+                              value={newPasscode}
+                              onChange={(e) => setNewPasscode(e.target.value)}
+                            />
+                            <button type="submit" className="submit-main" disabled={rowLoading === `admin_passcode-${row.id}`}>
+                              {rowLoading === `admin_passcode-${row.id}` ? "جاري الحفظ..." : "حفظ الرمز"}
+                            </button>
+                          </form>
+                        ) : null}
                       </div>
 
-                      {editingPasscodeSalonId === row.id ? (
-                        <form
-                          className="row-actions"
-                          style={{ marginTop: 8 }}
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            updateSalonPasscode(row.id);
+                      <div className="row-actions" style={{ maxWidth: 420 }}>
+                        <Button
+                          variant="ghost"
+                          disabled={loadingThisRow}
+                          onClick={() => patchSalon(row, { is_listed: !row.is_listed }, row.is_listed ? "تم إخفاء الصالون." : "تم إظهار الصالون.")}
+                        >
+                          {row.is_listed ? "إخفاء من الاستكشاف" : "إظهار بالاستكشاف"}
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          disabled={loadingThisRow}
+                          onClick={() => patchSalon(row, { setup_paid: !row.setup_paid }, row.setup_paid ? "تم إلغاء دفع الإعداد." : "تم تعليم رسوم الإعداد كمدفوعة.")}
+                        >
+                          {row.setup_paid ? "إلغاء دفع الإعداد" : "تعيين الإعداد مدفوع"}
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          disabled={loadingThisRow}
+                          onClick={() => {
+                            const trialEnd = new Date();
+                            trialEnd.setDate(trialEnd.getDate() + 3);
+                            patchSalon(
+                              row,
+                              {
+                                trial_enabled: true,
+                                trial_end: trialEnd.toISOString(),
+                                billing_status: "trialing",
+                              },
+                              "تم تفعيل تجربة 3 أيام."
+                            );
                           }}
                         >
-                          <input
-                            className="input"
-                            style={{ minWidth: 220 }}
-                            type="password"
-                            placeholder="اكتبي الرمز الجديد"
-                            value={newPasscode}
-                            onChange={(e) => setNewPasscode(e.target.value)}
-                          />
-                          <button
-                            type="submit"
-                            className="submit-main"
-                            disabled={rowLoading === `admin_passcode-${row.id}`}
-                          >
-                            {rowLoading === `admin_passcode-${row.id}` ? "جاري الحفظ..." : "حفظ الرمز"}
-                          </button>
-                        </form>
-                      ) : null}
-                    </div>
+                          تفعيل تجربة 3 أيام
+                        </Button>
 
-                    <div className="row-actions">
-                      <button
-                        type="button"
-                        className="row-btn"
-                        onClick={() => toggleSalonFlag(row, "is_active")}
-                        disabled={rowLoading === `is_active-${row.id}`}
-                      >
-                        {rowLoading === `is_active-${row.id}`
-                          ? "جاري..."
-                          : row.is_active
-                            ? "تعطيل"
-                            : "تفعيل"}
-                      </button>
-                      <button
-                        type="button"
-                        className="row-btn"
-                        onClick={() => toggleSalonFlag(row, "is_listed")}
-                        disabled={rowLoading === `is_listed-${row.id}`}
-                      >
-                        {rowLoading === `is_listed-${row.id}`
-                          ? "جاري..."
-                          : row.is_listed
-                            ? "إخفاء من الاستكشاف"
-                            : "إظهار بالاستكشاف"}
-                      </button>
+                        <Button
+                          variant="ghost"
+                          disabled={loadingThisRow}
+                          onClick={() => patchSalon(row, { trial_enabled: false, trial_end: null }, "تم تعطيل الفترة التجريبية.")}
+                        >
+                          تعطيل التجربة
+                        </Button>
+
+                        <Button
+                          variant={row.manual_override_active ? "danger" : "secondary"}
+                          disabled={loadingThisRow}
+                          onClick={() =>
+                            patchSalon(
+                              row,
+                              row.manual_override_active
+                                ? { manual_override_active: false, manual_override_reason: null }
+                                : { manual_override_active: true, manual_override_reason: "Super admin override" },
+                              row.manual_override_active ? "تم إلغاء الـ override." : "تم تفعيل الـ override."
+                            )
+                          }
+                        >
+                          {row.manual_override_active ? "إلغاء Override" : "تفعيل Override"}
+                        </Button>
+
+                        <Button
+                          variant="danger"
+                          disabled={loadingThisRow}
+                          onClick={() => {
+                            if (row.billing_status === "suspended") {
+                              patchSalon(row, { billing_status: "inactive", suspended_reason: null }, "تم رفع الإيقاف.");
+                              return;
+                            }
+                            const reason =
+                              (typeof window !== "undefined"
+                                ? window.prompt("سبب الإيقاف (اختياري)", "تم الإيقاف من السوبر أدمن")
+                                : "") || "تم الإيقاف من السوبر أدمن";
+                            setConfirmState({
+                              title: "إيقاف الصالون",
+                              text: `هل تريد إيقاف ${row.name}؟`,
+                              onConfirm: async () => {
+                                await patchSalon(
+                                  row,
+                                  {
+                                    billing_status: "suspended",
+                                    suspended_reason: reason,
+                                  },
+                                  "تم إيقاف الصالون."
+                                );
+                              },
+                            });
+                          }}
+                        >
+                          {row.billing_status === "suspended" ? "رفع الإيقاف" : "إيقاف"}
+                        </Button>
+
+                        <Button
+                          variant="success"
+                          disabled={loadingThisRow}
+                          onClick={() =>
+                            patchSalon(
+                              row,
+                              {
+                                setup_paid: true,
+                                setup_required: false,
+                                billing_status: "active",
+                                manual_override_active: true,
+                                manual_override_reason: "Force activate (testing)",
+                                is_active: true,
+                              },
+                              "تم التفعيل الإجباري للاختبار.",
+                              { recomputeActive: false }
+                            )
+                          }
+                        >
+                          تفعيل إجباري للاختبار
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
         </>
       )}
+
+      <ConfirmModal
+        open={Boolean(confirmState)}
+        title={confirmState?.title || "تأكيد"}
+        text={confirmState?.text || ""}
+        loading={Boolean(rowLoading)}
+        onCancel={() => !rowLoading && setConfirmState(null)}
+        onConfirm={async () => {
+          if (!confirmState?.onConfirm) return;
+          await confirmState.onConfirm();
+          setConfirmState(null);
+        }}
+        confirmText="تأكيد"
+      />
 
       <Toast {...toast} />
     </PageShell>

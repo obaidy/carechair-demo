@@ -19,6 +19,7 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/explore" element={<ExplorePage />} />
         <Route path="/admin" element={<SuperAdminPage />} />
+        <Route path="/superadmin" element={<SuperAdminPage />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/billing" element={<Billing />} />

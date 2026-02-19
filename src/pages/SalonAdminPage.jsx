@@ -22,6 +22,8 @@ import { useToast } from "../lib/useToast";
 import { supabase } from "../lib/supabase";
 import { compressImage } from "../lib/imageCompression";
 import { formatWhatsappAppointment, sendWhatsappTemplate } from "../lib/whatsapp";
+import { createSubscriptionCheckout } from "../lib/stripeBilling";
+import { deriveSalonAccess, formatBillingDate, getBillingStatusLabel, getTrialRemainingLabel } from "../lib/billing";
 import {
   galleryToTextareaValue,
   getDefaultAvatar,
@@ -37,6 +39,7 @@ const ADMIN_SIDEBAR_ITEMS = [
   { key: "dashboard", label: "لوحة التحكم" },
   { key: "bookings", label: "الحجوزات" },
   { key: "calendar", label: "التقويم" },
+  { key: "billing", label: "الفوترة" },
   { key: "clients", label: "العملاء" },
   { key: "employees", label: "الموظفين" },
   { key: "services", label: "الخدمات" },
@@ -145,6 +148,7 @@ export default function SalonAdminPage() {
   const [staffImageLoading, setStaffImageLoading] = useState({});
   const [staffImageCompressing, setStaffImageCompressing] = useState({});
   const [copyingLink, setCopyingLink] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
     const validKeys = new Set(ADMIN_SIDEBAR_ITEMS.map((x) => x.key));
@@ -705,6 +709,17 @@ export default function SalonAdminPage() {
     [employeeTimeOff, scheduleStaffId]
   );
 
+  const salonAccess = useMemo(() => deriveSalonAccess(salon), [salon]);
+  const writeLocked = unlocked && !salonAccess.canManage;
+  const setupPaymentLink = String(import.meta.env.VITE_SETUP_PAYMENT_LINK || "").trim();
+  const trialRemaining = getTrialRemainingLabel(salon?.trial_end);
+
+  function ensureWriteAccess() {
+    if (!writeLocked) return true;
+    showToast("error", salonAccess.lockMessage || "الحساب غير مفعل للتعديل حالياً.");
+    return false;
+  }
+
   function validateImageFile(file) {
     if (!file) {
       showToast("error", "اختاري صورة أولاً.");
@@ -768,6 +783,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function handleLogoUpload(file) {
     if (!supabase || !salon?.id) return;
+    if (!ensureWriteAccess()) return;
     if (!validateImageFile(file)) return;
 
     setLogoCompressing(true);
@@ -799,6 +815,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function handleCoverUpload(file) {
     if (!supabase || !salon?.id) return;
+    if (!ensureWriteAccess()) return;
     if (!validateImageFile(file)) return;
 
     setCoverCompressing(true);
@@ -830,6 +847,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function handleGalleryUpload(fileList) {
     if (!supabase || !salon?.id) return;
+    if (!ensureWriteAccess()) return;
     const files = Array.from(fileList || []);
     if (files.length === 0) return;
 
@@ -875,6 +893,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function handleRemoveGalleryImage(url) {
     if (!supabase || !salon?.id) return;
+    if (!ensureWriteAccess()) return;
 
     setGalleryDeletingUrl(url);
     try {
@@ -896,6 +915,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function handleServiceImageUpload(serviceId, file) {
     if (!supabase || !salon?.id || !serviceId) return;
+    if (!ensureWriteAccess()) return;
     if (!validateImageFile(file)) return;
 
     setServiceImageCompressing((prev) => ({ ...prev, [serviceId]: true }));
@@ -927,6 +947,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function handleStaffImageUpload(staffId, file) {
     if (!supabase || !salon?.id || !staffId) return;
+    if (!ensureWriteAccess()) return;
     if (!validateImageFile(file)) return;
 
     setStaffImageCompressing((prev) => ({ ...prev, [staffId]: true }));
@@ -958,6 +979,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function updateBookingStatus(id, nextStatus) {
     if (!supabase || !salon?.id || statusUpdating[id]) return;
+    if (!ensureWriteAccess()) return;
 
     const prev = bookings.find((x) => x.id === id);
     if (!prev) return;
@@ -1017,6 +1039,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function saveHours() {
     if (!supabase || !salon?.id) return;
+    if (!ensureWriteAccess()) return;
 
     for (const day of DAYS) {
       const row = hoursDraft[day.index];
@@ -1054,6 +1077,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function saveEmployeeSchedule() {
     if (!supabase || !salon?.id || !scheduleStaffId) return;
+    if (!ensureWriteAccess()) return;
 
     for (const day of DAYS) {
       const row = scheduleDraft[day.index];
@@ -1098,6 +1122,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function addEmployeeTimeOff() {
     if (!supabase || !salon?.id || !scheduleStaffId) return;
+    if (!ensureWriteAccess()) return;
 
     const startAt = timeOffForm.start_at ? new Date(timeOffForm.start_at) : null;
     const endAt = timeOffForm.end_at ? new Date(timeOffForm.end_at) : null;
@@ -1131,6 +1156,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function deleteEmployeeTimeOff(rowId) {
     if (!supabase || !salon?.id || !rowId) return;
+    if (!ensureWriteAccess()) return;
 
     setDeletingTimeOffId(rowId);
     try {
@@ -1152,6 +1178,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function saveSalonFlags(patch) {
     if (!supabase || !salon?.id) return;
+    if (!ensureWriteAccess()) return;
 
     const previous = salon;
     const nextSalon = { ...salon, ...patch };
@@ -1173,6 +1200,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function saveSalonMedia() {
     if (!supabase || !salon?.id) return;
+    if (!ensureWriteAccess()) return;
 
     setSavingMedia(true);
     try {
@@ -1196,6 +1224,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function addService() {
     if (!supabase || !salon?.id) return;
+    if (!ensureWriteAccess()) return;
 
     const name = serviceForm.name.trim();
     const duration = Number(serviceForm.duration_minutes);
@@ -1237,6 +1266,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function addStaff() {
     if (!supabase || !salon?.id) return;
+    if (!ensureWriteAccess()) return;
 
     const name = staffForm.name.trim();
     const sort = Number(staffForm.sort_order);
@@ -1293,6 +1323,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function saveServiceEdit(id) {
     if (!supabase || !salon?.id) return;
+    if (!ensureWriteAccess()) return;
 
     const patch = {
       name: editingService.name.trim(),
@@ -1324,6 +1355,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function saveStaffEdit(id) {
     if (!supabase || !salon?.id) return;
+    if (!ensureWriteAccess()) return;
 
     const patch = {
       name: editingStaff.name.trim(),
@@ -1352,6 +1384,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function toggleServiceActive(row) {
     if (!supabase || !salon?.id) return;
+    if (!ensureWriteAccess()) return;
 
     setRowLoading(`service-toggle-${row.id}`);
     try {
@@ -1373,6 +1406,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function toggleStaffActive(row) {
     if (!supabase || !salon?.id) return;
+    if (!ensureWriteAccess()) return;
 
     setRowLoading(`staff-toggle-${row.id}`);
     try {
@@ -1394,6 +1428,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function deleteRow() {
     if (!supabase || !salon?.id || !deleteDialog) return;
+    if (!ensureWriteAccess()) return;
 
     setDeleteLoading(true);
     try {
@@ -1433,6 +1468,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function saveAssignments() {
     if (!supabase || !salon?.id || !assignStaffId) return;
+    if (!ensureWriteAccess()) return;
 
     setSaveAssignLoading(true);
     try {
@@ -1504,6 +1540,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   async function saveServiceAssignments(serviceId) {
     if (!supabase || !salon?.id || !serviceId) return;
+    if (!ensureWriteAccess()) return;
 
     setServiceAssignSavingId(serviceId);
     try {
@@ -1603,6 +1640,33 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
     }
   }
 
+  async function startMonthlySubscriptionCheckout() {
+    if (!salon?.id || !salon?.slug) return;
+
+    setCheckoutLoading(true);
+    try {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const encodedSlug = encodeURIComponent(salon.slug);
+      const successUrl = `${origin}/s/${encodedSlug}/admin/billing?checkout=success`;
+      const cancelUrl = `${origin}/s/${encodedSlug}/admin/billing?checkout=cancel`;
+
+      const checkoutUrl = await createSubscriptionCheckout({
+        salonId: salon.id,
+        salonSlug: salon.slug,
+        successUrl,
+        cancelUrl,
+      });
+
+      if (typeof window !== "undefined") {
+        window.location.href = checkoutUrl;
+      }
+    } catch (err) {
+      showToast("error", `تعذر فتح بوابة الاشتراك: ${err?.message || err}`);
+    } finally {
+      setCheckoutLoading(false);
+    }
+  }
+
   if (loading) {
     return (
       <PageShell title="إدارة الصالون" subtitle="جاري التحميل">
@@ -1658,12 +1722,32 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
         </Card>
       ) : (
         <>
+          {writeLocked ? (
+            <Card className="billing-lock-banner">
+              <div className="row-actions space-between" style={{ alignItems: "center" }}>
+                <div>
+                  <h4>الحساب غير مفعل</h4>
+                  <p className="muted">{salonAccess.lockMessage}</p>
+                </div>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setActiveSection("billing");
+                    navigate(`/s/${slug}/admin/billing`);
+                  }}
+                >
+                  فتح الفوترة
+                </Button>
+              </div>
+            </Card>
+          ) : null}
+
           <Card className="admin-topbar">
             <div>
               <div className="row-actions" style={{ alignItems: "center" }}>
                 <h3>{salon.name}</h3>
-                <Badge variant={salon.is_active ? "confirmed" : "cancelled"}>
-                  {salon.is_active ? "نشط" : "متوقف"}
+                <Badge variant={salonAccess.badgeVariant}>
+                  {salonAccess.badgeLabel}
                 </Badge>
               </div>
               <p className="muted">تحكم بالحجوزات والإعدادات من مكان واحد.</p>
@@ -2024,7 +2108,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                       <Button
                                         type="button"
                                         variant="success"
-                                        disabled={loadingRow}
+                                        disabled={loadingRow || writeLocked}
                                         onClick={() => updateBookingStatus(row.id, "confirmed")}
                                       >
                                         {target === "confirmed" ? "جاري القبول..." : "قبول"}
@@ -2032,7 +2116,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                       <Button
                                         type="button"
                                         variant="danger"
-                                        disabled={loadingRow}
+                                        disabled={loadingRow || writeLocked}
                                         onClick={() => updateBookingStatus(row.id, "cancelled")}
                                       >
                                         {target === "cancelled" ? "جاري الرفض..." : "رفض"}
@@ -2240,6 +2324,68 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                 </Card>
               ) : null}
 
+              {activeSection === "billing" ? (
+                <Card>
+                  <div className="enterprise-card-head">
+                    <h3>الفوترة والتفعيل</h3>
+                    <Badge variant={salonAccess.badgeVariant}>{salonAccess.badgeLabel}</Badge>
+                  </div>
+
+                  {writeLocked ? (
+                    <div className="billing-warning-box">
+                      <b>حسابك غير مفعل</b>
+                      <p>{salonAccess.lockMessage}</p>
+                    </div>
+                  ) : null}
+
+                  <div className="billing-stats-grid">
+                    <div className="billing-stat-card">
+                      <span>رسوم الإعداد</span>
+                      <b>{salon.setup_paid ? "مدفوعة" : "غير مدفوعة"}</b>
+                    </div>
+                    <div className="billing-stat-card">
+                      <span>الاشتراك الشهري</span>
+                      <b>{getBillingStatusLabel(salon.billing_status)}</b>
+                    </div>
+                    <div className="billing-stat-card">
+                      <span>انتهاء الاشتراك</span>
+                      <b>{formatBillingDate(salon.current_period_end)}</b>
+                    </div>
+                    <div className="billing-stat-card">
+                      <span>الفترة التجريبية</span>
+                      <b>
+                        {salon.trial_enabled
+                          ? `${trialRemaining || "جارية"} (تنتهي ${formatBillingDate(salon.trial_end)})`
+                          : "غير مفعلة"}
+                      </b>
+                    </div>
+                  </div>
+
+                  {!salon.setup_paid ? (
+                    <div className="billing-warning-box">
+                      <b>رسوم الإعداد تُدفع عبر رابط من الإدارة</b>
+                      {setupPaymentLink ? (
+                        <a href={setupPaymentLink} target="_blank" rel="noreferrer">
+                          افتح رابط دفع الإعداد
+                        </a>
+                      ) : (
+                        <p className="muted">تواصل مع الإدارة للحصول على رابط دفع الإعداد اليدوي.</p>
+                      )}
+                    </div>
+                  ) : null}
+
+                  <div className="row-actions" style={{ marginTop: 10 }}>
+                    <Button
+                      type="button"
+                      onClick={startMonthlySubscriptionCheckout}
+                      disabled={checkoutLoading}
+                    >
+                      {checkoutLoading ? "جاري التحويل..." : "فعّل الاشتراك الشهري"}
+                    </Button>
+                  </div>
+                </Card>
+              ) : null}
+
               {activeSection === "settings" ? (
                 <Card>
                   <div className="settings-tabs-wrap">
@@ -2260,6 +2406,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
           {activeSection === "schedules" ? (
             <Card>
               <h3>جداول دوام الموظفين</h3>
+              <fieldset disabled={writeLocked} className="locked-fieldset">
               <SelectInput
                 label="اختاري الموظف/الموظفة"
                 value={scheduleStaffId}
@@ -2412,12 +2559,14 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                   )}
                 </div>
               </Card>
+              </fieldset>
             </Card>
           ) : null}
 
           {activeSection === "services" ? (
             <Card>
               <h3>إدارة الخدمات</h3>
+              <fieldset disabled={writeLocked} className="locked-fieldset">
               <div className="grid service-form-grid">
                 <input
                   className="input"
@@ -2669,12 +2818,14 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                   })
                 )}
               </div>
+              </fieldset>
             </Card>
           ) : null}
 
           {activeSection === "employees" ? (
             <Card>
               <h3>إدارة الموظفين</h3>
+              <fieldset disabled={writeLocked} className="locked-fieldset">
               <div className="grid two">
                 <input
                   className="input"
@@ -2823,6 +2974,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                   })
                 )}
               </div>
+              </fieldset>
             </Card>
           ) : null}
 
@@ -2843,6 +2995,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
           {activeSection === "settings" && activeSettingsSection === "assign" ? (
             <Card>
               <h3>ربط الخدمات بالموظفين</h3>
+              <fieldset disabled={writeLocked} className="locked-fieldset">
               <SelectInput label="اختاري الموظف/الموظفة" value={assignStaffId} onChange={(e) => setAssignStaffId(e.target.value)}>
                 <option value="">اختيار</option>
                 {staff.map((row) => (
@@ -2894,6 +3047,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                   })}
                 </div>
               )}
+              </fieldset>
             </Card>
           ) : null}
 
@@ -2901,6 +3055,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             <Card>
               <h3>الصور</h3>
               <p className="muted">ارفعي صور للمركز، وإذا ماكو صور راح تظهر صور افتراضية تلقائياً.</p>
+              <fieldset disabled={writeLocked} className="locked-fieldset">
 
               <div className="media-admin-grid">
                 <div className="media-block">
@@ -3046,6 +3201,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
               <Button type="button" onClick={saveSalonMedia} disabled={savingMedia}>
                 {savingMedia ? "جاري الحفظ..." : "حفظ الصور"}
               </Button>
+              </fieldset>
             </Card>
           ) : null}
 
@@ -3053,6 +3209,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             <Card>
               <h3>إعدادات المركز</h3>
               <p className="muted">تحكم بظهور المركز وحالته العامة.</p>
+              <fieldset disabled={writeLocked} className="locked-fieldset">
 
               <div className="stack-sm" style={{ marginTop: 10 }}>
                 <label className="field">
@@ -3076,15 +3233,6 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                   />
                   يظهر في صفحة الاستكشاف
                 </label>
-                <label className="switch-pill">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(salon.is_active)}
-                    onChange={(e) => saveSalonFlags({ is_active: e.target.checked })}
-                    disabled={savingSalonFlags}
-                  />
-                  المركز فعّال ويستقبل حجوزات
-                </label>
               </div>
 
               <div className="admin-share-block" style={{ marginTop: 12 }}>
@@ -3101,6 +3249,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                   ) : null}
                 </div>
               </div>
+              </fieldset>
             </Card>
           ) : null}
             </div>

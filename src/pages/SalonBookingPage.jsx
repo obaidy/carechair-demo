@@ -13,6 +13,7 @@ import {
 import { supabase } from "../lib/supabase";
 import { combineDateTime, generateSlots } from "../lib/slots";
 import { formatWhatsappAppointment, sendWhatsappTemplate } from "../lib/whatsapp";
+import { deriveSalonAccess } from "../lib/billing";
 import {
   formatCurrencyIQD,
   formatDateTime,
@@ -153,6 +154,7 @@ export default function SalonBookingPage() {
   const selectedStaff = staffById[staffId] || null;
   const media = useMemo(() => getSalonMedia(salon), [salon]);
   const galleryImages = media.gallery || [];
+  const salonAccess = useMemo(() => deriveSalonAccess(salon), [salon]);
 
   const filteredStaff = useMemo(() => {
     if (!serviceId) return staff;
@@ -190,7 +192,7 @@ export default function SalonBookingPage() {
 
   useEffect(() => {
     async function loadDayBookings() {
-      if (!supabase || !salon?.id || !dateValue || !isValidPair) {
+      if (!supabase || !salon?.id || !dateValue || !isValidPair || !salonAccess.canCreateBookings) {
         setDayBookings([]);
         return;
       }
@@ -227,11 +229,11 @@ export default function SalonBookingPage() {
     }
 
     loadDayBookings();
-  }, [salon?.id, staffId, eligibleStaffIds, dateValue, showToast, isValidPair, bookingMode]);
+  }, [salon?.id, staffId, eligibleStaffIds, dateValue, showToast, isValidPair, bookingMode, salonAccess.canCreateBookings]);
 
   useEffect(() => {
     async function loadDayTimeOff() {
-      if (!supabase || !salon?.id || !dateValue || !isValidPair) {
+      if (!supabase || !salon?.id || !dateValue || !isValidPair || !salonAccess.canCreateBookings) {
         setDayTimeOff([]);
         setTimeOffLoading(false);
         return;
@@ -267,7 +269,7 @@ export default function SalonBookingPage() {
     }
 
     loadDayTimeOff();
-  }, [salon?.id, staffId, eligibleStaffIds, dateValue, showToast, isValidPair, bookingMode]);
+  }, [salon?.id, staffId, eligibleStaffIds, dateValue, showToast, isValidPair, bookingMode, salonAccess.canCreateBookings]);
 
   const hoursByDay = useMemo(() => {
     const map = {};
@@ -294,7 +296,7 @@ export default function SalonBookingPage() {
   }, [employeeHours]);
 
   const availableSlots = useMemo(() => {
-    if (!selectedService || !dateValue || !isValidPair) return [];
+    if (!selectedService || !dateValue || !isValidPair || !salonAccess.canCreateBookings) return [];
 
     const dateObj = new Date(`${dateValue}T00:00:00`);
     if (Number.isNaN(dateObj.getTime())) return [];
@@ -348,6 +350,7 @@ export default function SalonBookingPage() {
     employeeHoursByStaffDay,
     dayBookings,
     dayTimeOff,
+    salonAccess.canCreateBookings,
   ]);
 
   const availabilityLoading = slotsLoading || timeOffLoading;
@@ -510,6 +513,11 @@ export default function SalonBookingPage() {
 
     if (!selectedService || !slotIso) {
       showToast("error", "اختاري الخدمة والموعد.");
+      return;
+    }
+
+    if (!salonAccess.canCreateBookings) {
+      showToast("error", salonAccess.lockMessage || "الحجز غير متاح حالياً.");
       return;
     }
 
@@ -757,6 +765,12 @@ export default function SalonBookingPage() {
       <Card id="booking-form">
         {!successData ? (
           <form onSubmit={submitBooking} className="booking-form-modern">
+            {!salonAccess.canCreateBookings ? (
+              <div className="full lock-banner">
+                <b>الحساب غير مفعل حالياً</b>
+                <p>{salonAccess.lockMessage || "الحجز غير متاح حالياً."}</p>
+              </div>
+            ) : null}
             <div className="steps-wrap full">
               <Step index={1} label="اختاري الخدمة" active={currentStep === 1} done={Boolean(serviceId)} />
               <Step
@@ -869,7 +883,9 @@ export default function SalonBookingPage() {
 
             <div className="field full">
               <span>المواعيد المتاحة ({SLOT_STEP_MINUTES} دقيقة)</span>
-              {!isValidPair && selectedService ? (
+              {!salonAccess.canCreateBookings ? (
+                <div className="empty-box">{salonAccess.lockMessage || "الحجز غير متاح حالياً."}</div>
+              ) : !isValidPair && selectedService ? (
                 <div className="empty-box">
                   {bookingMode === "auto_assign"
                     ? "لا يوجد موظف متاح لهذه الخدمة حالياً."
@@ -920,7 +936,11 @@ export default function SalonBookingPage() {
               </p>
             </Card>
 
-            <Button type="submit" className="full" disabled={submitting || !slotIso || !isValidPair}>
+            <Button
+              type="submit"
+              className="full"
+              disabled={submitting || !slotIso || !isValidPair || !salonAccess.canCreateBookings}
+            >
               {submitting ? "جاري الإرسال..." : "تأكيد الحجز"}
             </Button>
           </form>

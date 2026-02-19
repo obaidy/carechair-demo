@@ -2066,6 +2066,94 @@ select:disabled {
   font-size: 12px;
 }
 
+.locked-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+}
+
+.locked-fieldset:disabled {
+  opacity: 0.72;
+}
+
+.billing-lock-banner {
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.02));
+}
+
+.billing-lock-banner h4 {
+  margin: 0 0 6px;
+}
+
+.billing-warning-box {
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.billing-warning-box b {
+  color: var(--warning);
+}
+
+.billing-warning-box p {
+  margin: 0;
+}
+
+.billing-warning-box a {
+  color: var(--primary-700);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.billing-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.billing-stat-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.billing-stat-card span {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.billing-stat-card b {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.lock-banner {
+  border: 1px solid rgba(220, 38, 38, 0.24);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(220, 38, 38, 0.08);
+  display: grid;
+  gap: 4px;
+}
+
+.lock-banner b {
+  color: var(--danger);
+}
+
+.lock-banner p {
+  margin: 0;
+  color: var(--muted);
+}
+
 /* ---------- Admin IA + Scalability ---------- */
 .admin-layout {
   display: grid;
@@ -2202,6 +2290,10 @@ select:disabled {
 @media (min-width: 760px) {
   .admin-onboarding-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .billing-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
