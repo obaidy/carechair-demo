@@ -39,6 +39,8 @@ export default function SuperAdminPage() {
   });
 
   const [rowLoading, setRowLoading] = useState("");
+  const [editingPasscodeSalonId, setEditingPasscodeSalonId] = useState("");
+  const [newPasscode, setNewPasscode] = useState("");
 
   async function loadSalons() {
     if (!supabase) {
@@ -203,6 +205,31 @@ export default function SuperAdminPage() {
     }
   }
 
+  async function updateSalonPasscode(rowId) {
+    if (!supabase) return;
+
+    const passcode = newPasscode.trim();
+    if (passcode.length < 3) {
+      showToast("error", "رمز الإدارة لازم يكون 3 خانات أو أكثر.");
+      return;
+    }
+
+    const loadingKey = `admin_passcode-${rowId}`;
+    setRowLoading(loadingKey);
+    try {
+      const up = await supabase.from("salons").update({ admin_passcode: passcode }).eq("id", rowId);
+      if (up.error) throw up.error;
+
+      showToast("success", "تم تغيير رمز إدارة الصالون.");
+      setEditingPasscodeSalonId("");
+      setNewPasscode("");
+    } catch (err) {
+      showToast("error", `تعذر تغيير الرمز: ${err?.message || err}`);
+    } finally {
+      setRowLoading("");
+    }
+  }
+
   const sortedSalons = useMemo(
     () => [...salons].sort((a, b) => String(a.name).localeCompare(String(b.name), "ar")),
     [salons]
@@ -332,7 +359,49 @@ export default function SuperAdminPage() {
                         <Link className="ghost-link" to={`/s/${row.slug}/admin`}>
                           إدارة الصالون
                         </Link>
+                        <button
+                          type="button"
+                          className="row-btn"
+                          onClick={() => {
+                            if (editingPasscodeSalonId === row.id) {
+                              setEditingPasscodeSalonId("");
+                              setNewPasscode("");
+                              return;
+                            }
+                            setEditingPasscodeSalonId(row.id);
+                            setNewPasscode("");
+                          }}
+                        >
+                          {editingPasscodeSalonId === row.id ? "إلغاء تغيير الرمز" : "تغيير رمز الإدارة"}
+                        </button>
                       </div>
+
+                      {editingPasscodeSalonId === row.id ? (
+                        <form
+                          className="row-actions"
+                          style={{ marginTop: 8 }}
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            updateSalonPasscode(row.id);
+                          }}
+                        >
+                          <input
+                            className="input"
+                            style={{ minWidth: 220 }}
+                            type="password"
+                            placeholder="اكتبي الرمز الجديد"
+                            value={newPasscode}
+                            onChange={(e) => setNewPasscode(e.target.value)}
+                          />
+                          <button
+                            type="submit"
+                            className="submit-main"
+                            disabled={rowLoading === `admin_passcode-${row.id}`}
+                          >
+                            {rowLoading === `admin_passcode-${row.id}` ? "جاري الحفظ..." : "حفظ الرمز"}
+                          </button>
+                        </form>
+                      ) : null}
                     </div>
 
                     <div className="row-actions">
