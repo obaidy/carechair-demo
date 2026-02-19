@@ -14,8 +14,8 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="site-footer-inner">
         <section className="footer-col">
-          <BrandLogo />
-          <p>CareChair منصة حجوزات للصالونات و مراكز التجميل</p>
+          <BrandLogo className="footer-brand" />
+          <p>منصة حجوزات للصالونات و مراكز التجميل</p>
           {hasWhatsapp ? (
             <a
               href={`https://wa.me/${platformWhatsapp}?text=${demoMessage}`}

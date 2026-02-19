@@ -14,21 +14,29 @@
   background: rgba(246, 248, 252, 0.9);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(220, 228, 242, 0.92);
+  min-height: 72px;
 }
 
 .landing-nav-inner {
-  padding-block: 10px;
+  min-height: 72px;
+  padding-block: 8px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.landing-logo-lockup {
-  display: none;
+.landing-logo-main {
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 12px;
+  margin-inline: 6px;
+  flex: 0 0 auto;
 }
 
-.landing-logo-mark {
-  display: inline-flex;
+.landing-logo-main img {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
 }
 
 .landing-links {
@@ -452,18 +460,19 @@
   color: var(--cc-muted);
 }
 
-.landing-final-card {
+.landing-page .landing-final-card.ui-card {
   color: #fff;
   border-color: #1f3f84;
   background: linear-gradient(135deg, #102f6e 0%, #174bb5 60%, #1fa8d7 100%);
 }
 
-.landing-final-card h2 {
+.landing-page .landing-final-card.ui-card h2 {
   margin: 0;
   font-size: clamp(25px, 5.8vw, 42px);
+  color: #fff;
 }
 
-.landing-final-card p {
+.landing-page .landing-final-card.ui-card p {
   margin: 8px 0 0;
   color: rgba(255, 255, 255, 0.92);
 }
@@ -523,12 +532,12 @@
     gap: 12px;
   }
 
-  .landing-logo-lockup {
-    display: inline-flex;
+  .landing-logo-main {
+    height: 48px;
   }
 
-  .landing-logo-mark {
-    display: none;
+  .landing-logo-main img {
+    height: 44px;
   }
 
   .landing-hero {
@@ -572,4 +581,3 @@
     display: none;
   }
 }
-

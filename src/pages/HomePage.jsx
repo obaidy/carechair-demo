@@ -113,8 +113,7 @@ export default function HomePage() {
     <div className="landing-page" dir="rtl">
       <header className="landing-nav">
         <div className="landing-nav-inner cc-container">
-          <BrandLogo className="landing-logo-lockup" />
-          <BrandLogo compact className="landing-logo-mark" />
+          <BrandLogo className="landing-logo-main" />
 
           <nav className="landing-links" aria-label="روابط الصفحة">
             <Link to="/explore">استكشف</Link>
@@ -359,4 +358,3 @@ export default function HomePage() {
     </div>
   );
 }
-

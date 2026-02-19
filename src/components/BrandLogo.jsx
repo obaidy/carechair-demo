@@ -22,9 +22,15 @@ export default function BrandLogo({ to = "/", compact = false, className = "" })
       {!lockupFailed ? (
         <img src="/images/brand/carechair-lockup.png" alt="CareChair" onError={() => setLockupFailed(true)} />
       ) : (
-        <span className="brand-fallback-text">CareChair</span>
+        <span className="brand-fallback-inline">
+          {!markFailed ? (
+            <img src="/images/brand/carechair-mark.png" alt="CareChair" onError={() => setMarkFailed(true)} />
+          ) : (
+            <span className="brand-fallback-mark">C</span>
+          )}
+          <span className="brand-fallback-text">CareChair</span>
+        </span>
       )}
     </Link>
   );
 }
-

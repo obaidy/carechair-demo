@@ -20,10 +20,11 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  padding: 14px;
+  min-height: 72px;
+  padding: 12px 14px;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   background: rgba(246, 248, 252, 0.92);
   backdrop-filter: blur(8px);
@@ -32,6 +33,11 @@
 
 .platform-brand {
   margin-bottom: 2px;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 12px;
+  margin-inline: 6px;
+  flex: 0 0 auto;
 }
 
 .platform-header h1 {
@@ -885,6 +891,22 @@ select:disabled {
   align-content: start;
 }
 
+.footer-brand {
+  margin-bottom: 16px;
+  opacity: 0.95;
+  flex: 0 0 auto;
+}
+
+.footer-brand img {
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+}
+
+.footer-brand .brand-fallback-text {
+  font-size: 30px;
+}
+
 .footer-col h4,
 .footer-col h5 {
   margin: 0;
@@ -940,6 +962,10 @@ select:disabled {
 @media (min-width: 760px) {
   .platform-header {
     padding: 16px 22px;
+  }
+
+  .platform-brand {
+    height: 48px;
   }
 
   .platform-main {
@@ -1733,12 +1759,20 @@ select:disabled {
   display: inline-flex;
   align-items: center;
   text-decoration: none;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+  flex-shrink: 0;
+}
+
+.brand-logo:hover {
+  opacity: 1;
 }
 
 .brand-logo img {
   display: block;
-  height: 30px;
+  height: 36px;
   width: auto;
+  object-fit: contain;
 }
 
 .brand-logo.compact img {
@@ -1748,20 +1782,32 @@ select:disabled {
 }
 
 .brand-fallback-text {
-  font-weight: 900;
-  font-size: 18px;
+  font-weight: 700;
+  font-size: 20px;
   color: var(--cc-primary-600);
 }
 
 .brand-fallback-mark {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border-radius: 9px;
   display: grid;
   place-items: center;
   font-weight: 900;
   color: #fff;
   background: linear-gradient(135deg, var(--cc-primary-600), var(--cc-accent-400));
+}
+
+.brand-fallback-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-fallback-inline img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
 }
 
 .ui-card {
@@ -1897,6 +1943,134 @@ select:disabled {
   margin: 0;
   color: #6f595e;
   font-size: 12px;
+}
+
+/* ---------- Admin IA + Scalability ---------- */
+.admin-layout {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-sidebar {
+  position: sticky;
+  top: 78px;
+  z-index: 12;
+}
+
+.admin-content {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.admin-tabs-sticky {
+  background: rgba(247, 250, 255, 0.95);
+  border: 1px solid #d5e1f5;
+  border-radius: 14px;
+  padding: 8px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  position: sticky;
+  top: 78px;
+  z-index: 11;
+}
+
+.admin-tabs-sticky .ui-btn {
+  white-space: nowrap;
+}
+
+.tabs-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.bookings-filters-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.bookings-filter-group {
+  display: grid;
+  gap: 7px;
+}
+
+.bookings-filter-group b {
+  font-size: 13px;
+  color: #37598c;
+}
+
+.compact-booking-card {
+  padding: 8px;
+  gap: 8px;
+}
+
+.compact-booking-card .booking-top h6 {
+  font-size: 14px;
+}
+
+.compact-booking-card .booking-top p,
+.compact-booking-card .booking-info p {
+  font-size: 12px;
+}
+
+.booking-actions.sticky {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  border-top: 1px solid #deebff;
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+@media (min-width: 960px) {
+  .admin-layout {
+    grid-template-columns: 220px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+  }
+
+  .admin-tabs-sticky {
+    position: sticky;
+    top: 86px;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .admin-tabs-sticky .ui-btn {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .bookings-filters-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+  }
+
+  .bookings-filters-grid .field {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 760px) {
+  .brand-logo img {
+    height: 44px;
+  }
+
+  .footer-brand img {
+    height: 56px;
+  }
+
+  .brand-fallback-mark {
+    width: 44px;
+    height: 44px;
+  }
+
+  .brand-fallback-inline img {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 .landing-hero {

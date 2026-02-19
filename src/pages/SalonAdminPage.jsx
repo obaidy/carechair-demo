@@ -33,13 +33,17 @@ import {
 const MEDIA_BUCKET = "carechair-media";
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-const SETTINGS_TABS = [
-  { key: "hours", label: "ساعات العمل" },
+const ADMIN_SECTIONS = [
+  { key: "bookings", label: "الحجوزات" },
   { key: "services", label: "الخدمات" },
   { key: "staff", label: "الموظفين" },
-  { key: "assign", label: "ربط الخدمات" },
+  { key: "assign", label: "ربط الخدمات بالموظفين" },
+  { key: "hours", label: "ساعات العمل" },
   { key: "media", label: "الصور" },
+  { key: "salon", label: "إعدادات المركز" },
 ];
+
+const BOOKINGS_PAGE_SIZE = 20;
 
 export default function SalonAdminPage() {
   const { slug } = useParams();
@@ -51,7 +55,10 @@ export default function SalonAdminPage() {
   const [unlocked, setUnlocked] = useState(false);
 
   const [bookings, setBookings] = useState([]);
-  const [bookingFilter, setBookingFilter] = useState("today");
+  const [bookingStatusFilter, setBookingStatusFilter] = useState("all");
+  const [bookingDateFilter, setBookingDateFilter] = useState("today");
+  const [bookingSearch, setBookingSearch] = useState("");
+  const [visibleBookingCount, setVisibleBookingCount] = useState(BOOKINGS_PAGE_SIZE);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState({});
 
@@ -63,7 +70,7 @@ export default function SalonAdminPage() {
   const [saveHoursLoading, setSaveHoursLoading] = useState(false);
   const [savingSalonFlags, setSavingSalonFlags] = useState(false);
 
-  const [settingsTab, setSettingsTab] = useState("hours");
+  const [activeSection, setActiveSection] = useState("bookings");
 
   const [serviceForm, setServiceForm] = useState({ name: "", duration_minutes: "45", price: "20000", sort_order: "0" });
   const [staffForm, setStaffForm] = useState({ name: "", sort_order: "0", photo_url: "" });
@@ -231,20 +238,37 @@ export default function SalonAdminPage() {
   const todayKey = formatDateKey(new Date());
 
   const filteredBookings = useMemo(() => {
-    const sorted = [...bookings].sort(
-      (a, b) => new Date(a.appointment_start).getTime() - new Date(b.appointment_start).getTime()
-    );
+    const query = bookingSearch.trim().toLowerCase();
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(startOfToday);
+    endOfWeek.setDate(endOfWeek.getDate() + 7);
 
-    if (bookingFilter === "all") return sorted;
-    if (bookingFilter === "today") {
-      return sorted.filter((x) => formatDateKey(x.appointment_start) === todayKey);
-    }
-    return sorted.filter((x) => new Date(x.appointment_start).getTime() >= Date.now());
-  }, [bookings, bookingFilter, todayKey]);
+    return [...bookings]
+      .filter((row) => {
+        if (bookingStatusFilter !== "all" && row.status !== bookingStatusFilter) return false;
+
+        const rowDate = new Date(row.appointment_start);
+        if (bookingDateFilter === "today" && formatDateKey(rowDate) !== todayKey) return false;
+        if (bookingDateFilter === "week" && (rowDate < startOfToday || rowDate >= endOfWeek)) return false;
+
+        if (!query) return true;
+        const haystack = `${String(row.customer_name || "").toLowerCase()} ${String(row.customer_phone || "").toLowerCase()}`;
+        return haystack.includes(query);
+      })
+      .sort((a, b) => new Date(a.appointment_start).getTime() - new Date(b.appointment_start).getTime());
+  }, [bookings, bookingStatusFilter, bookingDateFilter, bookingSearch, todayKey]);
+
+  const visibleBookings = useMemo(
+    () => filteredBookings.slice(0, visibleBookingCount),
+    [filteredBookings, visibleBookingCount]
+  );
+
+  const hasMoreBookings = filteredBookings.length > visibleBookingCount;
 
   const groupedBookings = useMemo(() => {
     const map = {};
-    for (const row of filteredBookings) {
+    for (const row of visibleBookings) {
       const key = formatDateKey(row.appointment_start);
       if (!map[key]) {
         map[key] = { key, label: formatDate(row.appointment_start), items: [] };
@@ -252,7 +276,7 @@ export default function SalonAdminPage() {
       map[key].items.push(row);
     }
     return Object.values(map).sort((a, b) => a.key.localeCompare(b.key));
-  }, [filteredBookings]);
+  }, [visibleBookings]);
 
   const kpis = useMemo(() => {
     const today = bookings.filter((x) => formatDateKey(x.appointment_start) === todayKey).length;
@@ -261,6 +285,10 @@ export default function SalonAdminPage() {
     const cancelled = bookings.filter((x) => x.status === "cancelled").length;
     return { today, pending, confirmed, cancelled };
   }, [bookings, todayKey]);
+
+  useEffect(() => {
+    setVisibleBookingCount(BOOKINGS_PAGE_SIZE);
+  }, [bookingStatusFilter, bookingDateFilter, bookingSearch, bookings]);
 
   const galleryUrls = useMemo(() => textareaToGalleryArray(mediaDraft.gallery_text), [mediaDraft.gallery_text]);
   const bookingPageUrl = useMemo(() => {
@@ -1090,185 +1118,249 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             </div>
           </Card>
 
-          <Card className="admin-onboarding-card">
-            <div className="admin-onboarding-grid">
-              <section className="admin-checklist-block">
-                <h4>دليل تشغيل سريع</h4>
-                <div className="admin-checklist">
-                  {onboardingChecklist.map((item) => (
-                    <div key={item.key} className={`admin-checklist-item ${item.done ? "done" : ""}`}>
-                      <span>{item.done ? "✅" : "⬜"}</span>
-                      <b>{item.label}</b>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              <section className="admin-share-block">
-                <h4>مشاركة رابط الحجز</h4>
-                <input className="input" value={bookingPageUrl} readOnly />
-                <div className="row-actions">
-                  <Button variant="secondary" onClick={copyBookingLink} disabled={copyingLink || !bookingPageUrl}>
-                    {copyingLink ? "جاري النسخ..." : "نسخ رابط الحجز"}
+          <div className="admin-layout">
+            <aside className="admin-sidebar">
+              <div className="settings-tabs-wrap admin-tabs-sticky">
+                {ADMIN_SECTIONS.map((tab) => (
+                  <Button
+                    key={tab.key}
+                    type="button"
+                    variant={activeSection === tab.key ? "primary" : "ghost"}
+                    onClick={() => setActiveSection(tab.key)}
+                  >
+                    {tab.label}
                   </Button>
-                  {shareBookingWhatsappHref ? (
-                    <Button as="a" variant="primary" href={shareBookingWhatsappHref} target="_blank" rel="noreferrer">
-                      مشاركة واتساب
-                    </Button>
-                  ) : (
-                    <Button variant="ghost" disabled>
-                      مشاركة واتساب
-                    </Button>
-                  )}
-                </div>
-
-                <div className="admin-wa-status">
-                  <Badge variant="neutral">إشعارات واتساب التلقائية: غير مفعلة حالياً</Badge>
-                </div>
-
-                <div className="admin-pricing-mini">
-                  <b>تسعير CareChair</b>
-                  <p>تجهيز أول مرة: $300–$500 (غير مسترجع)</p>
-                  <p>اشتراك شهري: $30–$50</p>
-                  <p>إلغاء بأي وقت، والاشتراك يبقى فعال لحد نهاية الشهر المدفوع.</p>
-                </div>
-              </section>
-            </div>
-          </Card>
-
-          <section className="kpi-grid">
-            <Card className="kpi-card">
-              <span>طلبات اليوم</span>
-              <strong>{kpis.today}</strong>
-            </Card>
-            <Card className="kpi-card">
-              <span>بانتظار التأكيد</span>
-              <strong>{kpis.pending}</strong>
-            </Card>
-            <Card className="kpi-card">
-              <span>مؤكد</span>
-              <strong>{kpis.confirmed}</strong>
-            </Card>
-            <Card className="kpi-card">
-              <span>ملغي</span>
-              <strong>{kpis.cancelled}</strong>
-            </Card>
-          </section>
-
-          <Card>
-            <div className="row-actions space-between">
-              <div className="tabs-inline">
-                <Button
-                  type="button"
-                  variant={bookingFilter === "today" ? "primary" : "ghost"}
-                  onClick={() => setBookingFilter("today")}
-                >
-                  اليوم
-                </Button>
-                <Button
-                  type="button"
-                  variant={bookingFilter === "upcoming" ? "primary" : "ghost"}
-                  onClick={() => setBookingFilter("upcoming")}
-                >
-                  القادمة
-                </Button>
-                <Button
-                  type="button"
-                  variant={bookingFilter === "all" ? "primary" : "ghost"}
-                  onClick={() => setBookingFilter("all")}
-                >
-                  الكل
-                </Button>
+                ))}
               </div>
-            </div>
+            </aside>
 
-            <div className="calendar-list">
-              {bookingsLoading ? (
-                <div className="bookings-stack">
-                  {Array.from({ length: 4 }).map((_, idx) => (
-                    <Card className="booking-card" key={`bsk-${idx}`}>
-                      <Skeleton className="skeleton-line" />
-                      <Skeleton className="skeleton-line short" />
+            <div className="admin-content">
+              {activeSection === "bookings" ? (
+                <>
+                  <Card className="admin-onboarding-card">
+                    <div className="admin-onboarding-grid">
+                      <section className="admin-checklist-block">
+                        <h4>دليل تشغيل سريع</h4>
+                        <div className="admin-checklist">
+                          {onboardingChecklist.map((item) => (
+                            <div key={item.key} className={`admin-checklist-item ${item.done ? "done" : ""}`}>
+                              <span>{item.done ? "✅" : "⬜"}</span>
+                              <b>{item.label}</b>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+
+                      <section className="admin-share-block">
+                        <h4>مشاركة رابط الحجز</h4>
+                        <input className="input" value={bookingPageUrl} readOnly />
+                        <div className="row-actions">
+                          <Button variant="secondary" onClick={copyBookingLink} disabled={copyingLink || !bookingPageUrl}>
+                            {copyingLink ? "جاري النسخ..." : "نسخ رابط الحجز"}
+                          </Button>
+                          {shareBookingWhatsappHref ? (
+                            <Button as="a" variant="primary" href={shareBookingWhatsappHref} target="_blank" rel="noreferrer">
+                              مشاركة واتساب
+                            </Button>
+                          ) : (
+                            <Button variant="ghost" disabled>
+                              مشاركة واتساب
+                            </Button>
+                          )}
+                        </div>
+
+                        <div className="admin-wa-status">
+                          <Badge variant="neutral">إشعارات واتساب التلقائية: غير مفعلة حالياً</Badge>
+                        </div>
+
+                        <div className="admin-pricing-mini">
+                          <b>تسعير CareChair</b>
+                          <p>تجهيز أول مرة: $300–$500 (غير مسترجع)</p>
+                          <p>اشتراك شهري: $30–$50</p>
+                          <p>إلغاء بأي وقت، والاشتراك يبقى فعال لحد نهاية الشهر المدفوع.</p>
+                        </div>
+                      </section>
+                    </div>
+                  </Card>
+
+                  <section className="kpi-grid">
+                    <Card className="kpi-card">
+                      <span>طلبات اليوم</span>
+                      <strong>{kpis.today}</strong>
                     </Card>
-                  ))}
-                </div>
-              ) : groupedBookings.length === 0 ? (
-                <div className="empty-box">لا توجد حجوزات ضمن هذا الفلتر.</div>
-              ) : (
-                groupedBookings.map((group) => (
-                  <div className="date-group panel-soft" key={group.key}>
-                    <div className="date-header">
-                      <h5>{group.label}</h5>
-                      <span>{group.items.length} حجز</span>
-                    </div>
-                    <div className="bookings-stack">
-                      {group.items.map((row) => {
-                        const loadingRow = Boolean(statusUpdating[row.id]);
-                        const target = statusUpdating[row.id];
-                        return (
-                          <article key={row.id} className="booking-card panel-soft">
-                            <div className="booking-top">
-                              <div>
-                                <h6>{row.customer_name}</h6>
-                                <p>{row.customer_phone}</p>
-                              </div>
-                              <Badge variant={row.status || "pending"}>{STATUS_LABELS[row.status] || "غير معروف"}</Badge>
-                            </div>
-                            <div className="booking-info">
-                              <p>
-                                <b>الخدمة:</b> {servicesById[row.service_id]?.name || "-"}
-                              </p>
-                              <p>
-                                <b>الموظفة:</b> {staffById[row.staff_id]?.name || "-"}
-                              </p>
-                              <p>
-                                <b>الوقت:</b> {formatTime(row.appointment_start)}
-                              </p>
-                            </div>
-                            <div className="booking-actions">
-                              <Button
-                                type="button"
-                                variant="success"
-                                disabled={loadingRow}
-                                onClick={() => updateBookingStatus(row.id, "confirmed")}
-                              >
-                                {target === "confirmed" ? "جاري القبول..." : "قبول"}
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="danger"
-                                disabled={loadingRow}
-                                onClick={() => updateBookingStatus(row.id, "cancelled")}
-                              >
-                                {target === "cancelled" ? "جاري الرفض..." : "رفض"}
-                              </Button>
-                            </div>
-                          </article>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </Card>
+                    <Card className="kpi-card">
+                      <span>بانتظار التأكيد</span>
+                      <strong>{kpis.pending}</strong>
+                    </Card>
+                    <Card className="kpi-card">
+                      <span>مؤكد</span>
+                      <strong>{kpis.confirmed}</strong>
+                    </Card>
+                    <Card className="kpi-card">
+                      <span>ملغي</span>
+                      <strong>{kpis.cancelled}</strong>
+                    </Card>
+                  </section>
 
-          <Card>
-            <div className="settings-tabs-wrap">
-              {SETTINGS_TABS.map((tab) => (
-                <Button
-                  key={tab.key}
-                  type="button"
-                  variant={settingsTab === tab.key ? "primary" : "ghost"}
-                  onClick={() => setSettingsTab(tab.key)}
-                >
-                  {tab.label}
-                </Button>
-              ))}
-            </div>
-          </Card>
+                  <Card>
+                    <div className="bookings-filters-grid">
+                      <div className="bookings-filter-group">
+                        <b>الحالة</b>
+                        <div className="tabs-inline">
+                          <Button
+                            type="button"
+                            variant={bookingStatusFilter === "all" ? "primary" : "ghost"}
+                            onClick={() => setBookingStatusFilter("all")}
+                          >
+                            الكل
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={bookingStatusFilter === "pending" ? "primary" : "ghost"}
+                            onClick={() => setBookingStatusFilter("pending")}
+                          >
+                            بانتظار
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={bookingStatusFilter === "confirmed" ? "primary" : "ghost"}
+                            onClick={() => setBookingStatusFilter("confirmed")}
+                          >
+                            مؤكد
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={bookingStatusFilter === "cancelled" ? "primary" : "ghost"}
+                            onClick={() => setBookingStatusFilter("cancelled")}
+                          >
+                            ملغي
+                          </Button>
+                        </div>
+                      </div>
 
-          {settingsTab === "hours" ? (
+                      <div className="bookings-filter-group">
+                        <b>التاريخ</b>
+                        <div className="tabs-inline">
+                          <Button
+                            type="button"
+                            variant={bookingDateFilter === "today" ? "primary" : "ghost"}
+                            onClick={() => setBookingDateFilter("today")}
+                          >
+                            اليوم
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={bookingDateFilter === "week" ? "primary" : "ghost"}
+                            onClick={() => setBookingDateFilter("week")}
+                          >
+                            هذا الأسبوع
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={bookingDateFilter === "all" ? "primary" : "ghost"}
+                            onClick={() => setBookingDateFilter("all")}
+                          >
+                            الكل
+                          </Button>
+                        </div>
+                      </div>
+
+                      <TextInput
+                        label="بحث بالاسم أو الهاتف"
+                        value={bookingSearch}
+                        onChange={(e) => setBookingSearch(e.target.value)}
+                        placeholder="مثال: 07xxxxxxxxx"
+                      />
+                    </div>
+
+                    <div className="calendar-list">
+                      {bookingsLoading ? (
+                        <div className="bookings-stack">
+                          {Array.from({ length: 4 }).map((_, idx) => (
+                            <Card className="booking-card" key={`bsk-${idx}`}>
+                              <Skeleton className="skeleton-line" />
+                              <Skeleton className="skeleton-line short" />
+                            </Card>
+                          ))}
+                        </div>
+                      ) : groupedBookings.length === 0 ? (
+                        <div className="empty-box">لا توجد حجوزات ضمن الفلاتر الحالية.</div>
+                      ) : (
+                        groupedBookings.map((group) => (
+                          <div className="date-group panel-soft" key={group.key}>
+                            <div className="date-header">
+                              <h5>{group.label}</h5>
+                              <span>{group.items.length} حجز</span>
+                            </div>
+                            <div className="bookings-stack">
+                              {group.items.map((row) => {
+                                const loadingRow = Boolean(statusUpdating[row.id]);
+                                const target = statusUpdating[row.id];
+                                return (
+                                  <article key={row.id} className="booking-card panel-soft compact-booking-card">
+                                    <div className="booking-top">
+                                      <div>
+                                        <h6>{row.customer_name}</h6>
+                                        <p>{row.customer_phone}</p>
+                                      </div>
+                                      <Badge variant={row.status || "pending"}>
+                                        {STATUS_LABELS[row.status] || "غير معروف"}
+                                      </Badge>
+                                    </div>
+                                    <div className="booking-info">
+                                      <p>
+                                        <b>الخدمة:</b> {servicesById[row.service_id]?.name || "-"}
+                                      </p>
+                                      <p>
+                                        <b>الموظفة:</b> {staffById[row.staff_id]?.name || "-"}
+                                      </p>
+                                      <p>
+                                        <b>الوقت:</b> {formatTime(row.appointment_start)}
+                                      </p>
+                                    </div>
+                                    <div className="booking-actions sticky">
+                                      <Button
+                                        type="button"
+                                        variant="success"
+                                        disabled={loadingRow}
+                                        onClick={() => updateBookingStatus(row.id, "confirmed")}
+                                      >
+                                        {target === "confirmed" ? "جاري القبول..." : "قبول"}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="danger"
+                                        disabled={loadingRow}
+                                        onClick={() => updateBookingStatus(row.id, "cancelled")}
+                                      >
+                                        {target === "cancelled" ? "جاري الرفض..." : "رفض"}
+                                      </Button>
+                                    </div>
+                                  </article>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {hasMoreBookings ? (
+                      <div className="row-actions center" style={{ marginTop: 10 }}>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => setVisibleBookingCount((prev) => prev + BOOKINGS_PAGE_SIZE)}
+                        >
+                          تحميل المزيد
+                        </Button>
+                      </div>
+                    ) : null}
+                  </Card>
+                </>
+              ) : null}
+
+          {activeSection === "hours" ? (
             <Card>
               <h3>ساعات العمل الأسبوعية</h3>
               <div className="hours-list">
@@ -1331,7 +1423,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             </Card>
           ) : null}
 
-          {settingsTab === "services" ? (
+          {activeSection === "services" ? (
             <Card>
               <h3>إدارة الخدمات</h3>
               <div className="grid service-form-grid">
@@ -1506,7 +1598,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             </Card>
           ) : null}
 
-          {settingsTab === "staff" ? (
+          {activeSection === "staff" ? (
             <Card>
               <h3>إدارة الموظفين</h3>
               <div className="grid two">
@@ -1660,7 +1752,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             </Card>
           ) : null}
 
-          {settingsTab === "assign" ? (
+          {activeSection === "assign" ? (
             <Card>
               <h3>ربط الخدمات بالموظفين</h3>
               <SelectInput label="اختاري الموظف/الموظفة" value={assignStaffId} onChange={(e) => setAssignStaffId(e.target.value)}>
@@ -1717,7 +1809,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             </Card>
           ) : null}
 
-          {settingsTab === "media" ? (
+          {activeSection === "media" ? (
             <Card>
               <h3>الصور</h3>
               <p className="muted">ارفعي صور للمركز، وإذا ماكو صور راح تظهر صور افتراضية تلقائياً.</p>
@@ -1839,27 +1931,6 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                 </div>
               </div>
 
-              <div className="stack-sm" style={{ marginTop: 10 }}>
-                <label className="switch-pill">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(salon.is_listed)}
-                    onChange={(e) => saveSalonFlags({ is_listed: e.target.checked })}
-                    disabled={savingSalonFlags}
-                  />
-                  يظهر في صفحة الاستكشاف
-                </label>
-                <label className="switch-pill">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(salon.is_active)}
-                    onChange={(e) => saveSalonFlags({ is_active: e.target.checked })}
-                    disabled={savingSalonFlags}
-                  />
-                  الصالون فعّال للحجز
-                </label>
-              </div>
-
               <div className="grid">
                 <TextInput
                   label="رابط شعار المركز (اختياري)"
@@ -1889,6 +1960,51 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
               </Button>
             </Card>
           ) : null}
+
+          {activeSection === "salon" ? (
+            <Card>
+              <h3>إعدادات المركز</h3>
+              <p className="muted">تحكم بظهور المركز وحالته العامة.</p>
+
+              <div className="stack-sm" style={{ marginTop: 10 }}>
+                <label className="switch-pill">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(salon.is_listed)}
+                    onChange={(e) => saveSalonFlags({ is_listed: e.target.checked })}
+                    disabled={savingSalonFlags}
+                  />
+                  يظهر في صفحة الاستكشاف
+                </label>
+                <label className="switch-pill">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(salon.is_active)}
+                    onChange={(e) => saveSalonFlags({ is_active: e.target.checked })}
+                    disabled={savingSalonFlags}
+                  />
+                  المركز فعّال ويستقبل حجوزات
+                </label>
+              </div>
+
+              <div className="admin-share-block" style={{ marginTop: 12 }}>
+                <h4>رابط الحجز المباشر</h4>
+                <input className="input" value={bookingPageUrl} readOnly />
+                <div className="row-actions">
+                  <Button variant="secondary" onClick={copyBookingLink} disabled={copyingLink || !bookingPageUrl}>
+                    {copyingLink ? "جاري النسخ..." : "نسخ رابط الحجز"}
+                  </Button>
+                  {shareBookingWhatsappHref ? (
+                    <Button as="a" variant="primary" href={shareBookingWhatsappHref} target="_blank" rel="noreferrer">
+                      مشاركة واتساب
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </Card>
+          ) : null}
+            </div>
+          </div>
         </>
       )}
 
