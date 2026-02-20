@@ -7,10 +7,12 @@ export default function PageShell({ title, subtitle, right, children }) {
   return (
     <div className="platform-page" dir="rtl">
       <header className="platform-header">
-        <div>
+        <div className="platform-header-main">
           <BrandLogo className="platform-brand" />
-          <h1>{title}</h1>
-          {subtitle ? <p>{subtitle}</p> : null}
+          <div className="platform-header-copy">
+            <h1>{title}</h1>
+            {subtitle ? <p>{subtitle}</p> : null}
+          </div>
         </div>
         <div className="header-actions">
           <Link className="ghost-link" to="/explore">

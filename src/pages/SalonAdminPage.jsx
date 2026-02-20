@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import SafeImage from "../components/SafeImage";
@@ -149,6 +149,7 @@ export default function SalonAdminPage() {
   const [staffImageCompressing, setStaffImageCompressing] = useState({});
   const [copyingLink, setCopyingLink] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const adminContentRef = useRef(null);
 
   useEffect(() => {
     const validKeys = new Set(ADMIN_SIDEBAR_ITEMS.map((x) => x.key));
@@ -159,6 +160,11 @@ export default function SalonAdminPage() {
     }
     setActiveSection(target);
   }, [module, navigate, slug]);
+
+  useEffect(() => {
+    if (!unlocked || !adminContentRef.current) return;
+    adminContentRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [activeSection, unlocked]);
 
   useEffect(() => {
     async function loadSalon() {
@@ -1782,7 +1788,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
               </div>
             </aside>
 
-            <div className="admin-content">
+            <div className="admin-content" ref={adminContentRef}>
               {activeSection === "dashboard" ? (
                 <div className="admin-dashboard-shell">
                   <Card className="enterprise-period-card">

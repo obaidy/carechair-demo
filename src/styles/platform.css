@@ -3073,3 +3073,328 @@ select:disabled {
     grid-template-columns: 1.35fr 0.85fr;
   }
 }
+
+/* ---------- Mobile UX Stabilization ---------- */
+.platform-page {
+  overflow-x: clip;
+}
+
+.platform-main {
+  width: min(1120px, 100%);
+}
+
+.platform-header {
+  padding: 10px 14px;
+  gap: 12px;
+}
+
+.platform-header-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+}
+
+.platform-header-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.platform-header-copy h1 {
+  margin: 0;
+  font-size: clamp(18px, 3.8vw, 24px);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.platform-header-copy p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.platform-page .platform-brand {
+  margin: 0;
+  padding: 0;
+}
+
+.platform-page .platform-brand img {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+.platform-page .header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.platform-page .header-actions > * {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+
+.platform-page .header-actions .ghost-link,
+.platform-page .header-actions .ui-btn {
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.admin-content {
+  min-width: 0;
+}
+
+.admin-content > * {
+  min-width: 0;
+}
+
+.revenue-chart-wrap,
+.enterprise-chart-card,
+.enterprise-table-card,
+.enterprise-pie-card {
+  min-width: 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.enterprise-table {
+  min-width: 560px;
+}
+
+.enterprise-card-head {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.enterprise-card-head .row-actions {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.revenue-chart-svg {
+  height: 240px;
+}
+
+.chart-axis-row span {
+  max-width: 48%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bookings-filters-grid .tabs-inline {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.bookings-filters-grid .tabs-inline .ui-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.compact-booking-card .booking-top {
+  align-items: flex-start;
+}
+
+.booking-actions.sticky {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.booking-actions.sticky .ui-btn {
+  width: 100%;
+}
+
+.settings-row {
+  align-items: stretch;
+}
+
+.settings-row > div {
+  min-width: 0;
+}
+
+.settings-row .row-actions {
+  width: 100%;
+}
+
+.settings-row .row-actions > * {
+  flex: 1 1 140px;
+}
+
+.service-row-actions .ui-btn,
+.superadmin-salon-actions .ui-btn {
+  white-space: normal;
+  line-height: 1.35;
+}
+
+@media (max-width: 1023px) {
+  .platform-page .platform-header {
+    align-items: stretch;
+  }
+
+  .platform-page .platform-header-main {
+    width: 100%;
+  }
+
+  .platform-page .platform-brand img {
+    height: 34px;
+  }
+
+  .platform-page .platform-header-copy p {
+    display: none;
+  }
+
+  .platform-page .header-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .platform-page .header-actions > * {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-layout {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .admin-sidebar {
+    position: static;
+    top: auto;
+  }
+
+  .admin-tabs-sticky {
+    position: sticky;
+    top: 72px;
+    z-index: 14;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 8px;
+    overflow: visible;
+  }
+
+  .admin-enterprise-sidebar .admin-sidebar-item {
+    min-height: 38px;
+    padding: 8px;
+    font-size: 12px;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.3;
+  }
+
+  .admin-topbar {
+    gap: 8px;
+  }
+
+  .admin-topbar .row-actions {
+    width: 100%;
+  }
+
+  .admin-topbar .row-actions .ui-btn {
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .enterprise-summary-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .enterprise-summary-card {
+    padding: 12px;
+  }
+
+  .enterprise-summary-card strong {
+    font-size: clamp(20px, 7vw, 28px);
+  }
+
+  .analytics-period-control {
+    max-width: 100%;
+  }
+
+  .bookings-filters-grid {
+    gap: 8px;
+  }
+
+  .bookings-filter-group b {
+    font-size: 12px;
+  }
+
+  .service-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .grid.two,
+  .grid.three {
+    grid-template-columns: 1fr;
+  }
+
+  .service-assign-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .services-pie {
+    width: 150px;
+    height: 150px;
+  }
+
+  .legend-row {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .platform-main {
+    padding: 10px 8px;
+  }
+
+  .platform-page .platform-header {
+    padding: 8px 10px;
+  }
+
+  .platform-page .platform-header-copy h1 {
+    font-size: 18px;
+  }
+
+  .platform-page .header-actions {
+    gap: 6px;
+  }
+
+  .platform-page .header-actions .ghost-link,
+  .platform-page .header-actions .ui-btn {
+    font-size: 12px;
+    padding: 7px 8px;
+  }
+
+  .admin-tabs-sticky {
+    top: 66px;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .revenue-chart-svg {
+    height: 210px;
+  }
+
+  .enterprise-table {
+    min-width: 520px;
+  }
+
+  .booking-actions.sticky {
+    grid-template-columns: 1fr;
+  }
+}
