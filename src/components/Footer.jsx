@@ -31,9 +31,9 @@ export default function Footer() {
         <section className="footer-col">
           <h5>روابط</h5>
           <Link to="/explore">استكشف</Link>
-          <a href="/#owners">للمراكز</a>
-          <a href="/#pricing">الأسعار</a>
-          <a href="/#faq">الأسئلة</a>
+          <Link to="/#owners">للمراكز</Link>
+          <Link to="/#pricing">الأسعار</Link>
+          <Link to="/#faq">الأسئلة</Link>
         </section>
 
         <section className="footer-col">

@@ -3450,3 +3450,82 @@ select:disabled {
     font-weight: 700;
   }
 }
+
+/* ---------- Mobile-First Layout Stability ---------- */
+.landing-section[id],
+#owners,
+#features,
+#pricing,
+#faq {
+  scroll-margin-top: 92px;
+}
+
+.revenue-chart-svg {
+  height: clamp(180px, 42vw, 280px);
+}
+
+.enterprise-table {
+  min-width: 520px;
+}
+
+.table-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+.site-footer {
+  margin-top: 20px;
+}
+
+.site-footer-inner {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr;
+  padding: 18px 14px;
+}
+
+.footer-col {
+  display: grid;
+  gap: 8px;
+}
+
+.footer-col h5 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.footer-col a,
+.footer-col span,
+.footer-col p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.footer-wa-cta {
+  width: fit-content;
+}
+
+.site-footer-bottom {
+  padding: 10px 14px 12px;
+}
+
+.site-footer-bottom p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.site-footer-bottom small {
+  margin-top: 4px;
+  display: block;
+  font-size: 11px;
+}
+
+@media (min-width: 760px) {
+  .site-footer-inner {
+    grid-template-columns: 1.2fr 1fr 1fr 1fr;
+    padding: 18px 16px 14px;
+  }
+
+  .site-footer-bottom {
+    padding: 10px 16px 12px;
+  }
+}

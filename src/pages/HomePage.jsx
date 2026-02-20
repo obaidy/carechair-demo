@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 import Footer from "../components/Footer";
@@ -32,7 +32,7 @@ const PRODUCT_SHOTS = [
   },
 ];
 
-const HERO_TAGS = ["تنظيم ذكي للمواعيد", "تجهيز سريع", "تشغيل بثقة"];
+const HERO_TAGS = ["يفتح على أكثر من جهاز", "ترتيب المواعيد", "إلغاء بأي وقت"];
 
 const BEFORE_ITEMS = ["مكالمات كثيرة", "ضياع مواعيد", "ضغط على الموظفين"];
 const AFTER_ITEMS = ["رابط حجز واحد", "جدول واضح", "قبول ورفض فوري"];
@@ -88,6 +88,25 @@ const TESTIMONIALS = [
   },
 ];
 
+const FAQS = [
+  {
+    q: "برنامج لو تطبيق؟",
+    a: "هو نظام ويب يشتغل من رابط مباشر على أي جهاز بدون تثبيت تطبيق.",
+  },
+  {
+    q: "ينفتح بأكثر من جهاز؟",
+    a: "نعم، الإدارة تقدر تستخدمه من الجوال والآيباد واللابتوب بنفس الوقت.",
+  },
+  {
+    q: "شلون أضيف الرابط بالإنستغرام؟",
+    a: "نعطيك رابط الحجز الجاهز وتحطيه مباشرة ببايو الإنستغرام أو الواتساب.",
+  },
+  {
+    q: "شلون يتم تأكيد الحجز؟",
+    a: "الحجز يوصل بلوحة الإدارة فوراً وتقدرين تقبلين أو ترفضين خلال ثواني.",
+  },
+];
+
 function FeatureIcon({ type }) {
   const paths = {
     link: "M8 12h8M12 8v8M5.5 5.5l13 13",
@@ -107,12 +126,45 @@ function FeatureIcon({ type }) {
   );
 }
 
+function getLandingOffset() {
+  if (typeof window === "undefined") return 0;
+  const nav = document.querySelector(".landing-nav");
+  return Math.round((nav?.getBoundingClientRect().height || 0) + 12);
+}
+
 export default function HomePage() {
   const [centersCount, setCentersCount] = useState(0);
   const [bookingsThisMonth, setBookingsThisMonth] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const ownersRef = useRef(null);
+  const featuresRef = useRef(null);
+  const pricingRef = useRef(null);
+  const faqRef = useRef(null);
 
   const heroFallback = getDefaultSalonImages("carechair-home").cover;
   const showcaseFallbacks = getDefaultGallery("carechair-showcase").slice(0, 3);
+
+  const sectionRefs = useMemo(
+    () => ({
+      owners: ownersRef,
+      features: featuresRef,
+      pricing: pricingRef,
+      faq: faqRef,
+    }),
+    []
+  );
+
+  const scrollToSection = useCallback(
+    (key) => {
+      const node = sectionRefs[key]?.current;
+      if (!node) return;
+      const top = window.scrollY + node.getBoundingClientRect().top - getLandingOffset();
+      window.scrollTo({ top: Math.max(0, top), left: 0, behavior: "smooth" });
+      setMobileMenuOpen(false);
+    },
+    [sectionRefs]
+  );
 
   useEffect(() => {
     async function loadStats() {
@@ -162,6 +214,28 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const prev = document.body.style.overflow;
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const closeOnDesktop = () => {
+      if (window.innerWidth >= 860) setMobileMenuOpen(false);
+    };
+    window.addEventListener("resize", closeOnDesktop);
+    return () => window.removeEventListener("resize", closeOnDesktop);
+  }, []);
+
   const trustItems = useMemo(() => {
     return [
       `+${Math.max(50, centersCount)} مركز نشط`,
@@ -178,57 +252,94 @@ export default function HomePage() {
           <BrandLogo className="landing-logo-main" />
 
           <nav className="landing-links" aria-label="روابط الصفحة">
-            <Link to="/explore" className="active">
+            <Link to="/explore" className="landing-nav-link">
               استكشف
             </Link>
-            <a href="#owners">للمراكز</a>
-            <a href="#features">المزايا</a>
-            <a href="#pricing">الأسعار</a>
+            <button type="button" className="landing-nav-link" onClick={() => scrollToSection("owners")}>
+              للمراكز
+            </button>
+            <button type="button" className="landing-nav-link" onClick={() => scrollToSection("features")}>
+              المزايا
+            </button>
+            <button type="button" className="landing-nav-link" onClick={() => scrollToSection("pricing")}>
+              الأسعار
+            </button>
+            <button type="button" className="landing-nav-link" onClick={() => scrollToSection("faq")}>
+              الأسئلة
+            </button>
           </nav>
 
           <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer" className="landing-nav-cta">
             ديمو واتساب
           </Button>
+
+          <button
+            type="button"
+            className="landing-menu-toggle"
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="landing-mobile-menu"
+          >
+            {mobileMenuOpen ? "✕" : "☰"}
+          </button>
         </div>
       </header>
 
-      <main className="landing-main cc-container">
+      <div
+        className={`landing-mobile-backdrop${mobileMenuOpen ? " open" : ""}`}
+        onClick={() => setMobileMenuOpen(false)}
+        aria-hidden={!mobileMenuOpen}
+      />
+      <aside id="landing-mobile-menu" className={`landing-mobile-menu${mobileMenuOpen ? " open" : ""}`} aria-hidden={!mobileMenuOpen}>
+        <button type="button" className="landing-mobile-link" onClick={() => scrollToSection("owners")}>للمراكز</button>
+        <button type="button" className="landing-mobile-link" onClick={() => scrollToSection("features")}>المزايا</button>
+        <button type="button" className="landing-mobile-link" onClick={() => scrollToSection("pricing")}>الأسعار</button>
+        <button type="button" className="landing-mobile-link" onClick={() => scrollToSection("faq")}>الأسئلة</button>
+        <Link className="landing-mobile-link" to="/explore" onClick={() => setMobileMenuOpen(false)}>
+          استكشف المراكز
+        </Link>
+        <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer" onClick={() => setMobileMenuOpen(false)}>
+          اطلب نسخة لمركزك
+        </Button>
+      </aside>
+
+      <main className="landing-main">
         <section className="landing-hero reveal-on-scroll is-visible">
-          <div className="landing-hero-visual">
-            <SafeImage
-              src="/images/hero/hero-salon-baghdad-01.webp"
-              alt="صالون في بغداد"
-              className="landing-hero-image"
-              fallbackIcon="✨"
-              style={{ backgroundImage: `url('${heroFallback}')`, backgroundPosition: "center left" }}
-            />
-            <div className="landing-hero-overlay" />
-          </div>
+          <div className="landing-hero-grid cc-container">
+            <div className="landing-hero-visual">
+              <SafeImage
+                src="/images/hero/hero-salon-baghdad-01.webp"
+                alt="صالون في بغداد"
+                className="landing-hero-image"
+                fallbackIcon="✨"
+                style={{ backgroundImage: `url('${heroFallback}')`, backgroundPosition: "center left" }}
+              />
+              <div className="landing-hero-overlay" />
+            </div>
 
-          <div className="landing-hero-content-wrap">
-            <div className="landing-hero-content">
-              <h1>
-                <span className="hero-line">حول حجوزات مركزك</span>
-                <span className="hero-line hero-line-accent">إلى نظام احترافي</span>
-                <span className="hero-line">بدون فوضى واتساب</span>
-              </h1>
-              <p>
-                رابط حجز ذكي + لوحة إدارة متقدمة + تنظيم كامل للموظفين والخدمات خلال 24 ساعة.
-              </p>
+            <div className="landing-hero-content-wrap">
+              <div className="landing-hero-content">
+                <h1>
+                  <span className="hero-line">حول حجوزات مركزك</span>
+                  <span className="hero-line hero-line-accent">إلى نظام احترافي</span>
+                  <span className="hero-line">بدون فوضى واتساب</span>
+                </h1>
+                <p>رابط حجز ذكي + لوحة إدارة متقدمة + تنظيم كامل للموظفين والخدمات خلال 24 ساعة.</p>
 
-              <div className="landing-hero-cta">
-                <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer">
-                  اطلب نسخة لمركزك
-                </Button>
-                <Button as={Link} to="/explore" variant="secondary">
-                  استعرض المراكز
-                </Button>
-              </div>
+                <div className="landing-hero-cta">
+                  <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer">
+                    اطلب نسخة لمركزك
+                  </Button>
+                  <Button as={Link} to="/explore" variant="secondary">
+                    استعرض المراكز
+                  </Button>
+                </div>
 
-              <div className="landing-proof-inline">
-                {HERO_TAGS.map((tag) => (
-                  <span key={tag}>{tag}</span>
-                ))}
+                <div className="landing-proof-inline">
+                  {HERO_TAGS.map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -244,7 +355,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="owners" className="landing-section reveal-on-scroll">
+        <section id="owners" ref={ownersRef} className="landing-section cc-container reveal-on-scroll">
           <div className="landing-section-head">
             <h2>قبل وبعد CareChair</h2>
           </div>
@@ -270,7 +381,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="landing-section reveal-on-scroll">
+        <section className="landing-section cc-container reveal-on-scroll">
           <div className="landing-section-head">
             <h2>شوف النظام</h2>
           </div>
@@ -294,25 +405,27 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="features" className="landing-section landing-features-section reveal-on-scroll">
-          <div className="landing-section-head">
-            <h2>مميزات النظام</h2>
-          </div>
+        <section id="features" ref={featuresRef} className="landing-section landing-features-section reveal-on-scroll">
+          <div className="cc-container">
+            <div className="landing-section-head">
+              <h2>مميزات النظام</h2>
+            </div>
 
-          <div className="landing-features-grid">
-            {FEATURES.map((feature) => (
-              <Card className="landing-feature" key={feature.title}>
-                <FeatureIcon type={feature.key} />
-                <div>
-                  <b>{feature.title}</b>
-                  <p>{feature.text}</p>
-                </div>
-              </Card>
-            ))}
+            <div className="landing-features-grid">
+              {FEATURES.map((feature) => (
+                <Card className="landing-feature" key={feature.title}>
+                  <FeatureIcon type={feature.key} />
+                  <div>
+                    <b>{feature.title}</b>
+                    <p>{feature.text}</p>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
         </section>
 
-        <section id="pricing" className="landing-section reveal-on-scroll">
+        <section id="pricing" ref={pricingRef} className="landing-section cc-container reveal-on-scroll">
           <div className="landing-section-head">
             <h2>الأسعار</h2>
           </div>
@@ -348,7 +461,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="landing-section landing-testimonials-section reveal-on-scroll">
+        <section className="landing-section landing-testimonials-section cc-container reveal-on-scroll">
           <div className="landing-section-head">
             <h2>آراء المراكز</h2>
           </div>
@@ -366,9 +479,23 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section id="faq" ref={faqRef} className="landing-section cc-container reveal-on-scroll">
+          <div className="landing-section-head">
+            <h2>الأسئلة الشائعة</h2>
+          </div>
+          <div className="landing-faq-grid">
+            {FAQS.map((item) => (
+              <Card key={item.q} className="landing-faq-item">
+                <h3>{item.q}</h3>
+                <p>{item.a}</p>
+              </Card>
+            ))}
+          </div>
+        </section>
+
         <section className="landing-final-cta reveal-on-scroll">
           <div className="landing-final-inner cc-container">
-            <h2>جاهز تخلي مركزك يستقبل حجوزات مرتبة؟</h2>
+            <h2>جاهز نخلي مركزك يستقبل حجوزات مرتبة؟</h2>
             <p>نجهز النظام بسرعة حتى تبدأ التشغيل بثقة من أول يوم.</p>
             <div className="landing-final-actions">
               <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer">

@@ -1,4 +1,5 @@
 :root {
+  --space-0: 4px;
   --primary-900: #0b1e3c;
   --primary-800: #0e2a57;
   --primary-700: #123a7a;
@@ -34,10 +35,10 @@
   --shadow-md: 0 14px 34px rgba(11, 30, 60, 0.1);
   --shadow-lg: 0 22px 48px rgba(11, 30, 60, 0.14);
 
-  --radius-sm: 10px;
-  --radius-md: 12px;
-  --radius-lg: 14px;
-  --radius-xl: 16px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 20px;
 
   --space-1: 8px;
   --space-2: 12px;
@@ -80,9 +81,9 @@
 }
 
 .cc-container {
-  max-width: 1120px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding-inline: 14px;
+  padding-inline: 16px;
 }
 
 .cc-section {
@@ -93,6 +94,12 @@
 
 @media (min-width: 760px) {
   .cc-container {
-    padding-inline: 16px;
+    padding-inline: 24px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .cc-container {
+    padding-inline: 28px;
   }
 }

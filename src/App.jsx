@@ -10,11 +10,13 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Billing from "./pages/Billing";
 import Cancellation from "./pages/Cancellation";
+import ScrollManager from "./components/ScrollManager";
 import "./styles/platform.css";
 
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollManager />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/explore" element={<ExplorePage />} />
