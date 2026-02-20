@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Link, useLocation } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 import Footer from "../components/Footer";
+import MobileDrawer from "../components/MobileDrawer";
 import SafeImage from "../components/SafeImage";
 import { Button, Card } from "../components/ui";
 import { getDefaultGallery, getDefaultSalonImages } from "../lib/media";
@@ -156,10 +157,20 @@ export default function HomePage() {
     }),
     []
   );
+  const sectionIds = useMemo(
+    () => ({
+      owners: "owners",
+      features: "features",
+      pricing: "pricing",
+      faq: "faq",
+    }),
+    []
+  );
 
   const scrollToSection = useCallback(
     (key) => {
-      const node = sectionRefs[key]?.current;
+      const id = sectionIds[key];
+      const node = document.getElementById(id || "") || sectionRefs[key]?.current;
       if (!node) return;
       setActiveNavItem(key);
       node.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -168,7 +179,7 @@ export default function HomePage() {
       });
       setMobileMenuOpen(false);
     },
-    [sectionRefs]
+    [sectionIds, sectionRefs]
   );
 
   useEffect(() => {
@@ -221,19 +232,6 @@ export default function HomePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const prev = document.body.style.overflow;
-    if (mobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [mobileMenuOpen]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
     const closeOnDesktop = () => {
       if (window.innerWidth > 768) setMobileMenuOpen(false);
     };
@@ -242,13 +240,14 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (!mobileMenuOpen || typeof window === "undefined") return;
-    const onEsc = (event) => {
-      if (event.key === "Escape") setMobileMenuOpen(false);
-    };
-    window.addEventListener("keydown", onEsc);
-    return () => window.removeEventListener("keydown", onEsc);
-  }, [mobileMenuOpen]);
+    if (location.pathname !== "/" || !location.hash) return;
+    const id = decodeURIComponent(location.hash.replace(/^#/, "")).trim();
+    if (!id) return;
+    const key = Object.keys(sectionIds).find((x) => sectionIds[x] === id);
+    if (key) {
+      requestAnimationFrame(() => scrollToSection(key));
+    }
+  }, [location.pathname, location.hash, sectionIds, scrollToSection]);
 
   const trustItems = useMemo(() => {
     return [
@@ -299,30 +298,27 @@ export default function HomePage() {
         </div>
       </header>
 
-      <div
-        className={`landing-mobile-backdrop${mobileMenuOpen ? " open" : ""}`}
-        onClick={() => setMobileMenuOpen(false)}
-        aria-hidden={!mobileMenuOpen}
-      />
-      <aside id="landing-mobile-menu" className={`landing-mobile-menu${mobileMenuOpen ? " open" : ""}`} aria-hidden={!mobileMenuOpen}>
-        <button type="button" className={`landing-mobile-link${activeNavItem === "owners" ? " active" : ""}`} onClick={() => scrollToSection("owners")}>للمراكز</button>
-        <button type="button" className={`landing-mobile-link${activeNavItem === "features" ? " active" : ""}`} onClick={() => scrollToSection("features")}>المزايا</button>
-        <button type="button" className={`landing-mobile-link${activeNavItem === "pricing" ? " active" : ""}`} onClick={() => scrollToSection("pricing")}>الأسعار</button>
-        <button type="button" className={`landing-mobile-link${activeNavItem === "faq" ? " active" : ""}`} onClick={() => scrollToSection("faq")}>الأسئلة</button>
-        <Link className={`landing-mobile-link${location.pathname === "/explore" ? " active" : ""}`} to="/explore" onClick={() => setMobileMenuOpen(false)}>
-          استكشف المراكز
-        </Link>
-        <Button
-          as="a"
-          href={PLATFORM_WHATSAPP_LINK}
-          target="_blank"
-          rel="noreferrer"
-          className="landing-mobile-link"
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          اطلب نسخة لمركزك
-        </Button>
-      </aside>
+      <MobileDrawer open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} id="landing-mobile-menu" title="القائمة">
+        <div className="landing-mobile-menu">
+          <button type="button" className={`landing-mobile-link${activeNavItem === "owners" ? " active" : ""}`} onClick={() => scrollToSection("owners")}>للمراكز</button>
+          <button type="button" className={`landing-mobile-link${activeNavItem === "features" ? " active" : ""}`} onClick={() => scrollToSection("features")}>المزايا</button>
+          <button type="button" className={`landing-mobile-link${activeNavItem === "pricing" ? " active" : ""}`} onClick={() => scrollToSection("pricing")}>الأسعار</button>
+          <button type="button" className={`landing-mobile-link${activeNavItem === "faq" ? " active" : ""}`} onClick={() => scrollToSection("faq")}>الأسئلة</button>
+          <Link className={`landing-mobile-link${location.pathname === "/explore" ? " active" : ""}`} to="/explore" onClick={() => setMobileMenuOpen(false)}>
+            استكشف المراكز
+          </Link>
+          <Button
+            as="a"
+            href={PLATFORM_WHATSAPP_LINK}
+            target="_blank"
+            rel="noreferrer"
+            className="landing-mobile-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            اطلب نسخة لمركزك
+          </Button>
+        </div>
+      </MobileDrawer>
 
       <main className="landing-main">
         <section className="landing-hero reveal-on-scroll is-visible">

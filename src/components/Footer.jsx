@@ -62,30 +62,21 @@ export default function Footer() {
         <section className="footer-mobile-brand">
           <BrandLogo className="footer-brand" />
           <p className="footer-brand-line">منصة حجوزات احترافية للصالونات ومراكز التجميل في العراق.</p>
-          <div className="footer-mobile-quick">
-            <Link className="footer-mobile-quick-link" to="/explore">
-              استكشف المراكز
-            </Link>
-            {hasWhatsapp ? (
-              <a
-                className="footer-mobile-quick-link is-primary"
-                href={`https://wa.me/${platformWhatsapp}?text=${demoMessage}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                ديمو واتساب
-              </a>
-            ) : (
-              <a className="footer-mobile-quick-link is-primary" href="mailto:aka.obaidy@gmail.com">
-                راسلنا
-              </a>
-            )}
-          </div>
+          {hasWhatsapp ? (
+            <a
+              className="footer-wa-cta footer-mobile-cta"
+              href={`https://wa.me/${platformWhatsapp}?text=${demoMessage}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              اطلب ديمو
+            </a>
+          ) : null}
         </section>
 
-        <section className="footer-mobile-section">
+        <section className="footer-mobile-group">
           <h5>روابط</h5>
-          <div className="footer-mobile-links-grid">
+          <div className="footer-mobile-links">
             <Link to="/explore">استكشف</Link>
             <Link to="/#owners">للمراكز</Link>
             <Link to="/#pricing">الأسعار</Link>
@@ -93,9 +84,9 @@ export default function Footer() {
           </div>
         </section>
 
-        <section className="footer-mobile-section">
+        <section className="footer-mobile-group">
           <h5>قانوني</h5>
-          <div className="footer-mobile-links-grid">
+          <div className="footer-mobile-links">
             <Link to="/terms">الشروط</Link>
             <Link to="/privacy">الخصوصية</Link>
             <Link to="/billing">الفوترة</Link>
@@ -103,9 +94,9 @@ export default function Footer() {
           </div>
         </section>
 
-        <section className="footer-mobile-section">
+        <section className="footer-mobile-group">
           <h5>تواصل</h5>
-          <div className="footer-mobile-contact-list">
+          <div className="footer-mobile-links footer-mobile-contact">
             {hasWhatsapp ? (
               <a href={`https://wa.me/${platformWhatsapp}`} target="_blank" rel="noreferrer">
                 واتساب: {platformWhatsapp}

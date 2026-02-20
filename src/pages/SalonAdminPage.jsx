@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
+import MobileDrawer from "../components/MobileDrawer";
 import SafeImage from "../components/SafeImage";
 import Toast from "../components/Toast";
 import { Badge, Button, Card, ConfirmModal, SelectInput, Skeleton, TextInput } from "../components/ui";
@@ -150,7 +151,6 @@ export default function SalonAdminPage() {
   const [copyingLink, setCopyingLink] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const bodyOverflowBeforeDrawer = useRef("");
 
   useEffect(() => {
     const validKeys = new Set(ADMIN_SIDEBAR_ITEMS.map((x) => x.key));
@@ -165,28 +165,6 @@ export default function SalonAdminPage() {
   useEffect(() => {
     setMobileNavOpen(false);
   }, [activeSection]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (mobileNavOpen) {
-      bodyOverflowBeforeDrawer.current = document.body.style.overflow || "";
-      document.body.style.overflow = "hidden";
-      return;
-    }
-    document.body.style.overflow = bodyOverflowBeforeDrawer.current || "";
-    return () => {
-      document.body.style.overflow = bodyOverflowBeforeDrawer.current || "";
-    };
-  }, [mobileNavOpen]);
-
-  useEffect(() => {
-    if (!mobileNavOpen || typeof window === "undefined") return;
-    const onEsc = (event) => {
-      if (event.key === "Escape") setMobileNavOpen(false);
-    };
-    window.addEventListener("keydown", onEsc);
-    return () => window.removeEventListener("keydown", onEsc);
-  }, [mobileNavOpen]);
 
   useEffect(() => {
     async function loadSalon() {
@@ -1802,16 +1780,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             </div>
           </div>
 
-          <div
-            className={`admin-mobile-backdrop${mobileNavOpen ? " open" : ""}`}
-            onClick={() => setMobileNavOpen(false)}
-            aria-hidden={!mobileNavOpen}
-          />
-          <aside id="admin-mobile-drawer" className={`admin-mobile-drawer${mobileNavOpen ? " open" : ""}`} aria-hidden={!mobileNavOpen}>
-            <div className="admin-mobile-drawer-head">
-              <b>{salon.name}</b>
-              <small>{activeSectionLabel}</small>
-            </div>
+          <MobileDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} id="admin-mobile-drawer" title={salon.name}>
             <div className="admin-mobile-drawer-links">
               {ADMIN_SIDEBAR_ITEMS.map((tab) => (
                 <Button
@@ -1828,7 +1797,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                 فتح صفحة الحجز
               </Button>
             </div>
-          </aside>
+          </MobileDrawer>
 
           <Card className="admin-topbar">
             <div>
