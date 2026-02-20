@@ -149,7 +149,8 @@ export default function SalonAdminPage() {
   const [staffImageCompressing, setStaffImageCompressing] = useState({});
   const [copyingLink, setCopyingLink] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const adminContentRef = useRef(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const bodyOverflowBeforeDrawer = useRef("");
 
   useEffect(() => {
     const validKeys = new Set(ADMIN_SIDEBAR_ITEMS.map((x) => x.key));
@@ -162,9 +163,30 @@ export default function SalonAdminPage() {
   }, [module, navigate, slug]);
 
   useEffect(() => {
-    if (!unlocked || !adminContentRef.current) return;
-    adminContentRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [activeSection, unlocked]);
+    setMobileNavOpen(false);
+  }, [activeSection]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (mobileNavOpen) {
+      bodyOverflowBeforeDrawer.current = document.body.style.overflow || "";
+      document.body.style.overflow = "hidden";
+      return;
+    }
+    document.body.style.overflow = bodyOverflowBeforeDrawer.current || "";
+    return () => {
+      document.body.style.overflow = bodyOverflowBeforeDrawer.current || "";
+    };
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
+    if (!mobileNavOpen || typeof window === "undefined") return;
+    const onEsc = (event) => {
+      if (event.key === "Escape") setMobileNavOpen(false);
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [mobileNavOpen]);
 
   useEffect(() => {
     async function loadSalon() {
@@ -724,6 +746,18 @@ export default function SalonAdminPage() {
     if (!writeLocked) return true;
     showToast("error", salonAccess.lockMessage || "الحساب غير مفعل للتعديل حالياً.");
     return false;
+  }
+
+  function scrollTopInstant() {
+    if (typeof window === "undefined") return;
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }
+
+  function goToSection(sectionKey, closeMobile = false) {
+    setActiveSection(sectionKey);
+    if (closeMobile) setMobileNavOpen(false);
+    navigate(`/s/${slug}/admin/${sectionKey}`);
+    requestAnimationFrame(scrollTopInstant);
   }
 
   function validateImageFile(file) {
@@ -1698,6 +1732,8 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
     );
   }
 
+  const activeSectionLabel = ADMIN_SIDEBAR_ITEMS.find((x) => x.key === activeSection)?.label || "لوحة التحكم";
+
   return (
     <PageShell
       title={`إدارة ${salon.name}`}
@@ -1738,8 +1774,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                 <Button
                   variant="primary"
                   onClick={() => {
-                    setActiveSection("billing");
-                    navigate(`/s/${slug}/admin/billing`);
+                    goToSection("billing");
                   }}
                 >
                   فتح الفوترة
@@ -1747,6 +1782,52 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
               </div>
             </Card>
           ) : null}
+
+          <div className="admin-mobile-nav">
+            <div className="admin-mobile-nav-head">
+              <div className="admin-mobile-nav-copy">
+                <small>إدارة الصالون</small>
+                <b>{activeSectionLabel}</b>
+              </div>
+              <button
+                type="button"
+                className="admin-mobile-nav-toggle"
+                onClick={() => setMobileNavOpen((v) => !v)}
+                aria-expanded={mobileNavOpen}
+                aria-controls="admin-mobile-drawer"
+              >
+                {mobileNavOpen ? "✕" : "☰"}
+              </button>
+            </div>
+          </div>
+
+          <div
+            className={`admin-mobile-backdrop${mobileNavOpen ? " open" : ""}`}
+            onClick={() => setMobileNavOpen(false)}
+            aria-hidden={!mobileNavOpen}
+          />
+          <aside id="admin-mobile-drawer" className={`admin-mobile-drawer${mobileNavOpen ? " open" : ""}`} aria-hidden={!mobileNavOpen}>
+            <div className="admin-mobile-drawer-head">
+              <b>{salon.name}</b>
+              <small>{activeSectionLabel}</small>
+            </div>
+            <div className="admin-mobile-drawer-links">
+              {ADMIN_SIDEBAR_ITEMS.map((tab) => (
+                <Button
+                  key={`mobile-${tab.key}`}
+                  type="button"
+                  variant={activeSection === tab.key ? "primary" : "ghost"}
+                  className="admin-mobile-link-btn"
+                  onClick={() => goToSection(tab.key, true)}
+                >
+                  {tab.label}
+                </Button>
+              ))}
+              <Button as={Link} variant="secondary" to={`/s/${salon.slug}`} onClick={() => setMobileNavOpen(false)}>
+                فتح صفحة الحجز
+              </Button>
+            </div>
+          </aside>
 
           <Card className="admin-topbar">
             <div>
@@ -1776,10 +1857,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                     key={tab.key}
                     type="button"
                     variant={activeSection === tab.key ? "primary" : "ghost"}
-                    onClick={() => {
-                      setActiveSection(tab.key);
-                      navigate(`/s/${slug}/admin/${tab.key}`);
-                    }}
+                    onClick={() => goToSection(tab.key)}
                     className="admin-sidebar-item"
                   >
                     {tab.label}
@@ -1788,7 +1866,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
               </div>
             </aside>
 
-            <div className="admin-content" ref={adminContentRef}>
+            <div className="admin-content">
               {activeSection === "dashboard" ? (
                 <div className="admin-dashboard-shell">
                   <Card className="enterprise-period-card">
@@ -2400,7 +2478,10 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                         key={tab.key}
                         type="button"
                         variant={activeSettingsSection === tab.key ? "primary" : "ghost"}
-                        onClick={() => setActiveSettingsSection(tab.key)}
+                        onClick={() => {
+                          setActiveSettingsSection(tab.key);
+                          scrollTopInstant();
+                        }}
                       >
                         {tab.label}
                       </Button>

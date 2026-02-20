@@ -12,7 +12,7 @@ export default function Footer() {
 
   return (
     <footer className="site-footer">
-      <div className="site-footer-inner">
+      <div className="site-footer-inner footer-desktop-grid">
         <section className="footer-col">
           <BrandLogo className="footer-brand" />
           <p className="footer-brand-line">منصة حجوزات احترافية للصالونات ومراكز التجميل في العراق.</p>
@@ -55,6 +55,55 @@ export default function Footer() {
             <span>واتساب غير متوفر حالياً</span>
           )}
         </section>
+      </div>
+
+      <div className="site-footer-inner footer-mobile-stack">
+        <section className="footer-mobile-brand">
+          <BrandLogo className="footer-brand" />
+          <p className="footer-brand-line">منصة حجوزات احترافية للصالونات ومراكز التجميل في العراق.</p>
+          {hasWhatsapp ? (
+            <a
+              className="footer-wa-cta footer-mobile-cta"
+              href={`https://wa.me/${platformWhatsapp}?text=${demoMessage}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              اطلب ديمو
+            </a>
+          ) : null}
+        </section>
+
+        <section className="footer-mobile-contact">
+          <h5>تواصل</h5>
+          {hasWhatsapp ? (
+            <a href={`https://wa.me/${platformWhatsapp}`} target="_blank" rel="noreferrer">
+              واتساب: {platformWhatsapp}
+            </a>
+          ) : (
+            <span>واتساب غير متوفر حالياً</span>
+          )}
+          <a href="mailto:aka.obaidy@gmail.com">البريد: aka.obaidy@gmail.com</a>
+        </section>
+
+        <details className="footer-accordion">
+          <summary>روابط</summary>
+          <div className="footer-accordion-links">
+            <Link to="/explore">استكشف</Link>
+            <Link to="/#owners">للمراكز</Link>
+            <Link to="/#pricing">الأسعار</Link>
+            <Link to="/#faq">الأسئلة</Link>
+          </div>
+        </details>
+
+        <details className="footer-accordion">
+          <summary>قانوني</summary>
+          <div className="footer-accordion-links">
+            <Link to="/terms">الشروط</Link>
+            <Link to="/privacy">الخصوصية</Link>
+            <Link to="/billing">الفوترة والاسترجاع</Link>
+            <Link to="/cancellation">الإلغاء والإيقاف</Link>
+          </div>
+        </details>
       </div>
 
       <div className="site-footer-bottom">

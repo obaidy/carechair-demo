@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 import Footer from "../components/Footer";
 import SafeImage from "../components/SafeImage";
@@ -133,9 +133,11 @@ function getLandingOffset() {
 }
 
 export default function HomePage() {
+  const location = useLocation();
   const [centersCount, setCentersCount] = useState(0);
   const [bookingsThisMonth, setBookingsThisMonth] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeNavItem, setActiveNavItem] = useState("owners");
 
   const ownersRef = useRef(null);
   const featuresRef = useRef(null);
@@ -159,8 +161,11 @@ export default function HomePage() {
     (key) => {
       const node = sectionRefs[key]?.current;
       if (!node) return;
-      const top = window.scrollY + node.getBoundingClientRect().top - getLandingOffset();
-      window.scrollTo({ top: Math.max(0, top), left: 0, behavior: "smooth" });
+      setActiveNavItem(key);
+      node.scrollIntoView({ behavior: "smooth", block: "start" });
+      requestAnimationFrame(() => {
+        window.scrollBy({ top: -getLandingOffset(), left: 0, behavior: "auto" });
+      });
       setMobileMenuOpen(false);
     },
     [sectionRefs]
@@ -181,8 +186,8 @@ export default function HomePage() {
 
         if (!salonsRes.error) setCentersCount(salonsRes.count || 0);
         if (!bookingsRes.error) setBookingsThisMonth(bookingsRes.count || 0);
-      } catch (err) {
-        console.error("landing stats error", err);
+      } catch {
+        // Ignore optional counters error in demo mode.
       }
     }
 
@@ -230,11 +235,20 @@ export default function HomePage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const closeOnDesktop = () => {
-      if (window.innerWidth >= 860) setMobileMenuOpen(false);
+      if (window.innerWidth > 768) setMobileMenuOpen(false);
     };
     window.addEventListener("resize", closeOnDesktop);
     return () => window.removeEventListener("resize", closeOnDesktop);
   }, []);
+
+  useEffect(() => {
+    if (!mobileMenuOpen || typeof window === "undefined") return;
+    const onEsc = (event) => {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [mobileMenuOpen]);
 
   const trustItems = useMemo(() => {
     return [
@@ -252,19 +266,19 @@ export default function HomePage() {
           <BrandLogo className="landing-logo-main" />
 
           <nav className="landing-links" aria-label="روابط الصفحة">
-            <Link to="/explore" className="landing-nav-link">
+            <Link to="/explore" className={`landing-nav-link${location.pathname === "/explore" ? " active" : ""}`}>
               استكشف
             </Link>
-            <button type="button" className="landing-nav-link" onClick={() => scrollToSection("owners")}>
+            <button type="button" className={`landing-nav-link${activeNavItem === "owners" ? " active" : ""}`} onClick={() => scrollToSection("owners")}>
               للمراكز
             </button>
-            <button type="button" className="landing-nav-link" onClick={() => scrollToSection("features")}>
+            <button type="button" className={`landing-nav-link${activeNavItem === "features" ? " active" : ""}`} onClick={() => scrollToSection("features")}>
               المزايا
             </button>
-            <button type="button" className="landing-nav-link" onClick={() => scrollToSection("pricing")}>
+            <button type="button" className={`landing-nav-link${activeNavItem === "pricing" ? " active" : ""}`} onClick={() => scrollToSection("pricing")}>
               الأسعار
             </button>
-            <button type="button" className="landing-nav-link" onClick={() => scrollToSection("faq")}>
+            <button type="button" className={`landing-nav-link${activeNavItem === "faq" ? " active" : ""}`} onClick={() => scrollToSection("faq")}>
               الأسئلة
             </button>
           </nav>
@@ -291,11 +305,11 @@ export default function HomePage() {
         aria-hidden={!mobileMenuOpen}
       />
       <aside id="landing-mobile-menu" className={`landing-mobile-menu${mobileMenuOpen ? " open" : ""}`} aria-hidden={!mobileMenuOpen}>
-        <button type="button" className="landing-mobile-link" onClick={() => scrollToSection("owners")}>للمراكز</button>
-        <button type="button" className="landing-mobile-link" onClick={() => scrollToSection("features")}>المزايا</button>
-        <button type="button" className="landing-mobile-link" onClick={() => scrollToSection("pricing")}>الأسعار</button>
-        <button type="button" className="landing-mobile-link" onClick={() => scrollToSection("faq")}>الأسئلة</button>
-        <Link className="landing-mobile-link" to="/explore" onClick={() => setMobileMenuOpen(false)}>
+        <button type="button" className={`landing-mobile-link${activeNavItem === "owners" ? " active" : ""}`} onClick={() => scrollToSection("owners")}>للمراكز</button>
+        <button type="button" className={`landing-mobile-link${activeNavItem === "features" ? " active" : ""}`} onClick={() => scrollToSection("features")}>المزايا</button>
+        <button type="button" className={`landing-mobile-link${activeNavItem === "pricing" ? " active" : ""}`} onClick={() => scrollToSection("pricing")}>الأسعار</button>
+        <button type="button" className={`landing-mobile-link${activeNavItem === "faq" ? " active" : ""}`} onClick={() => scrollToSection("faq")}>الأسئلة</button>
+        <Link className={`landing-mobile-link${location.pathname === "/explore" ? " active" : ""}`} to="/explore" onClick={() => setMobileMenuOpen(false)}>
           استكشف المراكز
         </Link>
         <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer" onClick={() => setMobileMenuOpen(false)}>
