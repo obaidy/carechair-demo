@@ -157,10 +157,20 @@ export default function HomePage() {
     }),
     []
   );
+  const sectionIds = useMemo(
+    () => ({
+      owners: "owners",
+      features: "features",
+      pricing: "pricing",
+      faq: "faq",
+    }),
+    []
+  );
 
   const scrollToSection = useCallback(
     (key) => {
-      const node = sectionRefs[key]?.current;
+      const id = sectionIds[key];
+      const node = document.getElementById(id || "") || sectionRefs[key]?.current;
       if (!node) return;
       setActiveNavItem(key);
       node.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -169,7 +179,7 @@ export default function HomePage() {
       });
       setMobileMenuOpen(false);
     },
-    [sectionRefs]
+    [sectionIds, sectionRefs]
   );
 
   useEffect(() => {
@@ -228,6 +238,16 @@ export default function HomePage() {
     window.addEventListener("resize", closeOnDesktop);
     return () => window.removeEventListener("resize", closeOnDesktop);
   }, []);
+
+  useEffect(() => {
+    if (location.pathname !== "/" || !location.hash) return;
+    const id = decodeURIComponent(location.hash.replace(/^#/, "")).trim();
+    if (!id) return;
+    const key = Object.keys(sectionIds).find((x) => sectionIds[x] === id);
+    if (key) {
+      requestAnimationFrame(() => scrollToSection(key));
+    }
+  }, [location.pathname, location.hash, sectionIds, scrollToSection]);
 
   const trustItems = useMemo(() => {
     return [

@@ -3740,3 +3740,79 @@ select:disabled {
     display: block;
   }
 }
+
+/* ---------- Final Mobile Stability ---------- */
+.platform-page,
+.platform-header,
+.platform-main,
+.admin-layout,
+.admin-content,
+.explore-grid,
+.explore-card,
+.explore-card-body,
+.site-footer,
+.site-footer-inner,
+.site-footer-bottom {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.platform-page {
+  overflow-x: clip;
+}
+
+@media (max-width: 768px) {
+  .platform-main {
+    padding-inline: 12px;
+    overflow-x: clip;
+  }
+
+  .platform-header-main,
+  .platform-header-copy,
+  .admin-mobile-nav-copy,
+  .settings-row > div {
+    min-width: 0;
+  }
+
+  .admin-mobile-nav-copy b {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .row-actions {
+    flex-wrap: wrap;
+  }
+
+  .row-actions > * {
+    max-width: 100%;
+  }
+
+  .category-chips-wrap {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+    padding-bottom: 4px;
+  }
+
+  .category-chip {
+    flex: 0 0 auto;
+  }
+
+  .explore-grid,
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .service-row-actions,
+  .superadmin-salon-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .footer-mobile-links {
+    grid-template-columns: 1fr;
+  }
+}
