@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import SafeImage from "../components/SafeImage";
@@ -70,6 +70,7 @@ export default function SalonBookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [successData, setSuccessData] = useState(null);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
+  const bookingFormRef = useRef(null);
 
   useEffect(() => {
     async function loadPage() {
@@ -361,6 +362,17 @@ export default function SalonBookingPage() {
     }
   }, [slotIso, availableSlots]);
 
+  useEffect(() => {
+    if (!successData) return;
+    if (bookingFormRef.current?.scrollIntoView) {
+      bookingFormRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [successData]);
+
   const quickDates = useMemo(() => {
     return Array.from({ length: 5 }).map((_, idx) => {
       const d = new Date();
@@ -398,6 +410,13 @@ export default function SalonBookingPage() {
     price: selectedService ? formatCurrencyIQD(selectedService.price) : "-",
     time: slotIso ? formatDateTime(slotIso) : "اختاري الموعد",
   };
+
+  function resetBookingFlow() {
+    setSuccessData(null);
+    if (bookingFormRef.current?.scrollIntoView) {
+      bookingFormRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
 
   async function verifySlotStillAvailable({ targetStaffId, selectedSlot }) {
     if (!supabase || !salon?.id || !targetStaffId || !selectedSlot || !selectedService || !dateValue) {
@@ -625,6 +644,9 @@ export default function SalonBookingPage() {
         phone: normalizedPhone,
         whatsappHref: manualWhatsappHref,
       });
+      if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       setNotes("");
 
       let whatsappUnavailable = false;
@@ -762,7 +784,8 @@ export default function SalonBookingPage() {
         </div>
       </Card>
 
-      <Card id="booking-form">
+      <div id="booking-form" ref={bookingFormRef}>
+      <Card>
         {!successData ? (
           <form onSubmit={submitBooking} className="booking-form-modern">
             {!salonAccess.canCreateBookings ? (
@@ -982,13 +1005,14 @@ export default function SalonBookingPage() {
                   رقم واتساب المركز غير متوفر
                 </Button>
               )}
-              <Button type="button" variant="secondary" onClick={() => setSuccessData(null)}>
+              <Button type="button" variant="secondary" onClick={resetBookingFlow}>
                 رجوع للحجز / تعديل موعد
               </Button>
             </div>
           </div>
         )}
       </Card>
+      </div>
 
       {lightboxIndex >= 0 ? (
         <div className="lightbox-backdrop" role="dialog" aria-modal="true">

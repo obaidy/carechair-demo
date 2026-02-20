@@ -315,7 +315,7 @@ export default function SuperAdminPage() {
             <p className="muted">هذه الشاشة خاصة بإدارة CareChair لتفعيل/تعليق الصالونات واختبار الفوترة.</p>
           </Card>
 
-          <section className="panel">
+          <section className="panel superadmin-create-panel">
             <h3>إنشاء صالون جديد</h3>
             <form className="grid two" onSubmit={createSalon}>
               <label className="field">
@@ -381,7 +381,7 @@ export default function SuperAdminPage() {
             </form>
           </section>
 
-          <section className="panel">
+          <section className="panel superadmin-salons-panel">
             <div className="row-actions space-between">
               <h3>التحكم بالصالونات</h3>
               <button className="ghost-btn" type="button" onClick={loadSalons}>
@@ -389,7 +389,7 @@ export default function SuperAdminPage() {
               </button>
             </div>
 
-            <div className="tabs-inline" style={{ marginBottom: 10 }}>
+            <div className="tabs-inline superadmin-filter-tabs" style={{ marginBottom: 10 }}>
               <Button variant={filter === "all" ? "primary" : "ghost"} onClick={() => setFilter("all")}>الكل</Button>
               <Button variant={filter === "inactive" ? "primary" : "ghost"} onClick={() => setFilter("inactive")}>غير مفعل</Button>
               <Button variant={filter === "trialing" ? "primary" : "ghost"} onClick={() => setFilter("trialing")}>تجريبي</Button>
@@ -402,13 +402,13 @@ export default function SuperAdminPage() {
             ) : filteredSalons.length === 0 ? (
               <p className="muted">لا توجد صالونات ضمن هذا الفلتر.</p>
             ) : (
-              <div className="settings-list">
+              <div className="settings-list superadmin-salons-list">
                 {filteredSalons.map((row) => {
                   const access = deriveSalonAccess(row);
                   const loadingThisRow = rowLoading.includes(row.id);
                   return (
-                    <div className="settings-row" key={row.id}>
-                      <div>
+                    <div className="settings-row superadmin-salon-row" key={row.id}>
+                      <div className="superadmin-salon-info">
                         <div className="row-actions" style={{ alignItems: "center" }}>
                           <b>{row.name}</b>
                           <Badge variant={access.badgeVariant}>{access.badgeLabel}</Badge>
@@ -474,7 +474,7 @@ export default function SuperAdminPage() {
                         ) : null}
                       </div>
 
-                      <div className="row-actions" style={{ maxWidth: 420 }}>
+                      <div className="row-actions superadmin-salon-actions">
                         <Button
                           variant="ghost"
                           disabled={loadingThisRow}
