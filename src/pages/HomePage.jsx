@@ -312,7 +312,14 @@ export default function HomePage() {
         <Link className={`landing-mobile-link${location.pathname === "/explore" ? " active" : ""}`} to="/explore" onClick={() => setMobileMenuOpen(false)}>
           استكشف المراكز
         </Link>
-        <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer" onClick={() => setMobileMenuOpen(false)}>
+        <Button
+          as="a"
+          href={PLATFORM_WHATSAPP_LINK}
+          target="_blank"
+          rel="noreferrer"
+          className="landing-mobile-link"
+          onClick={() => setMobileMenuOpen(false)}
+        >
           اطلب نسخة لمركزك
         </Button>
       </aside>

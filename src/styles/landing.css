@@ -1,8 +1,9 @@
 .landing-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
   position: relative;
+  overflow-x: hidden;
 }
 
 .landing-page::before {
@@ -32,11 +33,11 @@
 }
 
 .landing-nav-inner {
-  min-height: 66px;
+  min-height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .landing-logo-main {
@@ -86,41 +87,41 @@
 
 .landing-mobile-menu {
   position: fixed;
-  top: 66px;
-  inset-inline: 12px;
+  top: 0;
+  inset-inline-start: 0;
+  bottom: 0;
+  width: min(84vw, 320px);
   z-index: 95;
-  border: 1px solid var(--border);
-  border-radius: 16px;
   background: var(--surface);
+  border-inline-end: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
-  padding: 12px;
+  padding: 72px 12px 12px;
   display: grid;
-  gap: 8px;
-  transform: translateY(-10px);
-  opacity: 0;
-  pointer-events: none;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  align-content: start;
+  gap: 10px;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.22s ease;
 }
 
 .landing-mobile-menu.open {
-  transform: translateY(0);
-  opacity: 1;
-  pointer-events: auto;
+  transform: translateX(0);
 }
 
 .landing-mobile-link {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
-  min-height: 42px;
+  min-height: 44px;
   text-decoration: none;
   color: var(--primary-700);
   font-weight: 700;
   font-size: 14px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 0 12px;
+  width: 100%;
 }
 
 .landing-mobile-link.active {
@@ -132,7 +133,7 @@
 .landing-main {
   display: grid;
   gap: 0;
-  padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
 .landing-section {
@@ -200,6 +201,7 @@
   padding: 18px 16px;
   display: grid;
   gap: 14px;
+  overflow: hidden;
 }
 
 .landing-hero-content::before {
@@ -636,7 +638,7 @@
 
 @media (min-width: 769px) {
   .landing-nav-inner {
-    min-height: 74px;
+    min-height: 72px;
   }
 
   .landing-nav .landing-logo-main img {

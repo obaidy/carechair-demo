@@ -1738,6 +1738,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
     <PageShell
       title={`إدارة ${salon.name}`}
       subtitle="لوحة تشغيل يومية للمواعيد والخدمات"
+      mobileMenuDisabled
       right={
         <Button as={Link} variant="secondary" to={`/s/${salon.slug}`}>
           فتح صفحة الحجز

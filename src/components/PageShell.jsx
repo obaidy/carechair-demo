@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import Footer from "./Footer";
 import BrandLogo from "./BrandLogo";
 
-export default function PageShell({ title, subtitle, right, children }) {
+export default function PageShell({ title, subtitle, right, children, mobileMenuDisabled = false }) {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -35,15 +35,17 @@ export default function PageShell({ title, subtitle, right, children }) {
             {subtitle ? <p>{subtitle}</p> : null}
           </div>
         </div>
-        <button
-          type="button"
-          className="platform-menu-toggle"
-          onClick={() => setMenuOpen((v) => !v)}
-          aria-expanded={menuOpen}
-          aria-controls="platform-mobile-drawer"
-        >
-          {menuOpen ? "✕" : "☰"}
-        </button>
+        {!mobileMenuDisabled ? (
+          <button
+            type="button"
+            className="platform-menu-toggle"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-expanded={menuOpen}
+            aria-controls="platform-mobile-drawer"
+          >
+            {menuOpen ? "✕" : "☰"}
+          </button>
+        ) : null}
         <div className="header-actions">
           <Link className={`ghost-link${location.pathname === "/explore" ? " is-active" : ""}`} to="/explore">
             استكشاف
@@ -54,30 +56,38 @@ export default function PageShell({ title, subtitle, right, children }) {
           {right}
         </div>
       </header>
-      <div
-        className={`platform-mobile-backdrop${menuOpen ? " open" : ""}`}
-        onClick={() => setMenuOpen(false)}
-        aria-hidden={!menuOpen}
-      />
-      <aside id="platform-mobile-drawer" className={`platform-mobile-drawer${menuOpen ? " open" : ""}`} aria-hidden={!menuOpen}>
-        <div className="platform-mobile-drawer-links">
-          <Link
-            className={`platform-mobile-link${location.pathname === "/explore" ? " is-active" : ""}`}
-            to="/explore"
+      {!mobileMenuDisabled ? (
+        <>
+          <div
+            className={`platform-mobile-backdrop${menuOpen ? " open" : ""}`}
             onClick={() => setMenuOpen(false)}
+            aria-hidden={!menuOpen}
+          />
+          <aside
+            id="platform-mobile-drawer"
+            className={`platform-mobile-drawer${menuOpen ? " open" : ""}`}
+            aria-hidden={!menuOpen}
           >
-            استكشاف
-          </Link>
-          <Link
-            className={`platform-mobile-link${location.pathname === "/admin" || location.pathname === "/superadmin" ? " is-active" : ""}`}
-            to="/admin"
-            onClick={() => setMenuOpen(false)}
-          >
-            سوبر أدمن
-          </Link>
-          {right ? <div className="platform-mobile-extra">{right}</div> : null}
-        </div>
-      </aside>
+            <div className="platform-mobile-drawer-links">
+              <Link
+                className={`platform-mobile-link${location.pathname === "/explore" ? " is-active" : ""}`}
+                to="/explore"
+                onClick={() => setMenuOpen(false)}
+              >
+                استكشاف
+              </Link>
+              <Link
+                className={`platform-mobile-link${location.pathname === "/admin" || location.pathname === "/superadmin" ? " is-active" : ""}`}
+                to="/admin"
+                onClick={() => setMenuOpen(false)}
+              >
+                سوبر أدمن
+              </Link>
+              {right ? <div className="platform-mobile-extra">{right}</div> : null}
+            </div>
+          </aside>
+        </>
+      ) : null}
       <main className="platform-main">{children}</main>
       <Footer />
     </div>

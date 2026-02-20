@@ -6,8 +6,9 @@ html,
 body,
 #root {
   margin: 0;
-  min-height: 100%;
+  min-height: 100dvh;
   overflow-x: hidden;
+  background: var(--bg);
 }
 
 html {
@@ -15,6 +16,7 @@ html {
 }
 
 body {
+  min-height: 100dvh;
   font-family: "IBM Plex Sans Arabic", "Cairo", "Noto Sans Arabic", ui-sans-serif, system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);

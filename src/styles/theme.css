@@ -92,7 +92,7 @@
   margin-block: var(--space-2);
 }
 
-@media (min-width: 760px) {
+@media (min-width: 769px) {
   .cc-container {
     padding-inline: 24px;
   }

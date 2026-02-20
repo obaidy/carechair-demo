@@ -42,7 +42,7 @@ export default function ScrollManager() {
 
     if (navType === "POP") {
       const restoreY = Number(positionsRef.current.get(currentKey) || 0);
-      window.scrollTo({ top: Math.max(0, restoreY), left: 0, behavior: "auto" });
+    window.scrollTo({ top: Math.max(0, restoreY), left: 0, behavior: "auto" });
       if (debug) console.info("[ScrollManager] POP restore", { key: currentKey, y: restoreY });
       return;
     }
@@ -57,7 +57,7 @@ export default function ScrollManager() {
     }
 
     if (typeof window === "undefined") return;
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
     if (debug) console.info("[ScrollManager] TOP", { pathname, search, navType });
   }, [key, pathname, search, hash, navType, debug]);
 

@@ -3,7 +3,7 @@
   --line: var(--border);
   --brand: var(--primary-600);
   --brand-soft: var(--surface-2);
-  min-height: 100vh;
+  min-height: 100dvh;
   color: var(--text);
   background:
     radial-gradient(circle at 10% 0%, rgba(46, 107, 255, 0.12), transparent 30%),
@@ -985,7 +985,7 @@ select:disabled {
   font-size: 12px;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 769px) {
   .platform-header {
     padding: 16px 22px;
   }
@@ -1676,7 +1676,7 @@ select:disabled {
   object-fit: cover;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 769px) {
   .explore-cover {
     height: 190px;
   }
@@ -2014,7 +2014,7 @@ select:disabled {
   margin: 0;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 769px) {
   .media-admin-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -2430,7 +2430,7 @@ select:disabled {
   }
 }
 
-@media (min-width: 760px) {
+@media (min-width: 769px) {
   .brand-logo img {
     height: 44px;
   }
@@ -2455,7 +2455,7 @@ select:disabled {
   min-height: 44px;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 769px) {
   .admin-onboarding-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -2512,7 +2512,7 @@ select:disabled {
   border-radius: 14px;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 769px) {
   .platform-page .platform-header {
     min-height: 90px;
   }
@@ -3064,7 +3064,7 @@ select:disabled {
   border-radius: 50%;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 769px) {
   .enterprise-summary-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -3254,6 +3254,8 @@ select:disabled {
 @media (max-width: 768px) {
   .platform-page .platform-header {
     align-items: stretch;
+    min-height: 56px;
+    padding: 8px 10px;
   }
 
   .platform-page .platform-header-main {
@@ -3464,7 +3466,8 @@ select:disabled {
   }
 
   .platform-page .platform-header {
-    padding: 8px 10px;
+    min-height: 54px;
+    padding: 8px;
   }
 
   .platform-page .platform-header-copy h1 {
@@ -3609,7 +3612,7 @@ select:disabled {
   font-size: 11px;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 769px) {
   .site-footer-inner {
     grid-template-columns: 1.2fr 1fr 1fr 1fr;
     padding: 18px 16px 14px;
@@ -3642,13 +3645,14 @@ select:disabled {
 
 .footer-mobile-contact a,
 .footer-mobile-contact span {
-  min-height: 38px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
-  padding-inline: 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--surface);
+  padding-inline: 2px;
+  color: var(--primary-700);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .footer-mobile-cta {
@@ -3701,7 +3705,7 @@ select:disabled {
 
 .footer-accordion-links a {
   text-decoration: none;
-  min-height: 38px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   padding-inline: 8px;
