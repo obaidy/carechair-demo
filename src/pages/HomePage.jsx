@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 import Footer from "../components/Footer";
@@ -127,12 +127,6 @@ function FeatureIcon({ type }) {
   );
 }
 
-function getLandingOffset() {
-  if (typeof window === "undefined") return 0;
-  const nav = document.querySelector(".landing-nav");
-  return Math.round((nav?.getBoundingClientRect().height || 0) + 12);
-}
-
 export default function HomePage() {
   const location = useLocation();
   const [centersCount, setCentersCount] = useState(0);
@@ -140,23 +134,9 @@ export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeNavItem, setActiveNavItem] = useState("owners");
 
-  const ownersRef = useRef(null);
-  const featuresRef = useRef(null);
-  const pricingRef = useRef(null);
-  const faqRef = useRef(null);
-
   const heroFallback = getDefaultSalonImages("carechair-home").cover;
   const showcaseFallbacks = getDefaultGallery("carechair-showcase").slice(0, 3);
 
-  const sectionRefs = useMemo(
-    () => ({
-      owners: ownersRef,
-      features: featuresRef,
-      pricing: pricingRef,
-      faq: faqRef,
-    }),
-    []
-  );
   const sectionIds = useMemo(
     () => ({
       owners: "owners",
@@ -167,36 +147,13 @@ export default function HomePage() {
     []
   );
 
-  const scrollToSection = useCallback(
-    (key) => {
-      const id = sectionIds[key];
-      const node = document.getElementById(id || "") || sectionRefs[key]?.current;
-      if (!node) return;
+  const handleSectionNavClick = useCallback(
+    (_event, key) => {
+      if (!sectionIds[key]) return;
       setActiveNavItem(key);
-      node.scrollIntoView({ behavior: "smooth", block: "start" });
-      requestAnimationFrame(() => {
-        window.scrollBy({ top: -getLandingOffset(), left: 0, behavior: "auto" });
-      });
       setMobileMenuOpen(false);
     },
-    [sectionIds, sectionRefs]
-  );
-
-  const handleSectionNavClick = useCallback(
-    (event, key) => {
-      const id = sectionIds[key];
-      if (!id) return;
-      if (location.pathname === "/") {
-        event.preventDefault();
-        scrollToSection(key);
-        if (typeof window !== "undefined" && window.location.hash !== `#${id}`) {
-          window.history.replaceState(null, "", `/#${id}`);
-        }
-      } else {
-        setMobileMenuOpen(false);
-      }
-    },
-    [location.pathname, scrollToSection, sectionIds]
+    [sectionIds]
   );
 
   useEffect(() => {
@@ -261,10 +218,8 @@ export default function HomePage() {
     const id = decodeURIComponent(location.hash.replace(/^#/, "")).trim();
     if (!id) return;
     const key = Object.keys(sectionIds).find((x) => sectionIds[x] === id);
-    if (key) {
-      requestAnimationFrame(() => scrollToSection(key));
-    }
-  }, [location.pathname, location.hash, sectionIds, scrollToSection]);
+    if (key) setActiveNavItem(key);
+  }, [location.pathname, location.hash, sectionIds]);
 
   const trustItems = useMemo(() => {
     return [
@@ -429,7 +384,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="owners" ref={ownersRef} className="landing-section cc-container reveal-on-scroll">
+        <section id="owners" className="landing-section cc-container reveal-on-scroll">
           <div className="landing-section-head">
             <h2>قبل وبعد CareChair</h2>
           </div>
@@ -479,7 +434,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="features" ref={featuresRef} className="landing-section landing-features-section reveal-on-scroll">
+        <section id="features" className="landing-section landing-features-section reveal-on-scroll">
           <div className="cc-container">
             <div className="landing-section-head">
               <h2>مميزات النظام</h2>
@@ -499,7 +454,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="pricing" ref={pricingRef} className="landing-section cc-container reveal-on-scroll">
+        <section id="pricing" className="landing-section cc-container reveal-on-scroll">
           <div className="landing-section-head">
             <h2>الأسعار</h2>
           </div>
@@ -553,7 +508,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="faq" ref={faqRef} className="landing-section cc-container reveal-on-scroll">
+        <section id="faq" className="landing-section cc-container reveal-on-scroll">
           <div className="landing-section-head">
             <h2>الأسئلة الشائعة</h2>
           </div>

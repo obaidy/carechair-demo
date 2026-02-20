@@ -16,9 +16,12 @@ function scrollToHash(hash) {
   if (!id) return false;
   const target = document.getElementById(id);
   if (!target) return false;
-  target.scrollIntoView({ behavior: "smooth", block: "start" });
-  requestAnimationFrame(() => {
-    window.scrollBy({ top: -getHeaderOffset(), left: 0, behavior: "auto" });
+  const targetTop = target.getBoundingClientRect().top + window.scrollY;
+  const headerOffset = getHeaderOffset();
+  window.scrollTo({
+    top: Math.max(0, Math.round(targetTop - headerOffset)),
+    left: 0,
+    behavior: "smooth",
   });
   return true;
 }
@@ -32,12 +35,24 @@ export default function ScrollManager() {
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
       return;
     }
-    requestAnimationFrame(() => {
+    let attempts = 0;
+    let cancelled = false;
+    const tryScroll = () => {
+      if (cancelled) return;
       const ok = scrollToHash(hash);
-      if (!ok) window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-    });
+      if (ok) return;
+      attempts += 1;
+      if (attempts > 12) {
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        return;
+      }
+      window.setTimeout(tryScroll, 80);
+    };
+    requestAnimationFrame(tryScroll);
+    return () => {
+      cancelled = true;
+    };
   }, [pathname, search, hash]);
 
   return null;
 }
-
