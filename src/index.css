@@ -1,24 +1,41 @@
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 html,
-body,
-#root {
+body {
+  width: 100%;
   margin: 0;
+  overflow-x: hidden;
+  background: #f5f7fb;
+}
+
+#root {
   min-height: 100dvh;
   overflow-x: hidden;
-  background: var(--bg);
+  background: #f5f7fb;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
 }
 
 html {
   color-scheme: light;
+  scroll-behavior: smooth;
 }
 
 body {
   min-height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   font-family: "IBM Plex Sans Arabic", "Cairo", "Noto Sans Arabic", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  background: var(--bg);
+  background: #f5f7fb;
   color: var(--text);
   line-height: 1.7;
   font-size: var(--type-body);
