@@ -3251,9 +3251,12 @@ select:disabled {
 
 @media (max-width: 768px) {
   .platform-page .platform-header {
-    align-items: stretch;
-    min-height: 56px;
+    align-items: center;
+    min-height: 60px;
     padding: 8px 10px;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(246, 248, 252, 0.98);
   }
 
   .platform-page .platform-header-main {
@@ -3266,6 +3269,12 @@ select:disabled {
 
   .platform-page .platform-header-copy p {
     display: none;
+  }
+
+  .platform-page .platform-header-copy h1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .platform-menu-toggle {
@@ -3667,9 +3676,9 @@ select:disabled {
 @media (max-width: 768px) {
   .admin-mobile-nav {
     display: block;
-    position: sticky;
-    top: 70px;
-    z-index: 18;
+    position: relative;
+    top: auto;
+    z-index: 2;
     margin-bottom: 8px;
   }
 
@@ -3683,6 +3692,8 @@ select:disabled {
     background: var(--surface);
     box-shadow: var(--shadow-xs);
     padding: 8px 10px;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .admin-mobile-nav-copy {
