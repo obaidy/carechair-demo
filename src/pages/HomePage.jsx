@@ -182,6 +182,23 @@ export default function HomePage() {
     [sectionIds, sectionRefs]
   );
 
+  const handleSectionNavClick = useCallback(
+    (event, key) => {
+      const id = sectionIds[key];
+      if (!id) return;
+      if (location.pathname === "/") {
+        event.preventDefault();
+        scrollToSection(key);
+        if (typeof window !== "undefined" && window.location.hash !== `#${id}`) {
+          window.history.replaceState(null, "", `/#${id}`);
+        }
+      } else {
+        setMobileMenuOpen(false);
+      }
+    },
+    [location.pathname, scrollToSection, sectionIds]
+  );
+
   useEffect(() => {
     async function loadStats() {
       if (!supabase) return;
@@ -268,18 +285,34 @@ export default function HomePage() {
             <Link to="/explore" className={`landing-nav-link${location.pathname === "/explore" ? " active" : ""}`}>
               استكشف
             </Link>
-            <button type="button" className={`landing-nav-link${activeNavItem === "owners" ? " active" : ""}`} onClick={() => scrollToSection("owners")}>
+            <Link
+              to="/#owners"
+              className={`landing-nav-link${activeNavItem === "owners" ? " active" : ""}`}
+              onClick={(event) => handleSectionNavClick(event, "owners")}
+            >
               للمراكز
-            </button>
-            <button type="button" className={`landing-nav-link${activeNavItem === "features" ? " active" : ""}`} onClick={() => scrollToSection("features")}>
+            </Link>
+            <Link
+              to="/#features"
+              className={`landing-nav-link${activeNavItem === "features" ? " active" : ""}`}
+              onClick={(event) => handleSectionNavClick(event, "features")}
+            >
               المزايا
-            </button>
-            <button type="button" className={`landing-nav-link${activeNavItem === "pricing" ? " active" : ""}`} onClick={() => scrollToSection("pricing")}>
+            </Link>
+            <Link
+              to="/#pricing"
+              className={`landing-nav-link${activeNavItem === "pricing" ? " active" : ""}`}
+              onClick={(event) => handleSectionNavClick(event, "pricing")}
+            >
               الأسعار
-            </button>
-            <button type="button" className={`landing-nav-link${activeNavItem === "faq" ? " active" : ""}`} onClick={() => scrollToSection("faq")}>
+            </Link>
+            <Link
+              to="/#faq"
+              className={`landing-nav-link${activeNavItem === "faq" ? " active" : ""}`}
+              onClick={(event) => handleSectionNavClick(event, "faq")}
+            >
               الأسئلة
-            </button>
+            </Link>
           </nav>
 
           <Button as="a" href={PLATFORM_WHATSAPP_LINK} target="_blank" rel="noreferrer" className="landing-nav-cta">
@@ -300,10 +333,34 @@ export default function HomePage() {
 
       <MobileDrawer open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} id="landing-mobile-menu" title="القائمة">
         <div className="landing-mobile-menu">
-          <button type="button" className={`landing-mobile-link${activeNavItem === "owners" ? " active" : ""}`} onClick={() => scrollToSection("owners")}>للمراكز</button>
-          <button type="button" className={`landing-mobile-link${activeNavItem === "features" ? " active" : ""}`} onClick={() => scrollToSection("features")}>المزايا</button>
-          <button type="button" className={`landing-mobile-link${activeNavItem === "pricing" ? " active" : ""}`} onClick={() => scrollToSection("pricing")}>الأسعار</button>
-          <button type="button" className={`landing-mobile-link${activeNavItem === "faq" ? " active" : ""}`} onClick={() => scrollToSection("faq")}>الأسئلة</button>
+          <Link
+            to="/#owners"
+            className={`landing-mobile-link${activeNavItem === "owners" ? " active" : ""}`}
+            onClick={(event) => handleSectionNavClick(event, "owners")}
+          >
+            للمراكز
+          </Link>
+          <Link
+            to="/#features"
+            className={`landing-mobile-link${activeNavItem === "features" ? " active" : ""}`}
+            onClick={(event) => handleSectionNavClick(event, "features")}
+          >
+            المزايا
+          </Link>
+          <Link
+            to="/#pricing"
+            className={`landing-mobile-link${activeNavItem === "pricing" ? " active" : ""}`}
+            onClick={(event) => handleSectionNavClick(event, "pricing")}
+          >
+            الأسعار
+          </Link>
+          <Link
+            to="/#faq"
+            className={`landing-mobile-link${activeNavItem === "faq" ? " active" : ""}`}
+            onClick={(event) => handleSectionNavClick(event, "faq")}
+          >
+            الأسئلة
+          </Link>
           <Link className={`landing-mobile-link${location.pathname === "/explore" ? " active" : ""}`} to="/explore" onClick={() => setMobileMenuOpen(false)}>
             استكشف المراكز
           </Link>
