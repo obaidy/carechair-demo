@@ -9,12 +9,16 @@ body {
   width: 100%;
   margin: 0;
   overflow-x: hidden;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
   background: #f5f7fb;
 }
 
 #root {
   min-height: 100dvh;
   overflow-x: hidden;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
   background: #f5f7fb;
 }
 
@@ -43,6 +47,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
+  touch-action: pan-y;
 }
 
 h1,
@@ -98,4 +103,12 @@ a {
   outline: none;
   box-shadow: 0 0 0 3px rgba(46, 107, 255, 0.22);
   border-radius: 10px;
+}
+
+@media (max-width: 768px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
