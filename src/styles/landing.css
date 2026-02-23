@@ -3,7 +3,6 @@
   background: var(--bg);
   color: var(--text);
   position: relative;
-  overflow-x: hidden;
 }
 
 .landing-page::before {

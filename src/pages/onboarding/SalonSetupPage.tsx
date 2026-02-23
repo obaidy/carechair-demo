@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PageShell from "../../components/PageShell";
@@ -9,10 +9,19 @@ import { supabase } from "../../lib/supabase";
 import { compressImage } from "../../lib/imageCompression";
 import { normalizeSalonSlug } from "../../lib/slug";
 import { useToast } from "../../lib/useToast";
+import {
+  buildMapboxStaticPreviewUrl,
+  hasMapboxToken,
+  normalizeLatitude,
+  normalizeLongitude,
+  pickLatLngFromStaticMapClick,
+  searchMapboxPlaces,
+} from "../../lib/salonLocations";
 
 const MEDIA_BUCKET = "carechair-media";
 const DRAFT_KEY = "carechair_onboarding_draft_v1";
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAP_PICKER_ZOOM = 14;
 
 function uid() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -53,6 +62,21 @@ function createService() {
   };
 }
 
+function defaultLocation(countryCode = "IQ", city = "") {
+  return {
+    label: "Main Branch",
+    country_code: String(countryCode || "IQ").toUpperCase(),
+    city: String(city || ""),
+    address_line: "",
+    formatted_address: "",
+    lat: "",
+    lng: "",
+    provider: "manual",
+    provider_place_id: "",
+    pin_confirmed: false,
+  };
+}
+
 function localizeCountryName(country, lang) {
   const l = String(lang || "en").toLowerCase();
   if (l.startsWith("ar")) return country?.name_ar || country?.name_en || country?.code;
@@ -79,6 +103,7 @@ function normalizeDraft(raw) {
         whatsapp: "",
         admin_passcode: "",
       },
+      location: defaultLocation("IQ", ""),
       working_hours: baseHours,
       employees: [createEmployee(baseHours)],
       services: [createService()],
@@ -124,9 +149,25 @@ function normalizeDraft(raw) {
       }))
     : [createService()];
 
+  const fallbackCountry = String(raw?.basic?.country_code || "IQ").toUpperCase();
+  const fallbackCity = String(raw?.basic?.city || "");
+  const location = {
+    ...defaultLocation(fallbackCountry, fallbackCity),
+    ...(raw?.location && typeof raw.location === "object" ? raw.location : {}),
+  };
+  location.country_code = String(location.country_code || fallbackCountry || "IQ").toUpperCase();
+  location.city = String(location.city || fallbackCity || "");
+  location.address_line = String(location.address_line || "");
+  location.formatted_address = String(location.formatted_address || "");
+  location.lat = String(location.lat || "");
+  location.lng = String(location.lng || "");
+  location.provider = String(location.provider || "manual");
+  location.provider_place_id = String(location.provider_place_id || "");
+  location.pin_confirmed = Boolean(location.pin_confirmed);
+
   return {
     salon_id: String(raw.salon_id || uid()),
-    step: Math.max(1, Math.min(5, Number(raw.step || 1))),
+    step: Math.max(1, Math.min(6, Number(raw.step || 1))),
     basic: {
       name: String(raw?.basic?.name || ""),
       country_code: String(raw?.basic?.country_code || "IQ"),
@@ -134,6 +175,7 @@ function normalizeDraft(raw) {
       whatsapp: String(raw?.basic?.whatsapp || ""),
       admin_passcode: String(raw?.basic?.admin_passcode || ""),
     },
+    location,
     working_hours: working,
     employees,
     services,
@@ -161,6 +203,10 @@ export default function SalonSetupPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadStage, setUploadStage] = useState("");
   const [successData, setSuccessData] = useState(null);
+  const [locationSearch, setLocationSearch] = useState("");
+  const [locationSearchResults, setLocationSearchResults] = useState([]);
+  const [locationSearchLoading, setLocationSearchLoading] = useState(false);
+  const locationMapRef = useRef(null);
 
   const [draft, setDraft] = useState(() => {
     try {
@@ -173,12 +219,18 @@ export default function SalonSetupPage() {
 
   const step = draft.step;
   const basic = draft.basic;
+  const location = draft.location;
   const workingHours = draft.working_hours;
   const employees = draft.employees;
   const services = draft.services;
+  const mapboxAvailable = hasMapboxToken();
   const isInviteFlow = inviteValid && !!inviteCountryCode;
   const hasInviteParam = !!inviteToken;
   const shouldHideCountryField = hasInviteParam && (validatingInvite || isInviteFlow);
+  const normalizedLocationLat = normalizeLatitude(location?.lat);
+  const normalizedLocationLng = normalizeLongitude(location?.lng);
+  const hasLocationPin = normalizedLocationLat != null && normalizedLocationLng != null;
+  const locationAddressPreview = String(location?.formatted_address || location?.address_line || "").trim();
 
   const localizedDays = useMemo(() => {
     const locale = String(i18n.language || "en");
@@ -275,6 +327,10 @@ export default function SalonSetupPage() {
             ...prev.basic,
             country_code: countryCode,
           },
+          location: {
+            ...prev.location,
+            country_code: countryCode,
+          },
         }));
       }
       setValidatingInvite(false);
@@ -287,12 +343,63 @@ export default function SalonSetupPage() {
   }, [inviteToken, showToast, t]);
 
   useEffect(() => {
-    if (!countries.length || isInviteFlow) return;
-    const hasCountry = countries.some((country) => country.code === basic.country_code);
-    if (!hasCountry) {
-      patchBasic("country_code", countries[0].code);
+    if (!countries.length) return;
+
+    const fallbackCountry = isInviteFlow && inviteCountryCode ? inviteCountryCode : countries[0].code;
+    const hasBasicCountry = countries.some((country) => country.code === basic.country_code);
+    const hasLocationCountry = countries.some((country) => country.code === location.country_code);
+
+    if (!hasBasicCountry || (isInviteFlow && basic.country_code !== fallbackCountry)) {
+      patchBasic("country_code", fallbackCountry);
     }
-  }, [countries, isInviteFlow, basic.country_code]);
+
+    if (!hasLocationCountry || (isInviteFlow && location.country_code !== fallbackCountry)) {
+      patchLocation("country_code", fallbackCountry);
+    }
+  }, [countries, isInviteFlow, inviteCountryCode, basic.country_code, location.country_code]);
+
+  useEffect(() => {
+    if (!String(location.city || "").trim() && String(basic.city || "").trim()) {
+      patchLocation("city", basic.city);
+    }
+  }, [basic.city, location.city]);
+
+  useEffect(() => {
+    if (!mapboxAvailable) {
+      setLocationSearchLoading(false);
+      setLocationSearchResults([]);
+      return;
+    }
+
+    const query = String(locationSearch || "").trim();
+    if (query.length < 2) {
+      setLocationSearchLoading(false);
+      setLocationSearchResults([]);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      setLocationSearchLoading(true);
+      const res = await searchMapboxPlaces(query, {
+        countryCode: location.country_code || basic.country_code,
+        language: i18n.language,
+      });
+
+      if (cancelled) return;
+
+      setLocationSearchLoading(false);
+      setLocationSearchResults(res.data || []);
+      if (res.error) {
+        showToast("error", t("onboarding.errors.locationSearchFailed", "Failed to search location. You can still enter coordinates manually."));
+      }
+    }, 280);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [locationSearch, mapboxAvailable, location.country_code, basic.country_code, i18n.language, showToast, t]);
 
   useEffect(() => {
     const safeDraft = {
@@ -305,10 +412,11 @@ export default function SalonSetupPage() {
   const stepItems = useMemo(
     () => [
       { id: 1, label: t("onboarding.steps.basic", "Basic information") },
-      { id: 2, label: t("onboarding.steps.hours", "Working hours") },
-      { id: 3, label: t("onboarding.steps.employees", "Employees") },
-      { id: 4, label: t("onboarding.steps.services", "Services") },
-      { id: 5, label: t("onboarding.steps.submit", "Submit") },
+      { id: 2, label: t("onboarding.steps.location", "Location") },
+      { id: 3, label: t("onboarding.steps.hours", "Working hours") },
+      { id: 4, label: t("onboarding.steps.employees", "Employees") },
+      { id: 5, label: t("onboarding.steps.services", "Services") },
+      { id: 6, label: t("onboarding.steps.submit", "Submit") },
     ],
     [t]
   );
@@ -319,6 +427,90 @@ export default function SalonSetupPage() {
 
   function patchBasic(field, value) {
     setDraft((prev) => ({ ...prev, basic: { ...prev.basic, [field]: value } }));
+  }
+
+  function patchLocation(field, value) {
+    setDraft((prev) => {
+      const nextLocation = {
+        ...prev.location,
+        [field]: value,
+      };
+
+      if (field === "lat" || field === "lng") {
+        nextLocation.provider = "manual";
+        nextLocation.provider_place_id = "";
+        if (mapboxAvailable) nextLocation.pin_confirmed = false;
+      }
+
+      return { ...prev, location: nextLocation };
+    });
+  }
+
+  function applyMapLocation(place) {
+    const lat = normalizeLatitude(place?.lat);
+    const lng = normalizeLongitude(place?.lng);
+    if (lat == null || lng == null) return;
+
+    setDraft((prev) => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        country_code: String(place?.country_code || prev.location.country_code || basic.country_code || "IQ").toUpperCase(),
+        city: String(place?.city || prev.location.city || ""),
+        address_line: String(place?.address_line || prev.location.address_line || ""),
+        formatted_address: String(place?.formatted_address || prev.location.formatted_address || ""),
+        lat: String(lat),
+        lng: String(lng),
+        provider: String(place?.provider || "mapbox"),
+        provider_place_id: String(place?.provider_place_id || place?.place_id || ""),
+        pin_confirmed: true,
+      },
+    }));
+  }
+
+  function confirmCurrentPin() {
+    const lat = normalizeLatitude(location.lat);
+    const lng = normalizeLongitude(location.lng);
+    if (lat == null || lng == null) {
+      showToast("error", t("onboarding.errors.locationCoordinatesRequired", "Location pin is required. Select or confirm coordinates."));
+      return;
+    }
+
+    setDraft((prev) => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        lat: String(lat),
+        lng: String(lng),
+        pin_confirmed: true,
+      },
+    }));
+  }
+
+  function onLocationMapClick(event) {
+    if (!mapboxAvailable || !hasLocationPin || !locationMapRef.current) return;
+    const rect = locationMapRef.current.getBoundingClientRect();
+    const point = pickLatLngFromStaticMapClick({
+      clickX: event.clientX - rect.left,
+      clickY: event.clientY - rect.top,
+      width: rect.width,
+      height: rect.height,
+      centerLat: normalizedLocationLat,
+      centerLng: normalizedLocationLng,
+      zoom: MAP_PICKER_ZOOM,
+    });
+    if (!point || point.lat == null || point.lng == null) return;
+
+    setDraft((prev) => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        lat: String(point.lat),
+        lng: String(point.lng),
+        provider: mapboxAvailable ? "mapbox" : "manual",
+        pin_confirmed: true,
+      },
+    }));
   }
 
   function patchWorkingHour(dayIndex, patch) {
@@ -436,6 +628,35 @@ export default function SalonSetupPage() {
     }
 
     if (targetStep >= 2) {
+      const locationCountry = String(location.country_code || basic.country_code || "").trim();
+      if (!locationCountry) {
+        showToast("error", t("onboarding.errors.locationCountryRequired", "Location country is required."));
+        return false;
+      }
+
+      const hasAddress = Boolean(
+        String(location.formatted_address || "").trim() ||
+        String(location.address_line || "").trim()
+      );
+      if (!hasAddress) {
+        showToast("error", t("onboarding.errors.locationAddressRequired", "Address details are required."));
+        return false;
+      }
+
+      const lat = normalizeLatitude(location.lat);
+      const lng = normalizeLongitude(location.lng);
+      if (lat == null || lng == null) {
+        showToast("error", t("onboarding.errors.locationCoordinatesRequired", "Location pin is required. Select or confirm coordinates."));
+        return false;
+      }
+
+      if (mapboxAvailable && !location.pin_confirmed) {
+        showToast("error", t("onboarding.errors.locationPinConfirmRequired", "Please confirm the pin on map to continue."));
+        return false;
+      }
+    }
+
+    if (targetStep >= 3) {
       for (const row of workingHours) {
         if (!row.is_closed && (!row.open_time || !row.close_time || row.close_time <= row.open_time)) {
           showToast(
@@ -449,7 +670,7 @@ export default function SalonSetupPage() {
       }
     }
 
-    if (targetStep >= 3) {
+    if (targetStep >= 4) {
       if (!employees.length) {
         showToast("error", t("onboarding.errors.employeeRequired", "Add at least one employee."));
         return false;
@@ -475,7 +696,7 @@ export default function SalonSetupPage() {
       }
     }
 
-    if (targetStep >= 4) {
+    if (targetStep >= 5) {
       if (!services.length) {
         showToast("error", t("onboarding.errors.serviceRequired", "Add at least one service."));
         return false;
@@ -507,7 +728,7 @@ export default function SalonSetupPage() {
 
   function nextStep() {
     if (!validateStep(step)) return;
-    patchDraft({ step: Math.min(5, step + 1) });
+    patchDraft({ step: Math.min(6, step + 1) });
   }
 
   function prevStep() {
@@ -553,7 +774,7 @@ export default function SalonSetupPage() {
       return;
     }
 
-    if (!validateStep(4)) return;
+    if (!validateStep(5)) return;
 
     setSaving(true);
     setUploading(false);
@@ -585,6 +806,12 @@ export default function SalonSetupPage() {
 
       setUploadStage(t("onboarding.upload.finalizing", "Finalizing setup..."));
 
+      const locationLat = normalizeLatitude(location.lat);
+      const locationLng = normalizeLongitude(location.lng);
+      if (locationLat == null || locationLng == null) {
+        throw new Error(t("onboarding.errors.locationCoordinatesRequired", "Location pin is required. Select or confirm coordinates."));
+      }
+
       const payload = {
         invite_token: isInviteFlow ? inviteToken : null,
         salon: {
@@ -598,6 +825,18 @@ export default function SalonSetupPage() {
           language_default: i18n.language,
           logo_url: logoRes.url || null,
           cover_image_url: coverRes.url || null,
+        },
+        location: {
+          label: String(location.label || "Main Branch").trim() || "Main Branch",
+          country_code: String(location.country_code || basic.country_code || "IQ").toUpperCase(),
+          city: String(location.city || "").trim() || null,
+          address_line: String(location.address_line || "").trim() || null,
+          formatted_address: String(location.formatted_address || "").trim() || null,
+          lat: locationLat,
+          lng: locationLng,
+          provider: mapboxAvailable ? String(location.provider || "mapbox") : "manual",
+          provider_place_id: String(location.provider_place_id || "").trim() || null,
+          is_primary: true,
         },
         working_hours: workingHours.map((row) => ({
           day_of_week: Number(row.day_of_week),
@@ -680,6 +919,8 @@ export default function SalonSetupPage() {
     setCoverFile(null);
     setAvatarFiles({});
     setSuccessData(null);
+    setLocationSearch("");
+    setLocationSearchResults([]);
     window.localStorage.removeItem(DRAFT_KEY);
   }
 
@@ -850,6 +1091,155 @@ export default function SalonSetupPage() {
 
           {step === 2 ? (
             <section className="onboarding-step-section">
+              <h3>{t("onboarding.steps.location", "Location")}</h3>
+              <p className="onboarding-review-text">
+                {mapboxAvailable
+                  ? t("onboarding.location.mapHint", "Search address, then confirm your pin on map. You can still edit coordinates manually.")
+                  : t("onboarding.location.noMapboxHint", "Map search is unavailable. Enter address + coordinates manually.")}
+              </p>
+
+              {mapboxAvailable ? (
+                <div className="onboarding-location-search">
+                  <TextInput
+                    label={t("onboarding.location.search", "Search address on map")}
+                    value={locationSearch}
+                    onChange={(e) => setLocationSearch(e.target.value)}
+                    placeholder={t("onboarding.location.searchPlaceholder", "Search street, area or city")}
+                  />
+                  {locationSearchLoading ? (
+                    <small className="muted">{t("onboarding.location.searching", "Searching...")}</small>
+                  ) : null}
+                  {locationSearchResults.length ? (
+                    <div className="onboarding-location-results">
+                      {locationSearchResults.map((result) => (
+                        <button
+                          type="button"
+                          key={`${result.place_id || result.formatted_address}-${result.lat}-${result.lng}`}
+                          className="onboarding-location-result"
+                          onClick={() => {
+                            applyMapLocation(result);
+                            setLocationSearch(result.formatted_address || result.name || "");
+                            setLocationSearchResults([]);
+                          }}
+                        >
+                          <b>{result.formatted_address || result.name || t("onboarding.location.unnamed", "Selected place")}</b>
+                          <small>
+                            {result.lat}, {result.lng}
+                          </small>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <div className="onboarding-grid-2">
+                <SelectInput
+                  label={t("onboarding.location.country", "Location country")}
+                  value={location.country_code}
+                  onChange={(e) => patchLocation("country_code", e.target.value)}
+                  disabled={loadingCountries || validatingInvite || (isInviteFlow && !!inviteCountryCode)}
+                >
+                  {countries.map((country) => (
+                    <option key={country.code} value={country.code}>
+                      {localizeCountryName(country, i18n.language)}
+                    </option>
+                  ))}
+                </SelectInput>
+                <TextInput
+                  label={t("onboarding.location.city", "Location city")}
+                  value={location.city}
+                  onChange={(e) => patchLocation("city", e.target.value)}
+                  placeholder={t("onboarding.location.cityPlaceholder", "City")}
+                />
+                <TextInput
+                  label={t("onboarding.location.addressLine", "Address line")}
+                  value={location.address_line}
+                  onChange={(e) => patchLocation("address_line", e.target.value)}
+                  placeholder={t("onboarding.location.addressLinePlaceholder", "Street, building, landmark")}
+                />
+                <TextInput
+                  label={t("onboarding.location.formattedAddress", "Formatted address")}
+                  value={location.formatted_address}
+                  onChange={(e) => patchLocation("formatted_address", e.target.value)}
+                  placeholder={t("onboarding.location.formattedAddressPlaceholder", "Full formatted address (optional)")}
+                />
+              </div>
+
+              <div className="onboarding-location-pin-row">
+                <TextInput
+                  label={t("onboarding.location.latitude", "Latitude")}
+                  value={location.lat}
+                  onChange={(e) => patchLocation("lat", e.target.value)}
+                  placeholder="33.3152"
+                  inputMode="decimal"
+                />
+                <TextInput
+                  label={t("onboarding.location.longitude", "Longitude")}
+                  value={location.lng}
+                  onChange={(e) => patchLocation("lng", e.target.value)}
+                  placeholder="44.3661"
+                  inputMode="decimal"
+                />
+              </div>
+
+              {mapboxAvailable ? (
+                <div className="onboarding-location-map-wrap">
+                  <div className="onboarding-step-head-row">
+                    <h4>{t("onboarding.location.pinTitle", "Pin confirmation")}</h4>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        confirmCurrentPin();
+                        locationMapRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+                      }}
+                      disabled={!hasLocationPin}
+                    >
+                      {t("onboarding.location.confirmPin", "Confirm on map")}
+                    </Button>
+                  </div>
+
+                  {hasLocationPin ? (
+                    <button
+                      type="button"
+                      className={`onboarding-location-map${location.pin_confirmed ? " is-confirmed" : ""}`}
+                      ref={locationMapRef}
+                      onClick={onLocationMapClick}
+                    >
+                      <img
+                        src={buildMapboxStaticPreviewUrl({
+                          lat: normalizedLocationLat,
+                          lng: normalizedLocationLng,
+                          zoom: MAP_PICKER_ZOOM,
+                          width: 900,
+                          height: 420,
+                        })}
+                        alt={locationAddressPreview || t("onboarding.location.mapPreviewAlt", "Salon location map preview")}
+                      />
+                      <span className="onboarding-location-crosshair" aria-hidden="true">
+                        +
+                      </span>
+                    </button>
+                  ) : (
+                    <div className="onboarding-location-map-placeholder">
+                      {t("onboarding.location.mapNeedsCoordinates", "Enter coordinates first, then tap on map to move the pin.")}
+                    </div>
+                  )}
+
+                  <small className="muted">
+                    {t("onboarding.location.mapClickHint", "Tap/click map to move the pin. The center marker is your saved location.")}
+                  </small>
+                </div>
+              ) : (
+                <div className="onboarding-location-map-placeholder">
+                  {t("onboarding.location.mapUnavailable", "Map preview unavailable (missing Mapbox token). Directions links will still work with coordinates.")}
+                </div>
+              )}
+            </section>
+          ) : null}
+
+          {step === 3 ? (
+            <section className="onboarding-step-section">
               <h3>{t("onboarding.steps.hours", "Working hours")}</h3>
               <div className="onboarding-hours-list">
                 {localizedDays.map((day) => {
@@ -886,7 +1276,7 @@ export default function SalonSetupPage() {
             </section>
           ) : null}
 
-          {step === 3 ? (
+          {step === 4 ? (
             <section className="onboarding-step-section">
               <div className="onboarding-step-head-row">
                 <h3>{t("onboarding.steps.employees", "Employees")}</h3>
@@ -989,7 +1379,7 @@ export default function SalonSetupPage() {
             </section>
           ) : null}
 
-          {step === 4 ? (
+          {step === 5 ? (
             <section className="onboarding-step-section">
               <div className="onboarding-step-head-row">
                 <h3>{t("onboarding.steps.services", "Services")}</h3>
@@ -1057,7 +1447,7 @@ export default function SalonSetupPage() {
             </section>
           ) : null}
 
-          {step === 5 ? (
+          {step === 6 ? (
             <section className="onboarding-step-section">
               <h3>{t("onboarding.steps.submit", "Submit")}</h3>
               <p className="onboarding-review-text">{t("onboarding.reviewText", "Review your setup and submit to create the full salon structure.")}</p>
@@ -1070,6 +1460,13 @@ export default function SalonSetupPage() {
                     {!isInviteFlow ? <li>{t("onboarding.fields.country", "Country")}: {basic.country_code || "-"}</li> : null}
                     <li>{t("onboarding.fields.city", "City")}: {basic.city || "-"}</li>
                     <li>{t("onboarding.fields.whatsapp", "WhatsApp")}: {basic.whatsapp || "-"}</li>
+                    <li>
+                      {t("onboarding.steps.location", "Location")}: {locationAddressPreview || "-"}
+                    </li>
+                    <li>
+                      {t("onboarding.location.latitude", "Latitude")}/{t("onboarding.location.longitude", "Longitude")}:{" "}
+                      {hasLocationPin ? `${normalizedLocationLat}, ${normalizedLocationLng}` : "-"}
+                    </li>
                   </ul>
                 </Card>
                 <Card className="onboarding-review-card">
@@ -1090,7 +1487,7 @@ export default function SalonSetupPage() {
             <Button variant="ghost" onClick={prevStep} disabled={step === 1 || saving}>
               {t("onboarding.actions.back", "Back")}
             </Button>
-            {step < 5 ? (
+            {step < 6 ? (
               <Button variant="primary" onClick={nextStep} disabled={saving}>
                 {t("onboarding.actions.next", "Next")}
               </Button>

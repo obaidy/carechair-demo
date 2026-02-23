@@ -16,6 +16,15 @@ import { combineDateTime, generateSlots } from "../lib/slots";
 import { formatWhatsappAppointment, sendWhatsappTemplate } from "../lib/whatsapp";
 import { deriveSalonAccess } from "../lib/billing";
 import {
+  buildAppleMapsDirectionsUrl,
+  buildGoogleMapsDirectionsUrl,
+  buildMapboxStaticPreviewUrl,
+  formatLocationAddress,
+  getPrimarySalonLocationPublic,
+  normalizeLatitude,
+  normalizeLongitude,
+} from "../lib/salonLocations";
+import {
   formatSalonOperationalCurrency,
   formatDateTime,
   formatTime,
@@ -56,6 +65,7 @@ export default function SalonBookingPage() {
   const [staffServices, setStaffServices] = useState([]);
   const [hours, setHours] = useState([]);
   const [employeeHours, setEmployeeHours] = useState([]);
+  const [primaryLocation, setPrimaryLocation] = useState(null);
 
   const [serviceId, setServiceId] = useState("");
   const [staffId, setStaffId] = useState("");
@@ -97,7 +107,7 @@ export default function SalonBookingPage() {
         const salonRow = salonRes.data;
         setSalon(salonRow);
 
-        const [servicesRes, staffRes, staffServicesRes, hoursRes, employeeHoursRes] = await Promise.all([
+        const [servicesRes, staffRes, staffServicesRes, hoursRes, employeeHoursRes, locationRes] = await Promise.all([
           supabase
             .from("services")
             .select("*")
@@ -116,6 +126,7 @@ export default function SalonBookingPage() {
             .from("employee_hours")
             .select("staff_id, day_of_week, start_time, end_time, is_off, break_start, break_end")
             .eq("salon_id", salonRow.id),
+          getPrimarySalonLocationPublic(salonRow.id),
         ]);
 
         if (servicesRes.error) throw servicesRes.error;
@@ -123,6 +134,9 @@ export default function SalonBookingPage() {
         if (staffServicesRes.error) throw staffServicesRes.error;
         if (hoursRes.error) throw hoursRes.error;
         if (employeeHoursRes.error) throw employeeHoursRes.error;
+        if (locationRes?.error) {
+          console.error("Failed to load primary salon location:", locationRes.error);
+        }
 
         const serviceRows = (servicesRes.data || []).sort(sortByOrderThenName);
         const staffRows = (staffRes.data || []).sort(sortByOrderThenName);
@@ -132,6 +146,7 @@ export default function SalonBookingPage() {
         setStaffServices(staffServicesRes.data || []);
         setHours(hoursRes.data || []);
         setEmployeeHours(employeeHoursRes.data || []);
+        setPrimaryLocation(locationRes?.data || null);
 
         setServiceId(serviceRows[0]?.id || "");
         setStaffId(staffRows[0]?.id || "");
@@ -158,6 +173,36 @@ export default function SalonBookingPage() {
   const media = useMemo(() => getSalonMedia(salon), [salon]);
   const galleryImages = media.gallery || [];
   const salonAccess = useMemo(() => deriveSalonAccess(salon), [salon]);
+  const fallbackLocation = useMemo(() => {
+    if (!salon?.is_active || !salon?.is_listed) return null;
+    const lat = normalizeLatitude(salon?.latitude);
+    const lng = normalizeLongitude(salon?.longitude);
+    if (lat == null || lng == null) return null;
+    return {
+      lat,
+      lng,
+      city: String(salon?.area || "").trim(),
+      address_line: String(salon?.area || "").trim(),
+      formatted_address: "",
+      country_code: String(salon?.country_code || "").trim(),
+      provider: "manual",
+    };
+  }, [salon]);
+  const bookingLocation = primaryLocation || fallbackLocation;
+  const bookingLocationAddress = formatLocationAddress(bookingLocation) || String(salon?.area || "").trim();
+  const googleDirectionsUrl = buildGoogleMapsDirectionsUrl(bookingLocation?.lat, bookingLocation?.lng);
+  const appleDirectionsUrl = buildAppleMapsDirectionsUrl({
+    lat: bookingLocation?.lat,
+    lng: bookingLocation?.lng,
+    address: bookingLocationAddress,
+  });
+  const staticMapPreviewUrl = buildMapboxStaticPreviewUrl({
+    lat: bookingLocation?.lat,
+    lng: bookingLocation?.lng,
+    zoom: 14,
+    width: 600,
+    height: 300,
+  });
 
   const filteredStaff = useMemo(() => {
     if (!serviceId) return staff;
@@ -774,6 +819,42 @@ ${t("booking.whatsappFallback.phone")}: ${normalizedPhone}`;
           </div>
         </div>
       </section>
+
+      <Card className="booking-location-card">
+        <h3 className="section-title">{t("booking.locationTitle", "Location & Directions")}</h3>
+        {bookingLocation ? (
+          <div className="booking-location-grid">
+            <div className="booking-location-copy">
+              <p className="booking-location-address">
+                {bookingLocationAddress || t("booking.locationAddressUnavailable", "Address unavailable")}
+              </p>
+              <div className="row-actions">
+                <Button as="a" href={appleDirectionsUrl} target="_blank" rel="noreferrer" variant="secondary">
+                  {t("booking.appleMaps", "Apple Maps")}
+                </Button>
+                <Button as="a" href={googleDirectionsUrl} target="_blank" rel="noreferrer" variant="secondary">
+                  {t("booking.googleMaps", "Google Maps")}
+                </Button>
+              </div>
+            </div>
+            <div className="booking-location-preview">
+              {staticMapPreviewUrl ? (
+                <img
+                  src={staticMapPreviewUrl}
+                  alt={bookingLocationAddress || t("booking.mapPreviewAlt", "Location map preview")}
+                  className="booking-static-map-image"
+                />
+              ) : (
+                <div className="booking-map-placeholder">
+                  {t("booking.mapPreviewUnavailable", "Map preview unavailable")}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="booking-map-placeholder">{t("booking.locationUnavailable", "Salon location is not available yet.")}</div>
+        )}
+      </Card>
 
       <Card>
         <h3 className="section-title">{t("booking.whyTitle")}</h3>

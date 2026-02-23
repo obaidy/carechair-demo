@@ -194,7 +194,7 @@ export default function HomePage() {
 
   return (
     <div className={`landing-page ${i18n.dir() === "rtl" ? "is-rtl" : "is-ltr"}`} dir={i18n.dir()}>
-      <header className="landing-nav">
+      <header className="landing-nav cc-sticky-nav">
         <div className="landing-nav-inner cc-container">
           <BrandLogo className="landing-logo-main" />
 

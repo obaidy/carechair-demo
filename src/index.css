@@ -22,6 +22,11 @@ body {
   background: #f5f7fb;
 }
 
+.cc-sticky-nav {
+  position: sticky;
+  top: 0;
+}
+
 img,
 svg,
 video,

@@ -26,7 +26,7 @@ export default function PageShell({
 
   return (
     <div className="platform-page" dir={dir}>
-      <header className="platform-header">
+      <header className="platform-header cc-sticky-nav">
         <div className="platform-header-main">
           <BrandLogo className="platform-brand" />
           <div className="platform-header-copy">
