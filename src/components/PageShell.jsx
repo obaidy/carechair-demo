@@ -6,7 +6,14 @@ import BrandLogo from "./BrandLogo";
 import MobileDrawer from "./MobileDrawer";
 import LanguageSwitcher from "./LanguageSwitcher";
 
-export default function PageShell({ title, subtitle, right, children, mobileMenuDisabled = false }) {
+export default function PageShell({
+  title,
+  subtitle,
+  right,
+  children,
+  mobileMenuDisabled = false,
+  mobileMenuContent = null,
+}) {
   const location = useLocation();
   const { i18n, t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -54,31 +61,37 @@ export default function PageShell({ title, subtitle, right, children, mobileMenu
       </header>
       {!mobileMenuDisabled ? (
         <MobileDrawer open={menuOpen} onClose={() => setMenuOpen(false)} id="platform-mobile-drawer" title={t("nav.menu")}>
-          <div className="platform-mobile-drawer-links">
-            <Link
-              className={`platform-mobile-link${location.pathname === "/explore" ? " is-active" : ""}`}
-              to="/explore"
-              onClick={() => setMenuOpen(false)}
-            >
-              {t("common.explore")}
-            </Link>
-            <Link
-              className={`platform-mobile-link${location.pathname === "/pricing" ? " is-active" : ""}`}
-              to="/pricing"
-              onClick={() => setMenuOpen(false)}
-            >
-              {t("nav.pricing")}
-            </Link>
-            <Link
-              className={`platform-mobile-link${isSuperadminRoute ? " is-active" : ""}`}
-              to="/admin"
-              onClick={() => setMenuOpen(false)}
-            >
-              {t("nav.superadmin")}
-            </Link>
-            <LanguageSwitcher className="platform-mobile-lang" />
-            {right ? <div className="platform-mobile-extra">{right}</div> : null}
-          </div>
+          {typeof mobileMenuContent === "function" ? (
+            mobileMenuContent({ closeMenu: () => setMenuOpen(false) })
+          ) : mobileMenuContent ? (
+            mobileMenuContent
+          ) : (
+            <div className="platform-mobile-drawer-links">
+              <Link
+                className={`platform-mobile-link${location.pathname === "/explore" ? " is-active" : ""}`}
+                to="/explore"
+                onClick={() => setMenuOpen(false)}
+              >
+                {t("common.explore")}
+              </Link>
+              <Link
+                className={`platform-mobile-link${location.pathname === "/pricing" ? " is-active" : ""}`}
+                to="/pricing"
+                onClick={() => setMenuOpen(false)}
+              >
+                {t("nav.pricing")}
+              </Link>
+              <Link
+                className={`platform-mobile-link${isSuperadminRoute ? " is-active" : ""}`}
+                to="/admin"
+                onClick={() => setMenuOpen(false)}
+              >
+                {t("nav.superadmin")}
+              </Link>
+              <LanguageSwitcher className="platform-mobile-lang" />
+              {right ? <div className="platform-mobile-extra">{right}</div> : null}
+            </div>
+          )}
         </MobileDrawer>
       ) : null}
       <main className="platform-main">{children}</main>

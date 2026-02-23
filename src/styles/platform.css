@@ -921,6 +921,12 @@ select:disabled {
   }
 }
 
+@media (min-width: 769px) {
+  .platform-page .platform-brand img {
+    height: 64px;
+  }
+}
+
 .bookings-stack {
   display: grid;
   gap: 8px;
@@ -3510,15 +3516,16 @@ select:disabled {
 }
 
 .platform-header {
-  padding: 10px 14px;
-  gap: 12px;
+  min-height: 88px;
+  padding: 6px 12px;
+  gap: 10px;
 }
 
 .platform-header-main {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex: 1 1 auto;
 }
 
@@ -3543,13 +3550,27 @@ select:disabled {
 
 .platform-page .platform-brand {
   margin: 0;
-  padding: 0;
+  padding: 4px 6px;
+  min-height: 72px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(11, 30, 60, 0.08);
 }
 
 .platform-page .platform-brand img {
-  height: 40px;
+  height: 56px;
   width: auto;
   object-fit: contain;
+}
+
+.platform-page .platform-brand .brand-fallback-text {
+  font-size: clamp(20px, 2vw, 22px);
+  font-weight: 700;
+}
+
+.platform-page .platform-brand .brand-fallback-inline {
+  gap: 6px;
 }
 
 .platform-page .header-actions {
@@ -3678,8 +3699,8 @@ select:disabled {
 @media (max-width: 768px) {
   .platform-page .platform-header {
     align-items: center;
-    min-height: 60px;
-    padding: 8px 10px;
+    min-height: 84px;
+    padding: 6px 10px;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     background: rgba(246, 248, 252, 0.98);
@@ -3690,7 +3711,7 @@ select:disabled {
   }
 
   .platform-page .platform-brand img {
-    height: 34px;
+    height: 56px;
   }
 
   .platform-page .platform-header-copy p {

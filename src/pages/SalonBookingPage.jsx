@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import PageShell from "../components/PageShell";
 import SafeImage from "../components/SafeImage";
 import Toast from "../components/Toast";
-import { Badge, Button, Card, Skeleton, TextInput } from "../components/ui";
+import { Button, Card, Skeleton, TextInput } from "../components/ui";
 import {
   getDefaultAvatar,
   getInitials,
@@ -716,6 +716,30 @@ ${t("booking.whatsappFallback.phone")}: ${normalizedPhone}`;
     <PageShell
       title={salon.name}
       subtitle={t("booking.subtitle")}
+      mobileMenuContent={({ closeMenu }) => (
+        <div className="platform-mobile-drawer-links">
+          <Link className="platform-mobile-link" to="/explore" onClick={closeMenu}>
+            {t("common.explore")}
+          </Link>
+          <Link className="platform-mobile-link" to="/pricing" onClick={closeMenu}>
+            {t("nav.pricing")}
+          </Link>
+          <Link className="platform-mobile-link" to={`/s/${salon.slug}/admin`} onClick={closeMenu}>
+            {t("booking.salonAdmin")}
+          </Link>
+          {hasWhatsapp ? (
+            <a
+              className="platform-mobile-link"
+              href={`https://wa.me/${whatsappPhone}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={closeMenu}
+            >
+              {t("booking.contactWhatsapp")}
+            </a>
+          ) : null}
+        </div>
+      )}
       right={
         <Button as={Link} variant="ghost" to={`/s/${salon.slug}/admin`}>
           {t("booking.salonAdmin")}
@@ -725,7 +749,6 @@ ${t("booking.whatsappFallback.phone")}: ${normalizedPhone}`;
       <section className="salon-hero" style={{ backgroundImage: `url('${media.cover}')` }}>
         <div className="salon-hero-overlay">
           <div className="salon-hero-content">
-            <Badge variant="featured">{t("booking.demoRating")}</Badge>
             <div className="salon-hero-brand">
               <SafeImage
                 src={salon.logo_url || ""}
