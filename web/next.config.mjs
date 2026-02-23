@@ -15,6 +15,20 @@ const nextConfig = {
         hostname: 'api.mapbox.com'
       }
     ]
+  },
+  async redirects() {
+    return [
+      {
+        source: '/home',
+        destination: '/',
+        permanent: true
+      },
+      {
+        source: '/:locale(en|ar|cs|ru)/home',
+        destination: '/:locale',
+        permanent: true
+      }
+    ];
   }
 };
 

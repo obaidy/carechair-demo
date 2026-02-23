@@ -20,7 +20,7 @@ import {
 import {normalizeSlug} from '@/lib/slug';
 
 type PageProps = {
-  params: Promise<{country: string; city: string; slug: string}>;
+  params: Promise<{locale: string; country: string; city: string; slug: string}>;
 };
 
 function dayLabel(index: number): string {
@@ -29,8 +29,8 @@ function dayLabel(index: number): string {
 }
 
 export async function generateMetadata({params}: PageProps): Promise<Metadata> {
-  const {country, city, slug} = await params;
-  const messages = await getMessages();
+  const {locale, country, city, slug} = await params;
+  const messages = await getMessages({locale});
 
   const salonPayload = await getPublicSalonByPath(country, city, slug);
   if (salonPayload) {
@@ -59,8 +59,8 @@ export async function generateMetadata({params}: PageProps): Promise<Metadata> {
 }
 
 export default async function SlugPage({params}: PageProps) {
-  const {country, city, slug} = await params;
-  const messages = await getMessages();
+  const {locale, country, city, slug} = await params;
+  const messages = await getMessages({locale});
 
   const salonPayload = await getPublicSalonByPath(country, city, slug);
 
@@ -141,7 +141,7 @@ export default async function SlugPage({params}: PageProps) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(jsonLd)}} />
 
       <section className="hero-card">
-        <h1>{salon.name}</h1>
+        <h1 className="hero-title-clamp">{salon.name}</h1>
         <p>{address || salon.area || t(messages, 'salon.addressUnavailable', 'Address unavailable')}</p>
       </section>
 
@@ -182,7 +182,11 @@ export default async function SlugPage({params}: PageProps) {
             {hours.map((row) => (
               <li key={`${row.day_of_week}-${row.open_time}-${row.close_time}`}>
                 <span>{dayLabel(row.day_of_week)}</span>
-                <span>{row.is_closed ? t(messages, 'salon.closed', 'Closed') : `${String(row.open_time || '').slice(0, 5)} - ${String(row.close_time || '').slice(0, 5)}`}</span>
+                <span>
+                  {row.is_closed
+                    ? t(messages, 'salon.closed', 'Closed')
+                    : `${String(row.open_time || '').slice(0, 5)} - ${String(row.close_time || '').slice(0, 5)}`}
+                </span>
               </li>
             ))}
           </ul>
@@ -190,14 +194,18 @@ export default async function SlugPage({params}: PageProps) {
           <h3>{t(messages, 'salon.services', 'Services')}</h3>
           <ul className="chip-list">
             {services.map((service) => (
-              <li key={service.id} className="chip">{service.name}</li>
+              <li key={service.id} className="chip">
+                {service.name}
+              </li>
             ))}
           </ul>
 
           <h3>{t(messages, 'salon.staff', 'Staff')}</h3>
           <ul className="chip-list">
             {staff.map((member) => (
-              <li key={member.id} className="chip">{member.name}</li>
+              <li key={member.id} className="chip">
+                {member.name}
+              </li>
             ))}
           </ul>
         </article>

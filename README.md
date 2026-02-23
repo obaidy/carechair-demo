@@ -1,102 +1,71 @@
-# CareChair Demo Monorepo (Vite SPA + Next.js Public Web)
+# CareChair Demo Monorepo (Vite SPA + Next.js)
 
-This repo now contains two apps:
+This repo contains two frontends:
 
-- Root app (`/`): existing Vite React SPA for dashboard/admin flows.
-- Public web (`/web`): new Next.js App Router app for SEO pages (`/`, `/explore`, city/service/salon public routes).
-
-The existing SPA routing/build behavior is intentionally preserved.
+- Root app (`/`): existing Vite React SPA (kept as fallback, unchanged build/deploy behavior)
+- Next app (`/web`): locale-prefixed public SEO pages + Next dashboards
 
 ## Apps
 
-### 1) Dashboard SPA (existing, unchanged)
-- Tech: React + Vite
-- Purpose: salon/admin dashboard and existing demo app
-- Default deployment: Netlify
+### 1) Vite SPA (existing)
+- Path: `/`
+- Purpose: existing demo fallback
+- Build: `npm run build`
+- Deploy: Netlify (current default)
 
-### 2) Public SEO site (new)
-- Tech: Next.js App Router (`/web`)
-- Purpose: public landing, explore, city/service listing, salon booking SEO pages
-- Recommended deployment: Vercel (can also run on Netlify)
+### 2) Next app
+- Path: `/web`
+- Purpose: public SEO pages + salon admin + superadmin
 - Runtime: Node.js `>=18.18` (recommended Node 20)
 
-## Development Scripts (root)
+## Root Scripts
 
-- `npm run dev:app` -> run Vite SPA only
-- `npm run dev:web` -> run Next.js web app only
-- `npm run dev` -> run both in parallel
-- `npm run build` -> build Vite SPA only (kept for current Netlify flow)
+- `npm run dev:app` -> run Vite SPA
+- `npm run dev:web` -> run Next app in `/web`
+- `npm run dev` -> run both
+- `npm run build` -> build Vite SPA only
+- `npm run build:web` -> build Next app
+- `npm run start:web` -> start Next app
 
-## Environment Variables
+## Next Routes (`/web`)
 
-### Root SPA (`.env`)
+Locale prefix is required for app routes (`en`, `ar`, `cs`, `ru`):
+
+- Public:
+  - `/{locale}`
+  - `/{locale}/explore`
+  - `/{locale}/{country}/{city}`
+  - `/{locale}/{country}/{city}/{slug}`
+- Auth:
+  - `/{locale}/login`
+- Dashboards:
+  - `/{locale}/app` (salon admin)
+  - `/{locale}/sa` (superadmin)
+
+Legacy redirects:
+
+- `/home` -> `/`
+- `/{locale}/home` -> `/{locale}`
+
+## Environment
+
+### Root SPA `.env`
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 - `VITE_MAPBOX_TOKEN` (optional)
-- existing demo vars (`VITE_ADMIN_PASS`, `VITE_SALON_SLUG`, etc.)
 
-### Next public web (`/web/.env`)
+### Next `/web/.env`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_MAPBOX_TOKEN` (optional): enables static map preview on salon public page
-- `NEXT_PUBLIC_SITE_URL` (optional but recommended): canonical/hreflang base URL
+- `NEXT_PUBLIC_SITE_URL` (recommended)
+- `NEXT_PUBLIC_MAPBOX_TOKEN` (optional)
+- `NEXT_PUBLIC_SUPERADMIN_CODE` (optional demo override)
 
-See `web/.env.example`.
+More details: `web/README.md`.
 
-### /web Quick Start
+## Recommended Deployment Split
 
-```bash
-# Node 18.18+ (recommended: Node 20)
-cd web
-npm install
-npm run dev
-```
+- `carechair.com` -> Next app (`/web`)
+- `app.carechair.com` -> Vite SPA (root)
 
-## Deployment
-
-### Recommended setup (Option A)
-
-- `carechair.com` -> deploy `/web` Next app (Vercel)
-- `app.carechair.com` -> deploy root Vite SPA (Netlify)
-
-This avoids rewrite complexity and keeps current SPA routes/deployment behavior intact.
-
-### If using one provider
-
-Deploy as two separate projects:
-- Project 1 build root (`npm run build`) for SPA
-- Project 2 build `/web` (`npm --prefix web run build`) for public web
-
-## Public SEO Features in `/web`
-
-- SSR/server data fetching from Supabase with public filters
-- Valid public routes:
-  - `/`
-  - `/explore`
-  - `/[country]/[city]`
-  - `/[country]/[city]/[slug]` (resolves salon profile + booking or service listing)
-- Legacy route redirects:
-  - `/home` -> `/`
-  - `/en/home`, `/ar/home`, `/cs/home`, `/ru/home` -> `/` (and locale cookie is set)
-- Metadata per page (title/description/canonical/hreflang)
-- `sitemap.xml` and `robots.txt`
-- JSON-LD `LocalBusiness` on salon profile pages
-- i18n with `next-intl`: `ar`, `en`, `cs`, `ru` (RTL supported for Arabic)
-- Directions links (Apple Maps + Google Maps)
-- Static map preview using Mapbox token fallback
-
-## Location Sanity Check (SPA)
-
-Run a lightweight DB sanity script after applying migrations:
-
-```bash
-VITE_SUPABASE_URL=... \
-SUPABASE_SERVICE_ROLE_KEY=... \
-SANITY_SALON_SLUG=your-salon-slug \
-npm run sanity:location
-```
-
-This verifies:
-- primary location upsert works,
-- direction links can be generated from stored coordinates,
-- invalid latitude is rejected by server-side constraints.
+This keeps current SPA deployment behavior intact and avoids risky rewrites.

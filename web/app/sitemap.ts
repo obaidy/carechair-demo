@@ -1,10 +1,12 @@
 import type {MetadataRoute} from 'next';
 import {getSiteMapData} from '@/lib/data/public';
-import {localeAlternateUrls, toAbsoluteUrl} from '@/lib/seo';
+import {DEFAULT_LOCALE} from '@/lib/i18n';
+import {localeAlternateUrls, localizedPath, toAbsoluteUrl} from '@/lib/seo';
 
 function withAlternates(path: string) {
+  const canonicalPath = localizedPath(DEFAULT_LOCALE, path);
   return {
-    url: toAbsoluteUrl(path),
+    url: toAbsoluteUrl(canonicalPath),
     alternates: {
       languages: localeAlternateUrls(path)
     }

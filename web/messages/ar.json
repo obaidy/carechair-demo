@@ -3,11 +3,26 @@
     "language": "اللغة",
     "loading": "جارٍ التحميل...",
     "saving": "جارٍ الحفظ...",
-    "noData": "لا توجد بيانات"
+    "noData": "لا توجد بيانات",
+    "view": "عرض",
+    "forbidden": "غير مسموح",
+    "forbiddenHint": "ليس لديك صلاحية لفتح هذه الصفحة.",
+    "notFound": "الصفحة غير موجودة",
+    "notFoundHint": "الصفحة المطلوبة غير موجودة.",
+    "loginHint": "استخدم رمز صالونك أو رمز السوبر أدمن لفتح لوحة التحكم."
   },
   "nav": {
     "home": "الرئيسية",
-    "explore": "استكشاف"
+    "explore": "استكشاف",
+    "login": "تسجيل الدخول",
+    "logout": "تسجيل الخروج",
+    "superadmin": "الإدارة العليا",
+    "menu": "القائمة",
+    "features": "المزايا",
+    "pricing": "الأسعار",
+    "faq": "الأسئلة الشائعة",
+    "centers": "لأصحاب الصالونات",
+    "dashboard": "لوحة التحكم"
   },
   "meta": {
     "defaultTitle": "منصة حجز صالونات",
@@ -92,5 +107,44 @@
       "noSlots": "لا توجد مواعيد متاحة في هذا التاريخ.",
       "generic": "تعذر إتمام الحجز حالياً."
     }
+  },
+  "dashboard": {
+    "overview": "نظرة عامة",
+    "bookings": "الحجوزات",
+    "calendar": "التقويم",
+    "staff": "الموظفون",
+    "services": "الخدمات",
+    "clients": "العملاء",
+    "settings": "الإعدادات",
+    "salonTitle": "إدارة الصالون",
+    "bookingsToday": "حجوزات اليوم",
+    "bookings30d": "حجوزات 30 يوم",
+    "confirmed30d": "المؤكدة 30 يوم",
+    "pending": "معلّق",
+    "clients30d": "العملاء 30 يوم",
+    "revenue30d": "الإيراد 30 يوم",
+    "quickActions": "إجراءات سريعة",
+    "bookingsHint": "أحدث المواعيد وتحديث الحالة.",
+    "calendarHint": "الجدول اليومي للمواعيد حسب التاريخ.",
+    "addStaff": "إضافة موظف",
+    "addService": "إضافة خدمة",
+    "name": "الاسم",
+    "sortOrder": "الترتيب",
+    "duration": "المدة",
+    "price": "السعر",
+    "add": "إضافة",
+    "markCancelled": "تعيين كملغى",
+    "markConfirmed": "تعيين كمؤكد",
+    "visibility": "الظهور في الاستكشاف",
+    "account": "الحساب"
+  },
+  "superadmin": {
+    "overview": "نظرة عامة",
+    "totalSalons": "إجمالي الصالونات",
+    "active": "نشط",
+    "pending": "قيد الانتظار",
+    "suspended": "معلّق",
+    "actions": "إجراءات",
+    "recentBookings": "أحدث الحجوزات"
   }
 }

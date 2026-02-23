@@ -7,12 +7,12 @@ import {Link} from '@/i18n/navigation';
 import {normalizeSlug} from '@/lib/slug';
 
 type PageProps = {
-  params: Promise<{country: string; city: string}>;
+  params: Promise<{locale: string; country: string; city: string}>;
 };
 
 export async function generateMetadata({params}: PageProps) {
-  const {country, city} = await params;
-  const messages = await getMessages();
+  const {locale, country, city} = await params;
+  const messages = await getMessages({locale});
 
   const countryLabel = normalizeSlug(country).toUpperCase();
   const cityLabel = decodeURIComponent(city).replace(/-/g, ' ');
@@ -25,23 +25,18 @@ export async function generateMetadata({params}: PageProps) {
 }
 
 export default async function CityPage({params}: PageProps) {
-  const {country, city} = await params;
-  const messages = await getMessages();
+  const {locale, country, city} = await params;
+  const messages = await getMessages({locale});
 
   const rows = await getCityListingData(country, city);
-
-  if (!rows.length) {
-    notFound();
-  }
+  if (!rows.length) notFound();
 
   const cityName = decodeURIComponent(city).replace(/-/g, ' ');
 
   return (
     <div className="container page-stack">
       <section className="section-stack">
-        <h1>
-          {cityName}
-        </h1>
+        <h1>{cityName}</h1>
         <p className="muted">{t(messages, 'city.subtitle', 'Listed salons and services in this city.')}</p>
       </section>
 
@@ -57,17 +52,11 @@ export default async function CityPage({params}: PageProps) {
                 <p className="muted">{salon.area || '-'}</p>
                 <p className="muted">{services.slice(0, 4).map((service) => service.name).join(' • ')}</p>
                 <div className="row-actions">
-                  <Link
-                    href={`/${countryPath}/${cityPath}/${salon.slug}`}
-                    className="btn btn-primary"
-                  >
+                  <Link href={`/${countryPath}/${cityPath}/${salon.slug}`} className="btn btn-primary">
                     {t(messages, 'city.viewSalon', 'View salon')}
                   </Link>
                   {services[0] ? (
-                    <Link
-                      href={`/${countryPath}/${cityPath}/${normalizeSlug(services[0].name)}`}
-                      className="btn btn-secondary"
-                    >
+                    <Link href={`/${countryPath}/${cityPath}/${normalizeSlug(services[0].name)}`} className="btn btn-secondary">
                       {t(messages, 'city.viewService', 'View service salons')}
                     </Link>
                   ) : null}

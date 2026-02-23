@@ -3,11 +3,26 @@
     "language": "Language",
     "loading": "Loading...",
     "saving": "Saving...",
-    "noData": "No data"
+    "noData": "No data",
+    "view": "View",
+    "forbidden": "Access denied",
+    "forbiddenHint": "You do not have permission to open this page.",
+    "notFound": "Page not found",
+    "notFoundHint": "The page you requested does not exist.",
+    "loginHint": "Use salon passcode or superadmin passcode to open dashboards."
   },
   "nav": {
     "home": "Home",
-    "explore": "Explore"
+    "explore": "Explore",
+    "login": "Login",
+    "logout": "Logout",
+    "superadmin": "Superadmin",
+    "menu": "Menu",
+    "features": "Features",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "centers": "For salons",
+    "dashboard": "Dashboard"
   },
   "meta": {
     "defaultTitle": "Salon booking platform",
@@ -92,5 +107,44 @@
       "noSlots": "No available slots for this date.",
       "generic": "Unable to complete booking right now."
     }
+  },
+  "dashboard": {
+    "overview": "Overview",
+    "bookings": "Bookings",
+    "calendar": "Calendar",
+    "staff": "Staff",
+    "services": "Services",
+    "clients": "Clients",
+    "settings": "Settings",
+    "salonTitle": "Salon Admin",
+    "bookingsToday": "Bookings today",
+    "bookings30d": "Bookings (30d)",
+    "confirmed30d": "Confirmed (30d)",
+    "pending": "Pending",
+    "clients30d": "Clients (30d)",
+    "revenue30d": "Revenue (30d)",
+    "quickActions": "Quick actions",
+    "bookingsHint": "Recent appointments and status updates.",
+    "calendarHint": "Daily booking timeline grouped by date.",
+    "addStaff": "Add staff member",
+    "addService": "Add service",
+    "name": "Name",
+    "sortOrder": "Sort order",
+    "duration": "Duration",
+    "price": "Price",
+    "add": "Add",
+    "markCancelled": "Mark cancelled",
+    "markConfirmed": "Mark confirmed",
+    "visibility": "Visibility on explore",
+    "account": "Account"
+  },
+  "superadmin": {
+    "overview": "Overview",
+    "totalSalons": "Total salons",
+    "active": "Active",
+    "pending": "Pending",
+    "suspended": "Suspended",
+    "actions": "Actions",
+    "recentBookings": "Recent bookings"
   }
 }

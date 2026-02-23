@@ -3,11 +3,26 @@
     "language": "Jazyk",
     "loading": "Načítání...",
     "saving": "Ukládání...",
-    "noData": "Žádná data"
+    "noData": "Žádná data",
+    "view": "Detail",
+    "forbidden": "Přístup odepřen",
+    "forbiddenHint": "Nemáte oprávnění otevřít tuto stránku.",
+    "notFound": "Stránka nenalezena",
+    "notFoundHint": "Požadovaná stránka neexistuje.",
+    "loginHint": "Použijte kód salonu nebo superadmin kód pro vstup do dashboardu."
   },
   "nav": {
     "home": "Domů",
-    "explore": "Prozkoumat"
+    "explore": "Prozkoumat",
+    "login": "Přihlásit",
+    "logout": "Odhlásit",
+    "superadmin": "Superadmin",
+    "menu": "Menu",
+    "features": "Funkce",
+    "pricing": "Ceník",
+    "faq": "FAQ",
+    "centers": "Pro salony",
+    "dashboard": "Dashboard"
   },
   "meta": {
     "defaultTitle": "Platforma pro rezervaci salonů",
@@ -92,5 +107,44 @@
       "noSlots": "Pro tento den nejsou volné termíny.",
       "generic": "Rezervaci se teď nepodařilo dokončit."
     }
+  },
+  "dashboard": {
+    "overview": "Přehled",
+    "bookings": "Rezervace",
+    "calendar": "Kalendář",
+    "staff": "Personál",
+    "services": "Služby",
+    "clients": "Klienti",
+    "settings": "Nastavení",
+    "salonTitle": "Salon admin",
+    "bookingsToday": "Dnešní rezervace",
+    "bookings30d": "Rezervace (30d)",
+    "confirmed30d": "Potvrzené (30d)",
+    "pending": "Čekající",
+    "clients30d": "Klienti (30d)",
+    "revenue30d": "Tržby (30d)",
+    "quickActions": "Rychlé akce",
+    "bookingsHint": "Nedávné rezervace a změny stavu.",
+    "calendarHint": "Denní harmonogram rezervací podle data.",
+    "addStaff": "Přidat zaměstnance",
+    "addService": "Přidat službu",
+    "name": "Název",
+    "sortOrder": "Pořadí",
+    "duration": "Délka",
+    "price": "Cena",
+    "add": "Přidat",
+    "markCancelled": "Označit zrušeno",
+    "markConfirmed": "Označit potvrzeno",
+    "visibility": "Viditelnost v explore",
+    "account": "Účet"
+  },
+  "superadmin": {
+    "overview": "Přehled",
+    "totalSalons": "Celkem salonů",
+    "active": "Aktivní",
+    "pending": "Čekající",
+    "suspended": "Pozastavené",
+    "actions": "Akce",
+    "recentBookings": "Poslední rezervace"
   }
 }

@@ -1,0 +1,54 @@
+import {redirect} from 'next/navigation';
+import {getTranslations} from 'next-intl/server';
+import {createServiceAction, toggleServiceAction} from '@/lib/actions/dashboard';
+import {getSessionSalon, getSalonServices} from '@/lib/data/dashboard';
+
+type Props = {params: Promise<{locale: string}>};
+
+export default async function ServicesPage({params}: Props) {
+  const {locale} = await params;
+  const t = await getTranslations();
+
+  const salon = await getSessionSalon();
+  if (!salon) redirect(`/${locale}/login?error=session`);
+
+  const services = await getSalonServices(salon.id);
+
+  return (
+    <div className="container page-stack">
+      <section className="section-stack">
+        <h1>{t('dashboard.services', {defaultValue: 'Services'})}</h1>
+      </section>
+
+      <section className="salon-info-card">
+        <h2>{t('dashboard.addService', {defaultValue: 'Add service'})}</h2>
+        <form action={createServiceAction} className="inline-form-grid">
+          <input type="hidden" name="path" value={`/${locale}/app/services`} />
+          <label className="form-field"><span>{t('dashboard.name', {defaultValue: 'Name'})}</span><input className="input" name="name" required minLength={2} /></label>
+          <label className="form-field"><span>{t('dashboard.duration', {defaultValue: 'Duration (min)'})}</span><input className="input" name="durationMinutes" type="number" min={5} defaultValue={45} /></label>
+          <label className="form-field"><span>{t('dashboard.price', {defaultValue: 'Price'})}</span><input className="input" name="price" type="number" min={0} defaultValue={0} /></label>
+          <label className="form-field"><span>{t('dashboard.sortOrder', {defaultValue: 'Sort order'})}</span><input className="input" name="sortOrder" type="number" min={0} defaultValue={0} /></label>
+          <button className="btn btn-primary" type="submit">{t('dashboard.add', {defaultValue: 'Add'})}</button>
+        </form>
+      </section>
+
+      <section className="dashboard-list">
+        {services.map((service) => (
+          <article className="dashboard-item-card" key={service.id}>
+            <div className="dashboard-item-main">
+              <h3>{service.name}</h3>
+              <p className="muted">{service.duration_minutes} min • {service.price ?? 0}</p>
+              <p className="muted">{service.is_active ? 'Active' : 'Inactive'}</p>
+            </div>
+            <form action={toggleServiceAction}>
+              <input type="hidden" name="path" value={`/${locale}/app/services`} />
+              <input type="hidden" name="serviceId" value={service.id} />
+              <input type="hidden" name="isActive" value={service.is_active ? 'true' : 'false'} />
+              <button type="submit" className="btn btn-secondary">{service.is_active ? 'Disable' : 'Enable'}</button>
+            </form>
+          </article>
+        ))}
+      </section>
+    </div>
+  );
+}

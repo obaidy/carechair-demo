@@ -1,5 +1,5 @@
 import type {Metadata} from 'next';
-import type {Locale} from '@/lib/i18n';
+import {DEFAULT_LOCALE, type Locale, SUPPORTED_LOCALES} from '@/lib/i18n';
 
 export const SITE_NAME = 'CareChair';
 
@@ -9,20 +9,23 @@ export function getBaseUrl(): string {
   return env.endsWith('/') ? env.slice(0, -1) : env;
 }
 
+export function localizedPath(locale: Locale, pathname: string): string {
+  const safePath = pathname.startsWith('/') ? pathname : `/${pathname}`;
+  if (safePath === '/') return `/${locale}`;
+  return `/${locale}${safePath}`;
+}
+
 export function toAbsoluteUrl(pathname: string): string {
   const safePath = pathname.startsWith('/') ? pathname : `/${pathname}`;
   return `${getBaseUrl()}${safePath}`;
 }
 
 export function localeAlternateUrls(pathname: string): Record<Locale, string> {
-  const safePath = pathname.startsWith('/') ? pathname : `/${pathname}`;
-  const base = getBaseUrl();
-  return {
-    en: `${base}${safePath}?lang=en`,
-    ar: `${base}${safePath}?lang=ar`,
-    cs: `${base}${safePath}?lang=cs`,
-    ru: `${base}${safePath}?lang=ru`
-  };
+  const map = {} as Record<Locale, string>;
+  for (const locale of SUPPORTED_LOCALES) {
+    map[locale] = toAbsoluteUrl(localizedPath(locale, pathname));
+  }
+  return map;
 }
 
 export function buildMetadata({
@@ -34,7 +37,9 @@ export function buildMetadata({
   description: string;
   pathname: string;
 }): Metadata {
-  const canonical = toAbsoluteUrl(pathname);
+  const canonicalPath = localizedPath(DEFAULT_LOCALE, pathname);
+  const canonical = toAbsoluteUrl(canonicalPath);
+
   return {
     title,
     description,
