@@ -226,7 +226,10 @@
       "suspended": "Account is suspended. Please contact support.",
       "pendingSetup": "Your account is not active. Complete setup fee and monthly subscription.",
       "pastDue": "Subscription is past due. Update payment to reactivate.",
-      "default": "Account is currently inactive. Complete setup and billing."
+      "default": "Account is currently inactive. Complete setup and billing.",
+      "pendingApproval": "Your salon is waiting for superadmin approval.",
+      "pendingBilling": "Approval completed, payment is required before access starts.",
+      "rejected": "This salon was rejected. Contact support."
     },
     "trialEnded": "Ended",
     "hoursRemaining": "{{count}} hours",
@@ -252,7 +255,11 @@
     "active": "Active",
     "past_due": "Past Due",
     "canceled": "Canceled",
-    "suspended": "Suspended"
+    "suspended": "Suspended",
+    "draft": "Draft",
+    "pending_approval": "Pending Approval",
+    "pending_billing": "Pending Billing",
+    "rejected": "Rejected"
   },
   "superadmin": {
     "title": "Super Admin Panel",
@@ -271,6 +278,62 @@
     "login": "Unlock",
     "salonControl": "Salon Control",
     "statusFilter": "Status filter",
+    "tabs": {
+      "overview": "Overview",
+      "salons": "Salons",
+      "create": "Create salon",
+      "countries": "Countries"
+    },
+    "kpis": {
+      "totalSalons": "Total salons",
+      "pendingApproval": "Pending approval",
+      "active": "Active / Trialing",
+      "suspended": "Suspended"
+    },
+    "overview": {
+      "title": "Operational overview",
+      "cards": {
+        "totalSalons": "Total Salons",
+        "activeSalons": "Active Salons",
+        "trialing": "Trialing",
+        "pendingApproval": "Pending Approval",
+        "pastDue": "Past Due",
+        "bookings30": "Total Bookings (30d)",
+        "customers30": "Total Customers (30d)"
+      },
+      "countryBreakdown": "Country breakdown",
+      "topSalons7d": "Top salons by bookings (7d)",
+      "atRisk": "Salons at risk",
+      "empty": "No data yet.",
+      "noRisk": "No risk salons right now.",
+      "table": {
+        "country": "Country",
+        "salons": "Salons",
+        "active": "Active",
+        "bookings30": "Bookings (30d)",
+        "customers30": "Customers (30d)",
+        "salon": "Salon",
+        "bookings7": "Bookings 7d",
+        "lastBooking": "Last booking",
+        "status": "Status",
+        "risk": "Risk"
+      },
+      "risks": {
+        "trialEnding": "Trial ending soon",
+        "zeroBookings": "0 bookings in 7d"
+      }
+    },
+    "health": {
+      "title": "Salon health",
+      "totalCustomers": "Total customers",
+      "newCustomers30": "New customers (30d)",
+      "repeatRate": "Repeat rate",
+      "bookings7": "Bookings 7d",
+      "bookings30": "Bookings 30d",
+      "lastBooking": "Last booking",
+      "trialCountdown": "Trial countdown",
+      "engagementScore": "Engagement score"
+    },
     "noSalons": "No salons found for this filter.",
     "setupPaid": "Setup Paid",
     "setupPending": "Setup Pending",
@@ -283,6 +346,8 @@
     "newPasscode": "New passcode",
     "saving": "Saving...",
     "savePasscode": "Save passcode",
+    "editSalonInfo": "Salon information",
+    "editSalonInfoHint": "Edit name, URL slug and contact before approving.",
     "hideFromExplore": "Hide from explore",
     "showInExplore": "Show in explore",
     "clearSetupPaid": "Clear setup paid",
@@ -311,7 +376,7 @@
     },
     "messages": {
       "unlocked": "Super admin unlocked.",
-      "salonCreated": "Salon created and trial activated.",
+      "salonCreated": "Salon created and moved to pending approval.",
       "saved": "Changes saved.",
       "passcodeUpdated": "Salon admin passcode updated.",
       "countrySaved": "Country settings updated for {{code}}.",
@@ -324,7 +389,12 @@
       "setupPaymentMarked": "Setup fee marked as paid.",
       "setupPaymentCleared": "Setup fee payment cleared.",
       "suspended": "Salon suspended.",
-      "unsuspended": "Suspension removed."
+      "unsuspended": "Suspension removed.",
+      "approvedTrialing": "Approved. Trial started for 7 days.",
+      "approvedPendingBilling": "Approved - payment required to start access.",
+      "rejected": "Salon rejected.",
+      "salonInfoUpdated": "Salon info updated.",
+      "deleted": "Salon deleted."
     },
     "errors": {
       "codeMissing": "Super admin code is not set. Configure VITE_SUPERADMIN_CODE then restart dev.",
@@ -340,7 +410,45 @@
       "passcodeTooShort": "Admin passcode must be at least 3 characters.",
       "passcodeUpdateFailed": "Failed to update passcode: {{message}}",
       "countrySaveFailed": "Failed to update country settings: {{message}}",
-      "countriesMigrationMissing": "Countries table is missing. Run the latest migration to enable country controls."
+      "countriesMigrationMissing": "Countries table is missing. Run the latest migration to enable country controls.",
+      "salonNotFound": "Salon not found.",
+      "slugTaken": "Slug is already used by another salon.",
+      "deleteFailed": "Failed to delete salon: {{message}}",
+      "metricsLoadFailed": "Failed to load overview metrics: {{message}}"
+    },
+    "approvals": "Approvals",
+    "approvalsQueue": "Pending approvals",
+    "noPendingApprovals": "No salons pending approval.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "view": "View",
+    "submittedAt": "Submitted at",
+    "counts": {
+      "staff": "Staff",
+      "services": "Services"
+    },
+    "confirmApproveTitle": "Approve salon",
+    "confirmApproveText": "Approve {{name}} now?",
+    "confirmRejectTitle": "Reject salon",
+    "confirmRejectText": "Reject {{name}}?",
+    "confirmDeleteTitle": "Delete salon",
+    "confirmDeleteText": "Are you sure you want to permanently delete {{name}}?",
+    "resume": "Resume",
+    "applyOverride": "Apply override",
+    "clearOverride": "Clear override",
+    "auditLog": "Audit log",
+    "noAuditLogs": "No audit logs yet.",
+    "stripeConfigWarning": "Stripe config is missing for this country.",
+    "stripeConfigWarningText": "Set Stripe Basic/Pro price IDs in Countries Configuration before activating non-IQ salons.",
+    "detail": {
+      "statusSection": "Status",
+      "statusHint": "Suspend, resume, or force operational status.",
+      "trialSection": "Trial",
+      "trialHint": "Start or extend trial quickly (+3 / +7 / +14 days).",
+      "overrideSection": "Manual override",
+      "overrideHint": "Grant temporary access until a specific date and time.",
+      "visibilitySection": "Visibility",
+      "visibilityHint": "Control listing visibility in Explore."
     }
   },
   "legal": {
@@ -528,7 +636,8 @@
       "commissions": "Commissions",
       "expenses": "Expenses",
       "reports": "Reports",
-      "settings": "Settings"
+      "settings": "Settings",
+      "media": "Media"
     },
     "settings": {
       "assign": "Assign services to staff",
@@ -877,6 +986,114 @@
       "outsideWorkingHours": "This booking is outside working hours.",
       "insideBreak": "This time overlaps break hours.",
       "overlap": "This slot overlaps another booking."
+    }
+  },
+  "onboarding": {
+    "title": "Salon onboarding setup",
+    "subtitle": "Create the full salon structure in one flow.",
+    "backAdmin": "Back to superadmin",
+    "progressTitle": "Setup progress",
+    "stepCount": "Step {{step}} of {{total}}",
+    "steps": {
+      "basic": "Basic information",
+      "hours": "Working hours",
+      "employees": "Employees",
+      "services": "Services",
+      "submit": "Submit"
+    },
+    "fields": {
+      "salonName": "Salon name",
+      "country": "Country",
+      "city": "City",
+      "whatsapp": "WhatsApp notification number",
+      "adminPasscode": "Admin passcode",
+      "logoUpload": "Logo upload",
+      "coverUpload": "Cover image upload",
+      "openDay": "Open",
+      "employeeName": "Employee name",
+      "employeeRole": "Role",
+      "employeePhoneOptional": "Phone (optional)",
+      "avatarUpload": "Avatar upload",
+      "sameHoursAsSalon": "Same hours as salon",
+      "serviceName": "Service name",
+      "durationMinutes": "Duration (minutes)",
+      "price": "Price",
+      "category": "Category",
+      "assignEmployees": "Assign to employees"
+    },
+    "placeholders": {
+      "salonName": "Example: Queen Beauty Center",
+      "city": "Example: Baghdad",
+      "whatsapp": "9647XXXXXXXX",
+      "adminPasscode": "Example: 1234",
+      "noFile": "No file selected",
+      "employeeName": "Example: Sara",
+      "employeeRole": "Example: Senior stylist",
+      "employeePhone": "07XXXXXXXXX",
+      "serviceName": "Example: Haircut",
+      "duration": "Duration: 45",
+      "price": "Price: 20000",
+      "category": "Example: Hair"
+    },
+    "labels": {
+      "employeeNumber": "Employee #{{n}}",
+      "serviceNumber": "Service #{{n}}",
+      "unnamedEmployee": "Unnamed employee"
+    },
+    "actions": {
+      "addEmployee": "Add employee",
+      "addService": "Add service",
+      "remove": "Remove",
+      "back": "Back",
+      "next": "Next",
+      "submit": "Create salon setup",
+      "submitting": "Submitting..."
+    },
+    "reviewText": "Review your setup and submit to create the full salon structure.",
+    "review": {
+      "basic": "Basic information",
+      "resources": "Resources",
+      "employees": "Employees",
+      "services": "Services",
+      "hours": "Working days"
+    },
+    "upload": {
+      "logo": "Uploading logo...",
+      "cover": "Uploading cover image...",
+      "avatarFor": "Uploading avatar for {{name}}...",
+      "finalizing": "Finalizing setup..."
+    },
+    "messages": {
+      "success": "Salon setup completed successfully."
+    },
+    "success": {
+      "badge": "Setup completed",
+      "title": "Salon is ready ✅",
+      "text": "Your setup was submitted successfully and is now waiting for superadmin approval.",
+      "openBooking": "Open booking page",
+      "openAdmin": "Open admin dashboard",
+      "bookingLink": "Booking link",
+      "adminLink": "Admin link",
+      "passcode": "Admin passcode",
+      "createAnother": "Create another salon",
+      "backSuperadmin": "Back to superadmin"
+    },
+    "errors": {
+      "supabaseMissing": "Supabase is not configured.",
+      "loadCountries": "Failed to load countries: {{message}}",
+      "nameRequired": "Salon name is required.",
+      "countryRequired": "Please select country.",
+      "invalidSalonHours": "Please fix salon working hours for {{day}}.",
+      "employeeRequired": "Add at least one employee.",
+      "employeeNameRequired": "Employee name is required.",
+      "invalidEmployeeHours": "Please fix custom hours for {{name}}.",
+      "serviceRequired": "Add at least one service.",
+      "serviceNameRequired": "Service name is required.",
+      "serviceDurationRequired": "Service duration must be at least 5 minutes.",
+      "servicePriceRequired": "Service price is invalid.",
+      "serviceAssignmentsRequired": "Assign at least one employee to every service.",
+      "invalidImageType": "Image must be JPG, PNG or WEBP.",
+      "submitFailed": "Failed to complete setup: {{message}}"
     }
   }
 }

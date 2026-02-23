@@ -226,7 +226,10 @@
       "suspended": "Аккаунт приостановлен. Свяжитесь с поддержкой.",
       "pendingSetup": "Аккаунт не активен. Оплатите setup и месячную подписку.",
       "pastDue": "Подписка просрочена. Обновите оплату.",
-      "default": "Аккаунт неактивен. Завершите настройку и оплату."
+      "default": "Аккаунт неактивен. Завершите настройку и оплату.",
+      "pendingApproval": "Салон ожидает одобрения супер-админа.",
+      "pendingBilling": "Одобрено, но до старта требуется оплата.",
+      "rejected": "Салон был отклонён. Обратитесь в поддержку."
     },
     "trialEnded": "Завершено",
     "hoursRemaining": "{{count}} ч",
@@ -252,7 +255,11 @@
     "active": "Активно",
     "past_due": "Просрочено",
     "canceled": "Отменено",
-    "suspended": "Приостановлено"
+    "suspended": "Приостановлено",
+    "draft": "Черновик",
+    "pending_approval": "Ожидает одобрения",
+    "pending_billing": "Ожидает оплаты",
+    "rejected": "Отклонён"
   },
   "superadmin": {
     "title": "Панель суперадмина",
@@ -271,6 +278,62 @@
     "login": "Войти",
     "salonControl": "Управление салонами",
     "statusFilter": "Фильтр статуса",
+    "tabs": {
+      "overview": "Обзор",
+      "salons": "Салоны",
+      "create": "Создать салон",
+      "countries": "Страны"
+    },
+    "kpis": {
+      "totalSalons": "Всего салонов",
+      "pendingApproval": "Ожидают одобрения",
+      "active": "Активные / Trial",
+      "suspended": "Заблокированные"
+    },
+    "overview": {
+      "title": "Операционный обзор",
+      "cards": {
+        "totalSalons": "Всего салонов",
+        "activeSalons": "Активные салоны",
+        "trialing": "Trialing",
+        "pendingApproval": "Ожидают одобрения",
+        "pastDue": "Просрочка оплаты",
+        "bookings30": "Всего записей (30 дн.)",
+        "customers30": "Всего клиентов (30 дн.)"
+      },
+      "countryBreakdown": "Разбивка по странам",
+      "topSalons7d": "Топ салонов по записям (7 дн.)",
+      "atRisk": "Салоны в риске",
+      "empty": "Пока нет данных.",
+      "noRisk": "Сейчас нет салонов в риске.",
+      "table": {
+        "country": "Страна",
+        "salons": "Салоны",
+        "active": "Активные",
+        "bookings30": "Записи (30 дн.)",
+        "customers30": "Клиенты (30 дн.)",
+        "salon": "Салон",
+        "bookings7": "Записи 7 дн.",
+        "lastBooking": "Последняя запись",
+        "status": "Статус",
+        "risk": "Риск"
+      },
+      "risks": {
+        "trialEnding": "Trial скоро закончится",
+        "zeroBookings": "0 записей за 7 дней"
+      }
+    },
+    "health": {
+      "title": "Здоровье салона",
+      "totalCustomers": "Всего клиентов",
+      "newCustomers30": "Новые клиенты (30 дн.)",
+      "repeatRate": "Доля повторных",
+      "bookings7": "Записи 7 дн.",
+      "bookings30": "Записи 30 дн.",
+      "lastBooking": "Последняя запись",
+      "trialCountdown": "До конца trial",
+      "engagementScore": "Индекс вовлеченности"
+    },
     "noSalons": "По этому фильтру салоны не найдены.",
     "setupPaid": "Setup оплачен",
     "setupPending": "Setup не оплачен",
@@ -283,6 +346,8 @@
     "newPasscode": "Новый код",
     "saving": "Сохранение...",
     "savePasscode": "Сохранить код",
+    "editSalonInfo": "Информация о салоне",
+    "editSalonInfoHint": "Перед одобрением отредактируйте название, URL slug и контакт.",
     "hideFromExplore": "Скрыть из каталога",
     "showInExplore": "Показать в каталоге",
     "clearSetupPaid": "Снять setup paid",
@@ -311,7 +376,7 @@
     },
     "messages": {
       "unlocked": "Доступ суперадмина открыт.",
-      "salonCreated": "Салон создан, пробный период активирован.",
+      "salonCreated": "Салон создан и переведён в статус ожидания одобрения.",
       "saved": "Изменения сохранены.",
       "passcodeUpdated": "Код админа салона обновлён.",
       "countrySaved": "Настройки страны обновлены: {{code}}.",
@@ -324,7 +389,12 @@
       "setupPaymentMarked": "Setup помечен как оплаченный.",
       "setupPaymentCleared": "Setup-оплата снята.",
       "suspended": "Салон заблокирован.",
-      "unsuspended": "Блокировка снята."
+      "unsuspended": "Блокировка снята.",
+      "approvedTrialing": "Одобрено. Пробный период активирован на 7 дней.",
+      "approvedPendingBilling": "Одобрено — для запуска требуется оплата.",
+      "rejected": "Салон отклонён.",
+      "salonInfoUpdated": "Информация о салоне обновлена.",
+      "deleted": "Салон удалён."
     },
     "errors": {
       "codeMissing": "Код суперадмина не задан. Укажите VITE_SUPERADMIN_CODE и перезапустите dev.",
@@ -340,7 +410,45 @@
       "passcodeTooShort": "Код админа должен быть не короче 3 символов.",
       "passcodeUpdateFailed": "Не удалось обновить код: {{message}}",
       "countrySaveFailed": "Не удалось сохранить страну: {{message}}",
-      "countriesMigrationMissing": "Таблица countries отсутствует. Примените последнюю миграцию."
+      "countriesMigrationMissing": "Таблица countries отсутствует. Примените последнюю миграцию.",
+      "salonNotFound": "Салон не найден.",
+      "slugTaken": "Этот slug уже используется другим салоном.",
+      "deleteFailed": "Не удалось удалить салон: {{message}}",
+      "metricsLoadFailed": "Не удалось загрузить метрики обзора: {{message}}"
+    },
+    "approvals": "Одобрения",
+    "approvalsQueue": "Очередь одобрений",
+    "noPendingApprovals": "Нет салонов, ожидающих одобрения.",
+    "approve": "Одобрить",
+    "reject": "Отклонить",
+    "view": "Открыть",
+    "submittedAt": "Отправлено",
+    "counts": {
+      "staff": "Сотрудники",
+      "services": "Услуги"
+    },
+    "confirmApproveTitle": "Одобрить салон",
+    "confirmApproveText": "Одобрить {{name}}?",
+    "confirmRejectTitle": "Отклонить салон",
+    "confirmRejectText": "Отклонить {{name}}?",
+    "confirmDeleteTitle": "Удалить салон",
+    "confirmDeleteText": "Вы уверены, что хотите навсегда удалить салон {{name}}?",
+    "resume": "Возобновить",
+    "applyOverride": "Применить override",
+    "clearOverride": "Сбросить override",
+    "auditLog": "Журнал действий",
+    "noAuditLogs": "Записей пока нет.",
+    "stripeConfigWarning": "Для этой страны не настроен Stripe.",
+    "stripeConfigWarningText": "Добавьте Stripe Price ID (Basic/Pro) в настройках стран для активации салонов вне Ирака.",
+    "detail": {
+      "statusSection": "Статус",
+      "statusHint": "Приостановка, возобновление и принудительное изменение статуса.",
+      "trialSection": "Пробный период",
+      "trialHint": "Запуск и продление пробного периода (+3 / +7 / +14 дней).",
+      "overrideSection": "Ручной override",
+      "overrideHint": "Временный доступ до выбранной даты и времени.",
+      "visibilitySection": "Видимость",
+      "visibilityHint": "Управление отображением в Explore."
     }
   },
   "legal": {
@@ -422,7 +530,8 @@
       "commissions": "Commissions",
       "expenses": "Expenses",
       "reports": "Reports",
-      "settings": "Settings"
+      "settings": "Settings",
+      "media": "Медиа"
     },
     "settings": {
       "assign": "Assign services to staff",
@@ -781,6 +890,114 @@
       "outsideWorkingHours": "Запись вне рабочих часов.",
       "insideBreak": "Время попадает в перерыв.",
       "overlap": "Этот слот пересекается с другой записью."
+    }
+  },
+  "onboarding": {
+    "title": "Полная настройка салона",
+    "subtitle": "Создайте всю структуру салона в одном мастере.",
+    "backAdmin": "Назад в супер-админ",
+    "progressTitle": "Прогресс настройки",
+    "stepCount": "Шаг {{step}} из {{total}}",
+    "steps": {
+      "basic": "Основная информация",
+      "hours": "Рабочие часы",
+      "employees": "Сотрудники",
+      "services": "Услуги",
+      "submit": "Отправка"
+    },
+    "fields": {
+      "salonName": "Название салона",
+      "country": "Страна",
+      "city": "Город",
+      "whatsapp": "WhatsApp для уведомлений",
+      "adminPasscode": "Код доступа админа",
+      "logoUpload": "Загрузка логотипа",
+      "coverUpload": "Загрузка обложки",
+      "openDay": "Открыто",
+      "employeeName": "Имя сотрудника",
+      "employeeRole": "Роль",
+      "employeePhoneOptional": "Телефон (необязательно)",
+      "avatarUpload": "Загрузка аватара",
+      "sameHoursAsSalon": "Такие же часы, как у салона",
+      "serviceName": "Название услуги",
+      "durationMinutes": "Длительность (мин.)",
+      "price": "Цена",
+      "category": "Категория",
+      "assignEmployees": "Назначить сотрудников"
+    },
+    "placeholders": {
+      "salonName": "Например: Queen Beauty Center",
+      "city": "Например: Baghdad",
+      "whatsapp": "9647XXXXXXXX",
+      "adminPasscode": "Например: 1234",
+      "noFile": "Файл не выбран",
+      "employeeName": "Например: Sara",
+      "employeeRole": "Например: Старший стилист",
+      "employeePhone": "07XXXXXXXXX",
+      "serviceName": "Например: Стрижка",
+      "duration": "Длительность: 45",
+      "price": "Цена: 20000",
+      "category": "Например: Волосы"
+    },
+    "labels": {
+      "employeeNumber": "Сотрудник #{{n}}",
+      "serviceNumber": "Услуга #{{n}}",
+      "unnamedEmployee": "Сотрудник без имени"
+    },
+    "actions": {
+      "addEmployee": "Добавить сотрудника",
+      "addService": "Добавить услугу",
+      "remove": "Удалить",
+      "back": "Назад",
+      "next": "Далее",
+      "submit": "Создать структуру салона",
+      "submitting": "Отправка..."
+    },
+    "reviewText": "Проверьте данные и отправьте создание полной структуры салона.",
+    "review": {
+      "basic": "Основная информация",
+      "resources": "Ресурсы",
+      "employees": "Сотрудники",
+      "services": "Услуги",
+      "hours": "Рабочие дни"
+    },
+    "upload": {
+      "logo": "Загрузка логотипа...",
+      "cover": "Загрузка обложки...",
+      "avatarFor": "Загрузка аватара для {{name}}...",
+      "finalizing": "Финализация настройки..."
+    },
+    "messages": {
+      "success": "Настройка салона успешно завершена."
+    },
+    "success": {
+      "badge": "Настройка завершена",
+      "title": "Салон готов ✅",
+      "text": "Настройка успешно отправлена и теперь ожидает одобрения супер-админа.",
+      "openBooking": "Открыть страницу бронирования",
+      "openAdmin": "Открыть админ-панель",
+      "bookingLink": "Ссылка на бронирование",
+      "adminLink": "Ссылка на админ-панель",
+      "passcode": "Код админа",
+      "createAnother": "Создать ещё один салон",
+      "backSuperadmin": "Назад в супер-админ"
+    },
+    "errors": {
+      "supabaseMissing": "Supabase не настроен.",
+      "loadCountries": "Не удалось загрузить страны: {{message}}",
+      "nameRequired": "Название салона обязательно.",
+      "countryRequired": "Выберите страну.",
+      "invalidSalonHours": "Исправьте рабочие часы для {{day}}.",
+      "employeeRequired": "Добавьте хотя бы одного сотрудника.",
+      "employeeNameRequired": "Имя сотрудника обязательно.",
+      "invalidEmployeeHours": "Исправьте часы работы сотрудника {{name}}.",
+      "serviceRequired": "Добавьте хотя бы одну услугу.",
+      "serviceNameRequired": "Название услуги обязательно.",
+      "serviceDurationRequired": "Длительность услуги должна быть не менее 5 минут.",
+      "servicePriceRequired": "Цена услуги указана неверно.",
+      "serviceAssignmentsRequired": "У каждой услуги должен быть хотя бы один назначенный сотрудник.",
+      "invalidImageType": "Изображение должно быть JPG, PNG или WEBP.",
+      "submitFailed": "Не удалось завершить настройку: {{message}}"
     }
   }
 }

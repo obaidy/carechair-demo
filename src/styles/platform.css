@@ -490,6 +490,119 @@ select:disabled {
   gap: 7px;
 }
 
+.superadmin-tabs-panel {
+  padding: 10px;
+}
+
+.superadmin-main-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.superadmin-main-tab-btn {
+  min-height: 42px;
+  white-space: nowrap;
+}
+
+.superadmin-overview-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.superadmin-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.superadmin-kpi-card {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.superadmin-kpi-card span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.superadmin-kpi-card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.superadmin-kpi-grid-wide {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.superadmin-table-card {
+  margin-top: 12px;
+}
+
+.superadmin-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.superadmin-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  background: var(--surface);
+}
+
+.superadmin-table th,
+.superadmin-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.superadmin-table th {
+  background: var(--surface-2);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.superadmin-health-panel {
+  border: 1px solid var(--line);
+}
+
+.superadmin-health-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.superadmin-health-metric {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--surface-2);
+}
+
+.superadmin-health-metric span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.superadmin-health-metric strong {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
 .tab-btn.active {
   background: var(--brand-soft);
   border-color: var(--primary-400);
@@ -4112,6 +4225,35 @@ select:disabled {
     grid-template-columns: 1fr;
   }
 
+  .superadmin-main-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .superadmin-main-tab-btn {
+    min-height: 40px;
+    font-size: 13px;
+  }
+
+  .superadmin-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .superadmin-kpi-grid-wide {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .superadmin-kpi-card strong {
+    font-size: 20px;
+  }
+
+  .superadmin-table {
+    min-width: 640px;
+  }
+
+  .superadmin-health-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .service-row-actions,
   .superadmin-salon-actions {
     display: grid;
@@ -4120,5 +4262,337 @@ select:disabled {
 
   .footer-mobile-links {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Onboarding Wizard ---------- */
+.onboarding-page {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.onboarding-progress-card,
+.onboarding-form-card,
+.onboarding-success-card {
+  padding: 20px;
+  border-radius: 18px;
+}
+
+.onboarding-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.onboarding-progress-head h2 {
+  margin: 0;
+  font-size: clamp(20px, 3vw, 26px);
+}
+
+.onboarding-progress-head span {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.onboarding-progress-track {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.onboarding-step-chip {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 12px;
+  min-height: 64px;
+  padding: 8px;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  align-content: center;
+  text-align: start;
+}
+
+.onboarding-step-chip span {
+  display: inline-flex;
+  min-width: 24px;
+  min-height: 24px;
+  border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.onboarding-step-chip small {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.onboarding-step-chip.active {
+  border-color: var(--primary-500);
+  background: var(--surface-2);
+}
+
+.onboarding-step-chip.active span,
+.onboarding-step-chip.done span {
+  border-color: var(--primary-500);
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--primary-700);
+}
+
+.onboarding-step-chip.active small,
+.onboarding-step-chip.done small {
+  color: var(--primary-700);
+  font-weight: 700;
+}
+
+.onboarding-step-section {
+  display: grid;
+  gap: 16px;
+}
+
+.onboarding-step-section h3,
+.onboarding-step-section h4 {
+  margin: 0;
+}
+
+.onboarding-step-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.onboarding-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.onboarding-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.onboarding-nested-card {
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.onboarding-file-field {
+  display: grid;
+  gap: 8px;
+}
+
+.onboarding-file-field > span {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.onboarding-file-field input[type="file"] {
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--surface-2);
+}
+
+.onboarding-file-field small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.onboarding-upload-grid {
+  margin-top: 4px;
+}
+
+.onboarding-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.onboarding-toggle.large {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  justify-content: flex-start;
+}
+
+.onboarding-hours-list {
+  display: grid;
+  gap: 8px;
+}
+
+.onboarding-hours-list.nested {
+  padding-top: 2px;
+}
+
+.onboarding-hours-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto minmax(110px, 1fr) minmax(110px, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.onboarding-assignment-block {
+  display: grid;
+  gap: 8px;
+}
+
+.onboarding-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.onboarding-checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px;
+  background: var(--surface-2);
+}
+
+.onboarding-review-text {
+  margin: 0;
+  color: var(--muted);
+}
+
+.onboarding-review-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.onboarding-review-card {
+  padding: 14px;
+}
+
+.onboarding-review-card ul {
+  margin: 0;
+  padding-inline-start: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.onboarding-upload-stage {
+  margin: 0;
+  color: var(--primary-700);
+  font-weight: 700;
+}
+
+.onboarding-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.onboarding-success-card {
+  display: grid;
+  gap: 14px;
+}
+
+.onboarding-success-card h2 {
+  margin: 0;
+  font-size: clamp(24px, 4.8vw, 34px);
+}
+
+.onboarding-success-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.onboarding-success-links,
+.onboarding-success-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.onboarding-success-meta {
+  display: grid;
+  gap: 10px;
+}
+
+.onboarding-success-meta div {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.onboarding-success-meta strong {
+  color: var(--text);
+}
+
+.onboarding-success-meta span {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 980px) {
+  .onboarding-progress-track {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .onboarding-progress-card,
+  .onboarding-form-card,
+  .onboarding-success-card {
+    padding: 14px;
+  }
+
+  .onboarding-progress-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .onboarding-grid-2,
+  .onboarding-review-grid,
+  .onboarding-checkbox-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .onboarding-hours-row {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .onboarding-step-head-row {
+    flex-wrap: wrap;
+  }
+
+  .onboarding-actions {
+    flex-direction: column;
+  }
+
+  .onboarding-actions .ui-btn,
+  .onboarding-step-head-row .ui-btn,
+  .onboarding-success-links .ui-btn,
+  .onboarding-success-actions .ui-btn {
+    width: 100%;
   }
 }

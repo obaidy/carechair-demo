@@ -225,7 +225,10 @@
       "suspended": "الحساب موقوف حالياً. يرجى التواصل مع الإدارة.",
       "pendingSetup": "حسابك غير مفعل. لإكمال الاستخدام: ادفع رسوم الإعداد + فعّل الاشتراك الشهري.",
       "pastDue": "الاشتراك متأخر. يرجى تحديث الدفع لتفعيل الحساب.",
-      "default": "الحساب غير مفعل حالياً. يرجى إكمال الإعدادات والدفع."
+      "default": "الحساب غير مفعل حالياً. يرجى إكمال الإعدادات والدفع.",
+      "pendingApproval": "الصالون بانتظار موافقة السوبر أدمن.",
+      "pendingBilling": "تمت الموافقة، لكن لازم يكتمل الدفع قبل تفعيل الوصول.",
+      "rejected": "تم رفض الصالون. تواصلوا ويا الدعم."
     },
     "trialEnded": "انتهت",
     "hoursRemaining": "{{count}} ساعة",
@@ -251,7 +254,11 @@
     "active": "فعال",
     "past_due": "متأخر بالدفع",
     "canceled": "ملغي",
-    "suspended": "موقوف"
+    "suspended": "موقوف",
+    "draft": "مسودة",
+    "pending_approval": "بانتظار الموافقة",
+    "pending_billing": "بانتظار الدفع",
+    "rejected": "مرفوض"
   },
   "superadmin": {
     "title": "لوحة السوبر أدمن",
@@ -270,6 +277,62 @@
     "login": "دخول",
     "salonControl": "التحكم بالصالونات",
     "statusFilter": "فلتر الحالة",
+    "tabs": {
+      "overview": "نظرة عامة",
+      "salons": "الصالونات",
+      "create": "إنشاء صالون",
+      "countries": "الدول"
+    },
+    "kpis": {
+      "totalSalons": "إجمالي الصالونات",
+      "pendingApproval": "بانتظار الموافقة",
+      "active": "نشط / تجريبي",
+      "suspended": "موقوف"
+    },
+    "overview": {
+      "title": "نظرة تشغيلية عامة",
+      "cards": {
+        "totalSalons": "إجمالي الصالونات",
+        "activeSalons": "الصالونات النشطة",
+        "trialing": "تجريبي",
+        "pendingApproval": "بانتظار الموافقة",
+        "pastDue": "متأخر بالدفع",
+        "bookings30": "إجمالي الحجوزات (30 يوم)",
+        "customers30": "إجمالي العملاء (30 يوم)"
+      },
+      "countryBreakdown": "تفصيل حسب الدولة",
+      "topSalons7d": "أفضل الصالونات حسب حجوزات 7 أيام",
+      "atRisk": "الصالونات المعرّضة للخطر",
+      "empty": "لا توجد بيانات حالياً.",
+      "noRisk": "لا توجد صالونات مهددة حالياً.",
+      "table": {
+        "country": "الدولة",
+        "salons": "الصالونات",
+        "active": "النشط",
+        "bookings30": "حجوزات (30 يوم)",
+        "customers30": "عملاء (30 يوم)",
+        "salon": "الصالون",
+        "bookings7": "حجوزات 7 أيام",
+        "lastBooking": "آخر حجز",
+        "status": "الحالة",
+        "risk": "الخطر"
+      },
+      "risks": {
+        "trialEnding": "التجربة تنتهي قريباً",
+        "zeroBookings": "0 حجوزات خلال 7 أيام"
+      }
+    },
+    "health": {
+      "title": "صحة الصالون",
+      "totalCustomers": "إجمالي العملاء",
+      "newCustomers30": "عملاء جدد (30 يوم)",
+      "repeatRate": "معدل التكرار",
+      "bookings7": "حجوزات 7 أيام",
+      "bookings30": "حجوزات 30 يوم",
+      "lastBooking": "آخر حجز",
+      "trialCountdown": "الوقت المتبقي للتجربة",
+      "engagementScore": "درجة التفاعل"
+    },
     "noSalons": "لا توجد صالونات ضمن هذا الفلتر.",
     "setupPaid": "رسوم الإعداد مدفوعة",
     "setupPending": "رسوم الإعداد غير مدفوعة",
@@ -282,6 +345,8 @@
     "newPasscode": "الرمز الجديد",
     "saving": "جاري الحفظ...",
     "savePasscode": "حفظ الرمز",
+    "editSalonInfo": "معلومات الصالون",
+    "editSalonInfoHint": "عدّل الاسم ورابط الصالون وبيانات التواصل قبل الموافقة.",
     "hideFromExplore": "إخفاء من الاستكشاف",
     "showInExplore": "إظهار بالاستكشاف",
     "clearSetupPaid": "إلغاء Setup Paid",
@@ -310,7 +375,7 @@
     },
     "messages": {
       "unlocked": "تم فتح لوحة السوبر أدمن.",
-      "salonCreated": "تم إنشاء الصالون وتفعيل فترة تجريبية.",
+      "salonCreated": "تم إنشاء الصالون وتحويله إلى بانتظار الموافقة.",
       "saved": "تم حفظ التحديث.",
       "passcodeUpdated": "تم تغيير رمز إدارة الصالون.",
       "countrySaved": "تم تحديث إعدادات {{code}}.",
@@ -323,7 +388,12 @@
       "setupPaymentMarked": "تم تعليم رسوم الإعداد كمدفوعة.",
       "setupPaymentCleared": "تم إلغاء دفع الإعداد.",
       "suspended": "تم إيقاف الصالون.",
-      "unsuspended": "تم رفع الإيقاف."
+      "unsuspended": "تم رفع الإيقاف.",
+      "approvedTrialing": "تمت الموافقة وبدأت فترة تجريبية 7 أيام.",
+      "approvedPendingBilling": "تمت الموافقة - مطلوب الدفع قبل بدء الاستخدام.",
+      "rejected": "تم رفض الصالون.",
+      "salonInfoUpdated": "تم تحديث معلومات الصالون.",
+      "deleted": "تم حذف الصالون."
     },
     "errors": {
       "codeMissing": "رمز السوبر أدمن غير مضبوط. تأكد من VITE_SUPERADMIN_CODE ثم أعد تشغيل dev.",
@@ -339,7 +409,45 @@
       "passcodeTooShort": "رمز الإدارة لازم يكون 3 خانات أو أكثر.",
       "passcodeUpdateFailed": "تعذر تغيير الرمز: {{message}}",
       "countrySaveFailed": "تعذر تحديث الدولة: {{message}}",
-      "countriesMigrationMissing": "جدول الدول غير موجود. شغّل آخر migration حتى تتفعل إدارة الدول."
+      "countriesMigrationMissing": "جدول الدول غير موجود. شغّل آخر migration حتى تتفعل إدارة الدول.",
+      "salonNotFound": "الصالون غير موجود.",
+      "slugTaken": "هذا الـ slug مستخدم مسبقاً من صالون آخر.",
+      "deleteFailed": "تعذر حذف الصالون: {{message}}",
+      "metricsLoadFailed": "تعذر تحميل إحصائيات النظرة العامة: {{message}}"
+    },
+    "approvals": "الموافقات",
+    "approvalsQueue": "طلبات بانتظار الموافقة",
+    "noPendingApprovals": "ماكو صالونات بانتظار الموافقة حالياً.",
+    "approve": "موافقة",
+    "reject": "رفض",
+    "view": "عرض",
+    "submittedAt": "وقت الإرسال",
+    "counts": {
+      "staff": "عدد الموظفين",
+      "services": "عدد الخدمات"
+    },
+    "confirmApproveTitle": "موافقة على الصالون",
+    "confirmApproveText": "تريد توافق على {{name}}؟",
+    "confirmRejectTitle": "رفض الصالون",
+    "confirmRejectText": "تريد ترفض {{name}}؟",
+    "confirmDeleteTitle": "حذف الصالون",
+    "confirmDeleteText": "متأكد تريد حذف {{name}} نهائياً؟",
+    "resume": "استئناف",
+    "applyOverride": "تطبيق الاستثناء",
+    "clearOverride": "إلغاء الاستثناء",
+    "auditLog": "سجل الإجراءات",
+    "noAuditLogs": "ماكو سجل إجراءات حالياً.",
+    "stripeConfigWarning": "إعدادات Stripe ناقصة لهاي الدولة.",
+    "stripeConfigWarningText": "لازم تضيف Price IDs (Basic/Pro) في إعدادات الدول قبل تفعيل صالونات خارج العراق.",
+    "detail": {
+      "statusSection": "الحالة",
+      "statusHint": "علّق، استأنف، أو غيّر الحالة التشغيلية.",
+      "trialSection": "الفترة التجريبية",
+      "trialHint": "ابدي أو مدّد الفترة التجريبية بسرعة (+3 / +7 / +14).",
+      "overrideSection": "استثناء يدوي",
+      "overrideHint": "فعّل وصول مؤقت لحد تاريخ ووقت محدد.",
+      "visibilitySection": "الظهور",
+      "visibilityHint": "تحكم بظهور الصالون بصفحة الاستكشاف."
     }
   },
   "legal": {
@@ -524,7 +632,8 @@
       "commissions": "العمولات",
       "expenses": "المصروفات",
       "reports": "التقارير",
-      "settings": "الإعدادات"
+      "settings": "الإعدادات",
+      "media": "الصور"
     },
     "settings": {
       "assign": "ربط الخدمات بالموظفين",
@@ -633,6 +742,114 @@
       "outsideWorkingHours": "الحجز خارج ساعات العمل.",
       "insideBreak": "هذا الوقت ضمن فترة الاستراحة.",
       "overlap": "هذا الموعد متداخل مع حجز آخر."
+    }
+  },
+  "onboarding": {
+    "title": "إعداد الصالون الكامل",
+    "subtitle": "أنشئ هيكل الصالون بالكامل بخطوات واضحة وسريعة.",
+    "backAdmin": "رجوع للسوبر أدمن",
+    "progressTitle": "تقدم الإعداد",
+    "stepCount": "الخطوة {{step}} من {{total}}",
+    "steps": {
+      "basic": "المعلومات الأساسية",
+      "hours": "ساعات العمل",
+      "employees": "الموظفين",
+      "services": "الخدمات",
+      "submit": "التأكيد والإرسال"
+    },
+    "fields": {
+      "salonName": "اسم الصالون",
+      "country": "الدولة",
+      "city": "المدينة",
+      "whatsapp": "رقم واتساب للإشعارات",
+      "adminPasscode": "رمز دخول الإدارة",
+      "logoUpload": "رفع الشعار",
+      "coverUpload": "رفع صورة الغلاف",
+      "openDay": "مفتوح",
+      "employeeName": "اسم الموظف/الموظفة",
+      "employeeRole": "الدور الوظيفي",
+      "employeePhoneOptional": "رقم الهاتف (اختياري)",
+      "avatarUpload": "رفع صورة الموظف",
+      "sameHoursAsSalon": "نفس ساعات الصالون",
+      "serviceName": "اسم الخدمة",
+      "durationMinutes": "المدة (دقيقة)",
+      "price": "السعر",
+      "category": "التصنيف",
+      "assignEmployees": "تعيين الموظفين للخدمة"
+    },
+    "placeholders": {
+      "salonName": "مثال: مركز الملكة للتجميل",
+      "city": "مثال: بغداد",
+      "whatsapp": "9647XXXXXXXX",
+      "adminPasscode": "مثال: 1234",
+      "noFile": "ماكو ملف مختار",
+      "employeeName": "مثال: سارة",
+      "employeeRole": "مثال: خبيرة شعر",
+      "employeePhone": "07XXXXXXXXX",
+      "serviceName": "مثال: قص شعر",
+      "duration": "المدة: 45",
+      "price": "السعر: 20000",
+      "category": "مثال: شعر"
+    },
+    "labels": {
+      "employeeNumber": "الموظف رقم {{n}}",
+      "serviceNumber": "الخدمة رقم {{n}}",
+      "unnamedEmployee": "موظف بدون اسم"
+    },
+    "actions": {
+      "addEmployee": "إضافة موظف",
+      "addService": "إضافة خدمة",
+      "remove": "حذف",
+      "back": "رجوع",
+      "next": "التالي",
+      "submit": "إنشاء إعداد الصالون",
+      "submitting": "جاري الإرسال..."
+    },
+    "reviewText": "راجع المعلومات وبعدين أكد حتى ينشأ الصالون بالكامل.",
+    "review": {
+      "basic": "المعلومات الأساسية",
+      "resources": "الموارد",
+      "employees": "عدد الموظفين",
+      "services": "عدد الخدمات",
+      "hours": "أيام الدوام"
+    },
+    "upload": {
+      "logo": "جاري رفع الشعار...",
+      "cover": "جاري رفع صورة الغلاف...",
+      "avatarFor": "جاري رفع صورة {{name}}...",
+      "finalizing": "جاري إكمال الإعداد..."
+    },
+    "messages": {
+      "success": "تم إعداد الصالون بنجاح."
+    },
+    "success": {
+      "badge": "تم الإعداد",
+      "title": "الصالون جاهز ✅",
+      "text": "تم إرسال الإعداد بنجاح وهو الآن بانتظار موافقة السوبر أدمن.",
+      "openBooking": "فتح رابط الحجز",
+      "openAdmin": "فتح لوحة الإدارة",
+      "bookingLink": "رابط الحجز",
+      "adminLink": "رابط الإدارة",
+      "passcode": "رمز دخول الإدارة",
+      "createAnother": "إنشاء صالون جديد",
+      "backSuperadmin": "الرجوع للسوبر أدمن"
+    },
+    "errors": {
+      "supabaseMissing": "إعدادات Supabase غير مكتملة.",
+      "loadCountries": "تعذر تحميل الدول: {{message}}",
+      "nameRequired": "اسم الصالون مطلوب.",
+      "countryRequired": "اختار الدولة.",
+      "invalidSalonHours": "صحح ساعات العمل ليوم {{day}}.",
+      "employeeRequired": "لازم تضيف موظف واحد على الأقل.",
+      "employeeNameRequired": "اسم الموظف مطلوب.",
+      "invalidEmployeeHours": "صحح ساعات الدوام الخاصة بالموظف {{name}}.",
+      "serviceRequired": "لازم تضيف خدمة واحدة على الأقل.",
+      "serviceNameRequired": "اسم الخدمة مطلوب.",
+      "serviceDurationRequired": "مدة الخدمة لازم تكون 5 دقائق أو أكثر.",
+      "servicePriceRequired": "سعر الخدمة غير صحيح.",
+      "serviceAssignmentsRequired": "لازم كل خدمة تكون متعيّنة لموظف واحد على الأقل.",
+      "invalidImageType": "نوع الصورة لازم JPG أو PNG أو WEBP.",
+      "submitFailed": "فشل إعداد الصالون: {{message}}"
     }
   }
 }

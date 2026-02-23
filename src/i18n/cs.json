@@ -226,7 +226,10 @@
       "suspended": "Účet je pozastaven. Kontaktujte podporu.",
       "pendingSetup": "Účet není aktivní. Dokončete setup poplatek a měsíční předplatné.",
       "pastDue": "Předplatné je po splatnosti. Aktualizujte platbu.",
-      "default": "Účet je neaktivní. Dokončete setup a platby."
+      "default": "Účet je neaktivní. Dokončete setup a platby.",
+      "pendingApproval": "Salon čeká na schválení superadminem.",
+      "pendingBilling": "Schváleno, ale před přístupem je vyžadována platba.",
+      "rejected": "Salon byl zamítnut. Kontaktujte podporu."
     },
     "trialEnded": "Ukončeno",
     "hoursRemaining": "{{count}} hodin",
@@ -252,7 +255,11 @@
     "active": "Aktivní",
     "past_due": "Po splatnosti",
     "canceled": "Zrušeno",
-    "suspended": "Pozastaveno"
+    "suspended": "Pozastaveno",
+    "draft": "Návrh",
+    "pending_approval": "Čeká na schválení",
+    "pending_billing": "Čeká na platbu",
+    "rejected": "Zamítnuto"
   },
   "superadmin": {
     "title": "Super admin panel",
@@ -271,6 +278,62 @@
     "login": "Přihlásit",
     "salonControl": "Správa salonů",
     "statusFilter": "Filtr stavu",
+    "tabs": {
+      "overview": "Přehled",
+      "salons": "Salony",
+      "create": "Vytvořit salon",
+      "countries": "Země"
+    },
+    "kpis": {
+      "totalSalons": "Celkem salonů",
+      "pendingApproval": "Čeká na schválení",
+      "active": "Aktivní / Trial",
+      "suspended": "Pozastavené"
+    },
+    "overview": {
+      "title": "Provozní přehled",
+      "cards": {
+        "totalSalons": "Celkem salonů",
+        "activeSalons": "Aktivní salony",
+        "trialing": "Trialing",
+        "pendingApproval": "Čeká na schválení",
+        "pastDue": "Po splatnosti",
+        "bookings30": "Celkem rezervací (30 dní)",
+        "customers30": "Celkem klientů (30 dní)"
+      },
+      "countryBreakdown": "Přehled podle zemí",
+      "topSalons7d": "Top salony podle rezervací (7 dní)",
+      "atRisk": "Rizikové salony",
+      "empty": "Zatím nejsou data.",
+      "noRisk": "Momentálně nejsou rizikové salony.",
+      "table": {
+        "country": "Země",
+        "salons": "Salony",
+        "active": "Aktivní",
+        "bookings30": "Rezervace (30 dní)",
+        "customers30": "Klienti (30 dní)",
+        "salon": "Salon",
+        "bookings7": "Rezervace 7 dní",
+        "lastBooking": "Poslední rezervace",
+        "status": "Stav",
+        "risk": "Riziko"
+      },
+      "risks": {
+        "trialEnding": "Trial brzy končí",
+        "zeroBookings": "0 rezervací za 7 dní"
+      }
+    },
+    "health": {
+      "title": "Zdraví salonu",
+      "totalCustomers": "Celkem klientů",
+      "newCustomers30": "Noví klienti (30 dní)",
+      "repeatRate": "Míra opakování",
+      "bookings7": "Rezervace 7 dní",
+      "bookings30": "Rezervace 30 dní",
+      "lastBooking": "Poslední rezervace",
+      "trialCountdown": "Odpočet trialu",
+      "engagementScore": "Skóre zapojení"
+    },
     "noSalons": "Pro tento filtr nebyly nalezeny žádné salony.",
     "setupPaid": "Setup zaplacen",
     "setupPending": "Setup čeká",
@@ -283,6 +346,8 @@
     "newPasscode": "Nový kód",
     "saving": "Ukládání...",
     "savePasscode": "Uložit kód",
+    "editSalonInfo": "Informace o salonu",
+    "editSalonInfoHint": "Před schválením upravte název, URL slug a kontakt.",
     "hideFromExplore": "Skrýt z katalogu",
     "showInExplore": "Zobrazit v katalogu",
     "clearSetupPaid": "Zrušit setup paid",
@@ -311,7 +376,7 @@
     },
     "messages": {
       "unlocked": "Super admin odemčen.",
-      "salonCreated": "Salon vytvořen a trial aktivován.",
+      "salonCreated": "Salon byl vytvořen a přesunut do čekajícího schválení.",
       "saved": "Změny uloženy.",
       "passcodeUpdated": "Admin kód salonu aktualizován.",
       "countrySaved": "Nastavení země aktualizováno: {{code}}.",
@@ -324,7 +389,12 @@
       "setupPaymentMarked": "Setup poplatek označen jako zaplacený.",
       "setupPaymentCleared": "Setup platba zrušena.",
       "suspended": "Salon pozastaven.",
-      "unsuspended": "Pozastavení zrušeno."
+      "unsuspended": "Pozastavení zrušeno.",
+      "approvedTrialing": "Schváleno. Trial aktivní na 7 dní.",
+      "approvedPendingBilling": "Schváleno - před startem je vyžadována platba.",
+      "rejected": "Salon byl zamítnut.",
+      "salonInfoUpdated": "Informace o salonu byly aktualizovány.",
+      "deleted": "Salon byl smazán."
     },
     "errors": {
       "codeMissing": "Kód super admina není nastaven. Nastavte VITE_SUPERADMIN_CODE a restartujte dev.",
@@ -340,7 +410,45 @@
       "passcodeTooShort": "Admin kód musí mít alespoň 3 znaky.",
       "passcodeUpdateFailed": "Nepodařilo se změnit kód: {{message}}",
       "countrySaveFailed": "Nepodařilo se uložit zemi: {{message}}",
-      "countriesMigrationMissing": "Tabulka countries chybí. Spusťte nejnovější migraci."
+      "countriesMigrationMissing": "Tabulka countries chybí. Spusťte nejnovější migraci.",
+      "salonNotFound": "Salon nebyl nalezen.",
+      "slugTaken": "Tento slug už používá jiný salon.",
+      "deleteFailed": "Nepodařilo se smazat salon: {{message}}",
+      "metricsLoadFailed": "Nepodařilo se načíst metriky přehledu: {{message}}"
+    },
+    "approvals": "Schválení",
+    "approvalsQueue": "Čekající schválení",
+    "noPendingApprovals": "Žádné salony nečekají na schválení.",
+    "approve": "Schválit",
+    "reject": "Zamítnout",
+    "view": "Detail",
+    "submittedAt": "Odesláno",
+    "counts": {
+      "staff": "Zaměstnanci",
+      "services": "Služby"
+    },
+    "confirmApproveTitle": "Schválit salon",
+    "confirmApproveText": "Schválit {{name}}?",
+    "confirmRejectTitle": "Zamítnout salon",
+    "confirmRejectText": "Zamítnout {{name}}?",
+    "confirmDeleteTitle": "Smazat salon",
+    "confirmDeleteText": "Opravdu chcete trvale smazat salon {{name}}?",
+    "resume": "Obnovit",
+    "applyOverride": "Použít override",
+    "clearOverride": "Zrušit override",
+    "auditLog": "Audit log",
+    "noAuditLogs": "Zatím žádné audit záznamy.",
+    "stripeConfigWarning": "Pro tuto zemi chybí konfigurace Stripe.",
+    "stripeConfigWarningText": "Nastavte Stripe Basic/Pro Price ID v konfiguraci zemí pro aktivaci salonů mimo Irák.",
+    "detail": {
+      "statusSection": "Stav",
+      "statusHint": "Pozastavení, obnovení nebo vynucení provozního stavu.",
+      "trialSection": "Zkušební období",
+      "trialHint": "Spusťte nebo prodlužte trial (+3 / +7 / +14 dní).",
+      "overrideSection": "Manuální override",
+      "overrideHint": "Dočasný přístup do konkrétního data a času.",
+      "visibilitySection": "Viditelnost",
+      "visibilityHint": "Řízení viditelnosti ve stránce Explore."
     }
   },
   "legal": {
@@ -422,7 +530,8 @@
       "commissions": "Commissions",
       "expenses": "Expenses",
       "reports": "Reports",
-      "settings": "Settings"
+      "settings": "Settings",
+      "media": "Média"
     },
     "settings": {
       "assign": "Assign services to staff",
@@ -781,6 +890,114 @@
       "outsideWorkingHours": "Rezervace je mimo pracovní dobu.",
       "insideBreak": "Čas koliduje s přestávkou.",
       "overlap": "Tento termín koliduje s jinou rezervací."
+    }
+  },
+  "onboarding": {
+    "title": "Kompletní nastavení salonu",
+    "subtitle": "Vytvořte celou strukturu salonu v jednom průvodci.",
+    "backAdmin": "Zpět na superadmin",
+    "progressTitle": "Postup nastavení",
+    "stepCount": "Krok {{step}} z {{total}}",
+    "steps": {
+      "basic": "Základní informace",
+      "hours": "Pracovní doba",
+      "employees": "Zaměstnanci",
+      "services": "Služby",
+      "submit": "Odeslání"
+    },
+    "fields": {
+      "salonName": "Název salonu",
+      "country": "Země",
+      "city": "Město",
+      "whatsapp": "WhatsApp číslo pro notifikace",
+      "adminPasscode": "Admin kód",
+      "logoUpload": "Nahrát logo",
+      "coverUpload": "Nahrát titulní obrázek",
+      "openDay": "Otevřeno",
+      "employeeName": "Jméno zaměstnance",
+      "employeeRole": "Role",
+      "employeePhoneOptional": "Telefon (volitelné)",
+      "avatarUpload": "Nahrát avatar",
+      "sameHoursAsSalon": "Stejná pracovní doba jako salon",
+      "serviceName": "Název služby",
+      "durationMinutes": "Délka (minuty)",
+      "price": "Cena",
+      "category": "Kategorie",
+      "assignEmployees": "Přiřadit zaměstnance"
+    },
+    "placeholders": {
+      "salonName": "Např.: Queen Beauty Center",
+      "city": "Např.: Baghdad",
+      "whatsapp": "9647XXXXXXXX",
+      "adminPasscode": "Např.: 1234",
+      "noFile": "Není vybrán soubor",
+      "employeeName": "Např.: Sara",
+      "employeeRole": "Např.: Senior stylistka",
+      "employeePhone": "07XXXXXXXXX",
+      "serviceName": "Např.: Střih",
+      "duration": "Délka: 45",
+      "price": "Cena: 20000",
+      "category": "Např.: Vlasy"
+    },
+    "labels": {
+      "employeeNumber": "Zaměstnanec #{{n}}",
+      "serviceNumber": "Služba #{{n}}",
+      "unnamedEmployee": "Neznámý zaměstnanec"
+    },
+    "actions": {
+      "addEmployee": "Přidat zaměstnance",
+      "addService": "Přidat službu",
+      "remove": "Smazat",
+      "back": "Zpět",
+      "next": "Další",
+      "submit": "Vytvořit nastavení salonu",
+      "submitting": "Odesílání..."
+    },
+    "reviewText": "Zkontrolujte nastavení a odešlete vytvoření celého salonu.",
+    "review": {
+      "basic": "Základní informace",
+      "resources": "Kapacity",
+      "employees": "Zaměstnanci",
+      "services": "Služby",
+      "hours": "Pracovní dny"
+    },
+    "upload": {
+      "logo": "Nahrávání loga...",
+      "cover": "Nahrávání titulního obrázku...",
+      "avatarFor": "Nahrávání avataru pro {{name}}...",
+      "finalizing": "Dokončování nastavení..."
+    },
+    "messages": {
+      "success": "Nastavení salonu bylo úspěšně dokončeno."
+    },
+    "success": {
+      "badge": "Nastavení dokončeno",
+      "title": "Salon je připraven ✅",
+      "text": "Nastavení bylo úspěšně odesláno a nyní čeká na schválení superadminem.",
+      "openBooking": "Otevřít rezervační stránku",
+      "openAdmin": "Otevřít admin dashboard",
+      "bookingLink": "Rezervační odkaz",
+      "adminLink": "Admin odkaz",
+      "passcode": "Admin kód",
+      "createAnother": "Vytvořit další salon",
+      "backSuperadmin": "Zpět na superadmin"
+    },
+    "errors": {
+      "supabaseMissing": "Supabase není nakonfigurován.",
+      "loadCountries": "Nepodařilo se načíst země: {{message}}",
+      "nameRequired": "Název salonu je povinný.",
+      "countryRequired": "Vyberte zemi.",
+      "invalidSalonHours": "Opravte pracovní dobu pro {{day}}.",
+      "employeeRequired": "Přidejte alespoň jednoho zaměstnance.",
+      "employeeNameRequired": "Jméno zaměstnance je povinné.",
+      "invalidEmployeeHours": "Opravte pracovní dobu zaměstnance {{name}}.",
+      "serviceRequired": "Přidejte alespoň jednu službu.",
+      "serviceNameRequired": "Název služby je povinný.",
+      "serviceDurationRequired": "Délka služby musí být minimálně 5 minut.",
+      "servicePriceRequired": "Cena služby je neplatná.",
+      "serviceAssignmentsRequired": "Každá služba musí mít přiřazeného alespoň jednoho zaměstnance.",
+      "invalidImageType": "Obrázek musí být JPG, PNG nebo WEBP.",
+      "submitFailed": "Nepodařilo se dokončit nastavení: {{message}}"
     }
   }
 }

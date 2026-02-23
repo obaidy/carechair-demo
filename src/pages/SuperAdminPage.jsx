@@ -7,7 +7,8 @@ import Toast from "../components/Toast";
 import { Badge, Button, Card, ConfirmModal, SelectInput, TextInput } from "../components/ui";
 import { supabase } from "../lib/supabase";
 import { DEFAULT_HOURS, DEFAULT_SERVICES, DEFAULT_STAFF } from "../lib/utils";
-import { computeIsActiveFromBilling, deriveSalonAccess, formatBillingDate } from "../lib/billing";
+import { computeIsActiveFromBilling, deriveSalonAccess, formatBillingDate, getTrialRemainingLabel } from "../lib/billing";
+import { normalizeSalonSlug } from "../lib/slug";
 import { useToast } from "../lib/useToast";
 
 const SUPER_ADMIN_CODE = String(
@@ -111,16 +112,6 @@ function billingStatusFromSalonStatus(status) {
   return "inactive";
 }
 
-function slugify(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^\w\u0600-\u06FF-]/g, "")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
 function addDaysIso(days) {
   const d = new Date();
   d.setDate(d.getDate() + Number(days || 0));
@@ -158,6 +149,9 @@ export default function SuperAdminPage() {
   const [rowLoading, setRowLoading] = useState("");
   const [actionsLoading, setActionsLoading] = useState(false);
   const [salonActions, setSalonActions] = useState([]);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [salonHealthRows, setSalonHealthRows] = useState([]);
+  const [globalStats, setGlobalStats] = useState(null);
 
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
@@ -172,17 +166,35 @@ export default function SuperAdminPage() {
 
   const [editingPasscodeSalonId, setEditingPasscodeSalonId] = useState("");
   const [newPasscode, setNewPasscode] = useState("");
+  const [editingSalonId, setEditingSalonId] = useState("");
+  const [salonEditDraft, setSalonEditDraft] = useState({
+    name: "",
+    slug: "",
+    area: "",
+    whatsapp: "",
+    country_code: "IQ",
+  });
 
   const [statusFilter, setStatusFilter] = useState("all");
   const [countryFilter, setCountryFilter] = useState("all");
   const [countriesAvailable, setCountriesAvailable] = useState(true);
+  const [activeMainTab, setActiveMainTab] = useState(() => {
+    try {
+      const stored = window.localStorage.getItem("carechair_superadmin_main_tab");
+      return stored || "overview";
+    } catch {
+      return "overview";
+    }
+  });
 
   const [countryDrafts, setCountryDrafts] = useState({});
   const [confirmState, setConfirmState] = useState(null);
   const [overrideUntilInput, setOverrideUntilInput] = useState("");
 
+  const isOverviewPage = location.pathname.startsWith("/superadmin/overview") || location.pathname.startsWith("/admin/overview");
   const isApprovalsPage = location.pathname.startsWith("/superadmin/approvals") || location.pathname.startsWith("/admin/approvals");
   const isDetailPage = Boolean(detailSalonId);
+  const isMainPage = !isOverviewPage && !isApprovalsPage && !isDetailPage;
 
   async function loadAll() {
     if (!supabase) {
@@ -252,6 +264,21 @@ export default function SuperAdminPage() {
         };
       }
       setCountryDrafts(draftMap);
+
+      if (unlocked) {
+        const adminCode = verifiedCode || codeInput.trim() || SUPER_ADMIN_CODE;
+        const [salonHealthRes, globalStatsRes] = await Promise.all([
+          supabase.rpc("superadmin_overview_salons", { p_admin_code: adminCode }),
+          supabase.rpc("superadmin_overview_stats", { p_admin_code: adminCode }),
+        ]);
+        if (!salonHealthRes.error) {
+          setSalonHealthRows(salonHealthRes.data || []);
+        }
+        if (!globalStatsRes.error) {
+          const statsRow = Array.isArray(globalStatsRes.data) ? globalStatsRes.data[0] || null : globalStatsRes.data || null;
+          setGlobalStats(statsRow);
+        }
+      }
     } catch (err) {
       showToast("error", t("superadmin.errors.loadFailed", { message: err?.message || err }));
     } finally {
@@ -293,6 +320,31 @@ export default function SuperAdminPage() {
       setSalonActions([]);
     } finally {
       setActionsLoading(false);
+    }
+  }
+
+  async function loadOverviewMetrics() {
+    if (!supabase || !unlocked) return;
+    setOverviewLoading(true);
+    try {
+      const adminCode = verifiedCode || codeInput.trim() || SUPER_ADMIN_CODE;
+      const [salonHealthRes, globalStatsRes] = await Promise.all([
+        supabase.rpc("superadmin_overview_salons", { p_admin_code: adminCode }),
+        supabase.rpc("superadmin_overview_stats", { p_admin_code: adminCode }),
+      ]);
+
+      if (salonHealthRes.error) throw salonHealthRes.error;
+      if (globalStatsRes.error) throw globalStatsRes.error;
+
+      setSalonHealthRows(salonHealthRes.data || []);
+      const statsRow = Array.isArray(globalStatsRes.data) ? globalStatsRes.data[0] || null : globalStatsRes.data || null;
+      setGlobalStats(statsRow);
+    } catch (err) {
+      setSalonHealthRows([]);
+      setGlobalStats(null);
+      showToast("error", t("superadmin.errors.metricsLoadFailed", "Failed to load overview metrics: {{message}}", { message: err?.message || err }));
+    } finally {
+      setOverviewLoading(false);
     }
   }
 
@@ -350,7 +402,7 @@ export default function SuperAdminPage() {
     if (!supabase) return;
 
     const name = form.name.trim();
-    const slug = slugify(form.slug || form.name);
+    const slug = normalizeSalonSlug(form.slug || form.name);
     const area = form.area.trim();
     const passcode = form.admin_passcode.trim();
     const countryCode = String(form.country_code || "IQ");
@@ -476,8 +528,99 @@ export default function SuperAdminPage() {
 
       setSalons((prev) => prev.map((x) => (x.id === row.id ? normalizeSalon({ ...x, ...up.data }) : x)));
       showToast("success", successMessage || t("superadmin.messages.saved"));
+      return up.data;
     } catch (err) {
       showToast("error", t("superadmin.errors.updateFailed", { message: err?.message || err }));
+      return null;
+    } finally {
+      setRowLoading("");
+    }
+  }
+
+  function startEditSalon(row) {
+    setEditingPasscodeSalonId("");
+    setNewPasscode("");
+    setEditingSalonId(row.id);
+    setSalonEditDraft({
+      name: String(row.name || ""),
+      slug: normalizeSalonSlug(row.slug || row.name || ""),
+      area: String(row.area || ""),
+      whatsapp: String(row.whatsapp || ""),
+      country_code: String(row.country_code || "IQ"),
+    });
+  }
+
+  function stopEditSalon() {
+    setEditingSalonId("");
+    setSalonEditDraft({
+      name: "",
+      slug: "",
+      area: "",
+      whatsapp: "",
+      country_code: "IQ",
+    });
+  }
+
+  async function saveSalonInfo(row) {
+    const name = salonEditDraft.name.trim();
+    const slug = normalizeSalonSlug(salonEditDraft.slug || salonEditDraft.name);
+    const area = salonEditDraft.area.trim();
+    const countryCode = String(salonEditDraft.country_code || "IQ");
+    if (name.length < 2) return showToast("error", t("superadmin.errors.invalidSalonName"));
+    if (!slug) return showToast("error", t("superadmin.errors.invalidSlug"));
+    if (area.length < 2) return showToast("error", t("superadmin.errors.invalidArea"));
+
+    const slugTaken = salons.some((x) => x.id !== row.id && String(x.slug || "").toLowerCase() === slug.toLowerCase());
+    if (slugTaken) {
+      showToast("error", t("superadmin.errors.slugTaken", "Slug is already used by another salon."));
+      return;
+    }
+
+    const country = countries.find((x) => x.code === countryCode);
+    const patch = {
+      name,
+      slug,
+      area,
+      whatsapp: salonEditDraft.whatsapp.trim() || null,
+      country_code: countryCode,
+      ...(country
+        ? {
+            currency_code: country.default_currency,
+            timezone: country.timezone_default,
+          }
+        : {}),
+    };
+
+    const updated = await patchSalon(row, patch, t("superadmin.messages.salonInfoUpdated", "Salon info updated."));
+    if (updated) {
+      await logAdminAction(row.id, "edit_salon_info", {
+        name,
+        slug,
+        area,
+        country_code: countryCode,
+      });
+      stopEditSalon();
+    }
+  }
+
+  async function deleteSalon(row) {
+    if (!supabase || !row?.id) return;
+    setRowLoading(`delete-${row.id}`);
+    try {
+      await logAdminAction(row.id, "delete_salon", {
+        name: row.name,
+        slug: row.slug,
+      });
+      const del = await supabase.from("salons").delete().eq("id", row.id);
+      if (del.error) throw del.error;
+      setSalons((prev) => prev.filter((x) => x.id !== row.id));
+      if (selectedSalon?.id === row.id) {
+        navigate("/superadmin");
+      }
+      showToast("success", t("superadmin.messages.deleted", "Salon deleted."));
+      stopEditSalon();
+    } catch (err) {
+      showToast("error", t("superadmin.errors.deleteFailed", "Failed to delete salon: {{message}}", { message: err?.message || err }));
     } finally {
       setRowLoading("");
     }
@@ -563,6 +706,100 @@ export default function SuperAdminPage() {
   }, [countries]);
 
   const countryNameField = i18n.language === "ar" ? "name_ar" : i18n.language === "cs" ? "name_cs" : i18n.language === "ru" ? "name_ru" : "name_en";
+
+  const mainTabs = useMemo(
+    () => [
+      { key: "overview", label: t("superadmin.tabs.overview", "Overview") },
+      { key: "salons", label: t("superadmin.tabs.salons", "Salons") },
+      { key: "create", label: t("superadmin.tabs.create", "Create salon") },
+      { key: "countries", label: t("superadmin.tabs.countries", "Countries") },
+    ],
+    [t]
+  );
+
+  const mainKpis = useMemo(() => {
+    const total = salons.length;
+    const pending = salons.filter((row) => String(row.status || "draft") === "pending_approval").length;
+    const active = salons.filter((row) => {
+      const status = String(row.status || "draft");
+      return (status === "trialing" || status === "active") && Boolean(row.is_active);
+    }).length;
+    const suspended = salons.filter((row) => String(row.status || "draft") === "suspended").length;
+    return { total, pending, active, suspended };
+  }, [salons]);
+
+  const countryBreakdownRows = useMemo(() => {
+    const map = new Map();
+    for (const row of salonHealthRows) {
+      const key = String(row.country_code || "IQ");
+      const current = map.get(key) || {
+        country_code: key,
+        salons: 0,
+        active: 0,
+        bookings_30: 0,
+        customers_30: 0,
+      };
+      current.salons += 1;
+      if ((row.status === "active" || row.status === "trialing") && row.is_active) current.active += 1;
+      current.bookings_30 += Number(row.bookings_last_30_days || 0);
+      current.customers_30 += Number(row.customers_last_30_days || 0);
+      map.set(key, current);
+    }
+    return Array.from(map.values()).sort((a, b) => b.bookings_30 - a.bookings_30);
+  }, [salonHealthRows]);
+
+  const topSalonsByBookings7d = useMemo(
+    () =>
+      [...salonHealthRows]
+        .sort((a, b) => Number(b.bookings_last_7_days || 0) - Number(a.bookings_last_7_days || 0))
+        .slice(0, 12),
+    [salonHealthRows]
+  );
+
+  const salonsAtRisk = useMemo(() => {
+    const nowMs = Date.now();
+    const threeDaysMs = nowMs + 3 * 24 * 60 * 60 * 1000;
+    return salonHealthRows.filter((row) => {
+      const trialEndMs = row.trial_end_at ? new Date(row.trial_end_at).getTime() : 0;
+      const trialEndingSoon = trialEndMs > nowMs && trialEndMs <= threeDaysMs;
+      const noRecentBookings = Number(row.bookings_last_7_days || 0) === 0;
+      return trialEndingSoon || noRecentBookings;
+    });
+  }, [salonHealthRows]);
+
+  const selectedSalonHealth = useMemo(
+    () => salonHealthRows.find((row) => String(row.salon_id) === String(selectedSalon?.id || "")) || null,
+    [salonHealthRows, selectedSalon?.id]
+  );
+
+  useEffect(() => {
+    if (!isMainPage) return;
+    if (!mainTabs.some((tab) => tab.key === activeMainTab)) {
+      setActiveMainTab("overview");
+    }
+  }, [isMainPage, mainTabs, activeMainTab]);
+
+  useEffect(() => {
+    if (!isMainPage) return;
+    try {
+      window.localStorage.setItem("carechair_superadmin_main_tab", activeMainTab);
+    } catch {
+      // ignore storage write errors
+    }
+  }, [activeMainTab, isMainPage]);
+
+  useEffect(() => {
+    if (!isOverviewPage) return;
+    if (activeMainTab !== "overview") {
+      setActiveMainTab("overview");
+    }
+  }, [isOverviewPage, activeMainTab]);
+
+  useEffect(() => {
+    if (!unlocked) return;
+    if (!isOverviewPage && !isDetailPage) return;
+    void loadOverviewMetrics();
+  }, [unlocked, isOverviewPage, isDetailPage]);
 
   useEffect(() => {
     if (!unlocked) return;
@@ -724,7 +961,14 @@ export default function SuperAdminPage() {
             <div className="row-actions">
               <Button
                 type="button"
-                variant={!isApprovalsPage && !isDetailPage ? "primary" : "ghost"}
+                variant={isOverviewPage ? "primary" : "ghost"}
+                onClick={() => navigate("/superadmin/overview")}
+              >
+                {t("superadmin.tabs.overview", "Overview")}
+              </Button>
+              <Button
+                type="button"
+                variant={isMainPage ? "primary" : "ghost"}
                 onClick={() => navigate("/superadmin")}
               >
                 {t("superadmin.salonControl")}
@@ -742,8 +986,233 @@ export default function SuperAdminPage() {
             </div>
           </Card>
 
-          {!isApprovalsPage && !isDetailPage ? (
+          {isOverviewPage ? (
+          <section className="panel superadmin-overview-page">
+            <div className="row-actions space-between" style={{ marginBottom: 10 }}>
+              <h3>{t("superadmin.overview.title", "Operational overview")}</h3>
+              <Button type="button" variant="ghost" onClick={loadOverviewMetrics}>
+                {overviewLoading ? t("common.loading") : t("common.refresh")}
+              </Button>
+            </div>
+
+            <div className="superadmin-kpi-grid superadmin-kpi-grid-wide">
+              <Card className="superadmin-kpi-card">
+                <span>{t("superadmin.overview.cards.totalSalons", "Total salons")}</span>
+                <strong>{Number(globalStats?.total_salons ?? mainKpis.total ?? 0)}</strong>
+              </Card>
+              <Card className="superadmin-kpi-card">
+                <span>{t("superadmin.overview.cards.activeSalons", "Active salons")}</span>
+                <strong>{Number(globalStats?.active_count ?? 0)}</strong>
+              </Card>
+              <Card className="superadmin-kpi-card">
+                <span>{t("superadmin.overview.cards.trialing", "Trialing")}</span>
+                <strong>{Number(globalStats?.trialing_count ?? 0)}</strong>
+              </Card>
+              <Card className="superadmin-kpi-card">
+                <span>{t("superadmin.overview.cards.pendingApproval", "Pending approval")}</span>
+                <strong>{Number(globalStats?.pending_approval_count ?? mainKpis.pending ?? 0)}</strong>
+              </Card>
+              <Card className="superadmin-kpi-card">
+                <span>{t("superadmin.overview.cards.pastDue", "Past due")}</span>
+                <strong>{Number(globalStats?.past_due_count ?? 0)}</strong>
+              </Card>
+              <Card className="superadmin-kpi-card">
+                <span>{t("superadmin.overview.cards.bookings30", "Total bookings (30d)")}</span>
+                <strong>{Number(globalStats?.bookings_last_30_days ?? 0)}</strong>
+              </Card>
+              <Card className="superadmin-kpi-card">
+                <span>{t("superadmin.overview.cards.customers30", "Total customers (30d)")}</span>
+                <strong>{Number(globalStats?.customers_last_30_days ?? 0)}</strong>
+              </Card>
+            </div>
+
+            <Card className="superadmin-table-card">
+              <div className="row-actions space-between" style={{ marginBottom: 8 }}>
+                <b>{t("superadmin.overview.countryBreakdown", "Country breakdown")}</b>
+              </div>
+              <div className="superadmin-table-wrap">
+                <table className="superadmin-table">
+                  <thead>
+                    <tr>
+                      <th>{t("superadmin.overview.table.country", "Country")}</th>
+                      <th>{t("superadmin.overview.table.salons", "Salons")}</th>
+                      <th>{t("superadmin.overview.table.active", "Active")}</th>
+                      <th>{t("superadmin.overview.table.bookings30", "Bookings (30d)")}</th>
+                      <th>{t("superadmin.overview.table.customers30", "Customers (30d)")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {countryBreakdownRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={5}>{t("superadmin.overview.empty", "No data yet.")}</td>
+                      </tr>
+                    ) : (
+                      countryBreakdownRows.map((row) => (
+                        <tr key={`country-${row.country_code}`}>
+                          <td>{row.country_code} - {(countryNameByCode[row.country_code] || {})[countryNameField] || row.country_code}</td>
+                          <td>{row.salons}</td>
+                          <td>{row.active}</td>
+                          <td>{row.bookings_30}</td>
+                          <td>{row.customers_30}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+
+            <Card className="superadmin-table-card">
+              <div className="row-actions space-between" style={{ marginBottom: 8 }}>
+                <b>{t("superadmin.overview.topSalons7d", "Top salons by bookings (7d)")}</b>
+              </div>
+              <div className="superadmin-table-wrap">
+                <table className="superadmin-table">
+                  <thead>
+                    <tr>
+                      <th>{t("superadmin.overview.table.salon", "Salon")}</th>
+                      <th>{t("superadmin.overview.table.country", "Country")}</th>
+                      <th>{t("superadmin.overview.table.bookings7", "Bookings 7d")}</th>
+                      <th>{t("superadmin.overview.table.customers30", "Customers 30d")}</th>
+                      <th>{t("superadmin.overview.table.lastBooking", "Last booking")}</th>
+                      <th>{t("superadmin.overview.table.status", "Status")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topSalonsByBookings7d.length === 0 ? (
+                      <tr>
+                        <td colSpan={6}>{t("superadmin.overview.empty", "No data yet.")}</td>
+                      </tr>
+                    ) : (
+                      topSalonsByBookings7d.map((row) => (
+                        <tr key={`top-${row.salon_id}`}>
+                          <td>{row.salon_name}</td>
+                          <td>{row.country_code}</td>
+                          <td>{Number(row.bookings_last_7_days || 0)}</td>
+                          <td>{Number(row.customers_last_30_days || 0)}</td>
+                          <td>{formatBillingDate(row.last_booking_at)}</td>
+                          <td>
+                            <Badge variant={deriveSalonAccess(row).badgeVariant}>{t(`status.${row.status || "draft"}`, row.status || "draft")}</Badge>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+
+            <Card className="superadmin-table-card">
+              <div className="row-actions space-between" style={{ marginBottom: 8 }}>
+                <b>{t("superadmin.overview.atRisk", "Salons at risk")}</b>
+              </div>
+              <div className="superadmin-table-wrap">
+                <table className="superadmin-table">
+                  <thead>
+                    <tr>
+                      <th>{t("superadmin.overview.table.salon", "Salon")}</th>
+                      <th>{t("superadmin.overview.table.country", "Country")}</th>
+                      <th>{t("superadmin.overview.table.bookings7", "Bookings 7d")}</th>
+                      <th>{t("superadmin.trialEnd")}</th>
+                      <th>{t("superadmin.overview.table.risk", "Risk")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {salonsAtRisk.length === 0 ? (
+                      <tr>
+                        <td colSpan={5}>{t("superadmin.overview.noRisk", "No risk salons right now.")}</td>
+                      </tr>
+                    ) : (
+                      salonsAtRisk.map((row) => {
+                        const trialEndMs = row.trial_end_at ? new Date(row.trial_end_at).getTime() : 0;
+                        const nowMs = Date.now();
+                        const trialSoon = trialEndMs > nowMs && trialEndMs <= nowMs + 3 * 24 * 60 * 60 * 1000;
+                        const zeroBookings = Number(row.bookings_last_7_days || 0) === 0;
+                        return (
+                          <tr key={`risk-${row.salon_id}`}>
+                            <td>{row.salon_name}</td>
+                            <td>{row.country_code}</td>
+                            <td>{Number(row.bookings_last_7_days || 0)}</td>
+                            <td>{formatBillingDate(row.trial_end_at)}</td>
+                            <td>
+                              <div className="row-actions">
+                                {trialSoon ? <Badge variant="pending">{t("superadmin.overview.risks.trialEnding", "Trial ending soon")}</Badge> : null}
+                                {zeroBookings ? <Badge variant="cancelled">{t("superadmin.overview.risks.zeroBookings", "0 bookings in 7d")}</Badge> : null}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </section>
+          ) : null}
+
+          {isMainPage ? (
           <>
+          <section className="panel superadmin-tabs-panel">
+            <div className="superadmin-main-tabs" role="tablist" aria-label={t("superadmin.salonControl")}>
+              {mainTabs.map((tab) => (
+                <Button
+                  key={tab.key}
+                  type="button"
+                  variant={activeMainTab === tab.key ? "primary" : "ghost"}
+                  className="superadmin-main-tab-btn"
+                  onClick={() => setActiveMainTab(tab.key)}
+                  role="tab"
+                  aria-selected={activeMainTab === tab.key}
+                >
+                  {tab.label}
+                </Button>
+              ))}
+            </div>
+          </section>
+
+          {activeMainTab === "overview" ? (
+          <section className="panel superadmin-overview-panel">
+            <div className="row-actions space-between" style={{ marginBottom: 10 }}>
+              <h3>{t("superadmin.tabs.overview", "Overview")}</h3>
+              <Button type="button" variant="ghost" onClick={loadAll}>
+                {loading ? t("common.loading") : t("common.refresh")}
+              </Button>
+            </div>
+            <div className="superadmin-kpi-grid">
+              <Card className="superadmin-kpi-card">
+                <span>{t("superadmin.kpis.totalSalons", "Total salons")}</span>
+                <strong>{mainKpis.total}</strong>
+              </Card>
+              <Card className="superadmin-kpi-card">
+                <span>{t("superadmin.kpis.pendingApproval", "Pending approval")}</span>
+                <strong>{mainKpis.pending}</strong>
+              </Card>
+              <Card className="superadmin-kpi-card">
+                <span>{t("superadmin.kpis.active", "Active / Trialing")}</span>
+                <strong>{mainKpis.active}</strong>
+              </Card>
+              <Card className="superadmin-kpi-card">
+                <span>{t("superadmin.kpis.suspended", "Suspended")}</span>
+                <strong>{mainKpis.suspended}</strong>
+              </Card>
+            </div>
+
+            <div className="row-actions" style={{ marginTop: 12 }}>
+              <Button type="button" variant="secondary" onClick={() => setActiveMainTab("create")}>
+                {t("superadmin.createSalon")}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => navigate("/superadmin/approvals")}>
+                {t("superadmin.approvals")}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setActiveMainTab("salons")}>
+                {t("superadmin.tabs.salons", "Salons")}
+              </Button>
+            </div>
+          </section>
+          ) : null}
+
+          {activeMainTab === "create" ? (
           <section className="panel superadmin-create-panel">
             <div className="row-actions space-between" style={{ marginBottom: 10 }}>
               <h3>{t("superadmin.createSalon")}</h3>
@@ -761,7 +1230,7 @@ export default function SuperAdminPage() {
                     setForm((p) => ({
                       ...p,
                       name: e.target.value,
-                      slug: p.slug ? p.slug : slugify(e.target.value),
+                      slug: p.slug ? p.slug : normalizeSalonSlug(e.target.value),
                     }))
                   }
                 />
@@ -769,7 +1238,7 @@ export default function SuperAdminPage() {
 
               <label className="field">
                 <span>{t("superadmin.form.slug")}</span>
-                <input className="input" value={form.slug} onChange={(e) => setForm((p) => ({ ...p, slug: slugify(e.target.value) }))} />
+                <input className="input" value={form.slug} onChange={(e) => setForm((p) => ({ ...p, slug: normalizeSalonSlug(e.target.value) }))} />
               </label>
 
               <label className="field">
@@ -809,7 +1278,9 @@ export default function SuperAdminPage() {
               </button>
             </form>
           </section>
+          ) : null}
 
+          {activeMainTab === "salons" ? (
           <section className="panel superadmin-salons-panel">
             <div className="row-actions space-between" style={{ marginBottom: 10 }}>
               <h3>{t("superadmin.salonControl")}</h3>
@@ -874,6 +1345,19 @@ export default function SuperAdminPage() {
                             type="button"
                             className="row-btn"
                             onClick={() => {
+                              if (editingSalonId === row.id) {
+                                stopEditSalon();
+                              } else {
+                                startEditSalon(row);
+                              }
+                            }}
+                          >
+                            {editingSalonId === row.id ? t("common.cancel") : t("common.edit")}
+                          </button>
+                          <button
+                            type="button"
+                            className="row-btn"
+                            onClick={() => {
                               if (editingPasscodeSalonId === row.id) {
                                 setEditingPasscodeSalonId("");
                                 setNewPasscode("");
@@ -899,6 +1383,57 @@ export default function SuperAdminPage() {
                             <button type="submit" className="submit-main" disabled={rowLoading === `admin_passcode-${row.id}`}>
                               {rowLoading === `admin_passcode-${row.id}` ? t("superadmin.saving") : t("superadmin.savePasscode")}
                             </button>
+                          </form>
+                        ) : null}
+
+                        {editingSalonId === row.id ? (
+                          <form
+                            className="grid two"
+                            style={{ marginTop: 8 }}
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              void saveSalonInfo(row);
+                            }}
+                          >
+                            <TextInput
+                              label={t("superadmin.form.salonName")}
+                              value={salonEditDraft.name}
+                              onChange={(e) => setSalonEditDraft((p) => ({ ...p, name: e.target.value }))}
+                            />
+                            <TextInput
+                              label={t("superadmin.form.slug")}
+                              value={salonEditDraft.slug}
+                              onChange={(e) => setSalonEditDraft((p) => ({ ...p, slug: normalizeSalonSlug(e.target.value) }))}
+                            />
+                            <TextInput
+                              label={t("superadmin.form.area")}
+                              value={salonEditDraft.area}
+                              onChange={(e) => setSalonEditDraft((p) => ({ ...p, area: e.target.value }))}
+                            />
+                            <TextInput
+                              label={t("superadmin.form.whatsapp")}
+                              value={salonEditDraft.whatsapp}
+                              onChange={(e) => setSalonEditDraft((p) => ({ ...p, whatsapp: e.target.value }))}
+                            />
+                            <SelectInput
+                              label={t("superadmin.country")}
+                              value={salonEditDraft.country_code}
+                              onChange={(e) => setSalonEditDraft((p) => ({ ...p, country_code: e.target.value }))}
+                            >
+                              {countries.map((country) => (
+                                <option value={country.code} key={`edit-country-${row.id}-${country.code}`}>
+                                  {country.code} - {country[countryNameField] || country.name_en}
+                                </option>
+                              ))}
+                            </SelectInput>
+                            <div className="row-actions" style={{ alignSelf: "end" }}>
+                              <Button type="submit" variant="primary" disabled={rowLoading.includes(row.id)}>
+                                {rowLoading.includes(row.id) ? t("superadmin.saving") : t("common.save")}
+                              </Button>
+                              <Button type="button" variant="ghost" onClick={stopEditSalon}>
+                                {t("common.cancel")}
+                              </Button>
+                            </div>
                           </form>
                         ) : null}
                       </div>
@@ -995,7 +1530,7 @@ export default function SuperAdminPage() {
 
                         <Button
                           variant="danger"
-                          disabled={loadingThisRow}
+                          disabled={loadingThisRow || rowLoading === `delete-${row.id}`}
                           onClick={() => {
                             if (effectiveStatus === "suspended") {
                               void patchSalon(
@@ -1027,6 +1562,22 @@ export default function SuperAdminPage() {
                         >
                           {effectiveStatus === "suspended" ? t("superadmin.unsuspend") : t("superadmin.suspend")}
                         </Button>
+
+                        <Button
+                          variant="danger"
+                          disabled={loadingThisRow || rowLoading === `delete-${row.id}`}
+                          onClick={() =>
+                            setConfirmState({
+                              title: t("superadmin.confirmDeleteTitle", "Delete salon"),
+                              text: t("superadmin.confirmDeleteText", { name: row.name, defaultValue: "Are you sure you want to permanently delete {{name}}?" }),
+                              onConfirm: async () => {
+                                await deleteSalon(row);
+                              },
+                            })
+                          }
+                        >
+                          {t("common.delete")}
+                        </Button>
                       </div>
                     </div>
                   );
@@ -1034,6 +1585,7 @@ export default function SuperAdminPage() {
               </div>
             )}
           </section>
+          ) : null}
           </>
           ) : null}
 
@@ -1072,8 +1624,66 @@ export default function SuperAdminPage() {
                           <p className="muted">
                             {t("superadmin.submittedAt")}: {formatBillingDate(row.created_at)}
                           </p>
+
+                          {editingSalonId === row.id ? (
+                            <form
+                              className="grid two"
+                              style={{ marginTop: 8 }}
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                void saveSalonInfo(row);
+                              }}
+                            >
+                              <TextInput
+                                label={t("superadmin.form.salonName")}
+                                value={salonEditDraft.name}
+                                onChange={(e) => setSalonEditDraft((p) => ({ ...p, name: e.target.value }))}
+                              />
+                              <TextInput
+                                label={t("superadmin.form.slug")}
+                                value={salonEditDraft.slug}
+                                onChange={(e) => setSalonEditDraft((p) => ({ ...p, slug: normalizeSalonSlug(e.target.value) }))}
+                              />
+                              <TextInput
+                                label={t("superadmin.form.area")}
+                                value={salonEditDraft.area}
+                                onChange={(e) => setSalonEditDraft((p) => ({ ...p, area: e.target.value }))}
+                              />
+                              <TextInput
+                                label={t("superadmin.form.whatsapp")}
+                                value={salonEditDraft.whatsapp}
+                                onChange={(e) => setSalonEditDraft((p) => ({ ...p, whatsapp: e.target.value }))}
+                              />
+                              <SelectInput
+                                label={t("superadmin.country")}
+                                value={salonEditDraft.country_code}
+                                onChange={(e) => setSalonEditDraft((p) => ({ ...p, country_code: e.target.value }))}
+                              >
+                                {countries.map((country) => (
+                                  <option value={country.code} key={`approval-edit-country-${row.id}-${country.code}`}>
+                                    {country.code} - {country[countryNameField] || country.name_en}
+                                  </option>
+                                ))}
+                              </SelectInput>
+                              <div className="row-actions" style={{ alignSelf: "end" }}>
+                                <Button type="submit" variant="primary" disabled={rowLoading.includes(row.id)}>
+                                  {rowLoading.includes(row.id) ? t("superadmin.saving") : t("common.save")}
+                                </Button>
+                                <Button type="button" variant="ghost" onClick={stopEditSalon}>
+                                  {t("common.cancel")}
+                                </Button>
+                              </div>
+                            </form>
+                          ) : null}
                         </div>
                         <div className="row-actions superadmin-salon-actions">
+                          <Button
+                            variant="ghost"
+                            disabled={rowBusy}
+                            onClick={() => startEditSalon(row)}
+                          >
+                            {t("common.edit")}
+                          </Button>
                           <Button
                             variant="success"
                             disabled={rowBusy}
@@ -1106,6 +1716,21 @@ export default function SuperAdminPage() {
                           </Button>
                           <Button variant="ghost" onClick={() => navigate(`/superadmin/salons/${row.id}`)}>
                             {t("superadmin.view")}
+                          </Button>
+                          <Button
+                            variant="danger"
+                            disabled={rowBusy || rowLoading === `delete-${row.id}`}
+                            onClick={() =>
+                              setConfirmState({
+                                title: t("superadmin.confirmDeleteTitle", "Delete salon"),
+                                text: t("superadmin.confirmDeleteText", { name: row.name, defaultValue: "Are you sure you want to permanently delete {{name}}?" }),
+                                onConfirm: async () => {
+                                  await deleteSalon(row);
+                                },
+                              })
+                            }
+                          >
+                            {t("common.delete")}
                           </Button>
                         </div>
                       </div>
@@ -1248,7 +1873,159 @@ export default function SuperAdminPage() {
                         </Button>
                       </div>
                     </div>
+
+                    <div className="settings-row">
+                      <div>
+                        <b>{t("superadmin.editSalonInfo", "Salon information")}</b>
+                        <p className="muted">{t("superadmin.editSalonInfoHint", "Edit name, URL slug and contact before approving.")}</p>
+                      </div>
+                      <div style={{ width: "100%" }}>
+                        <form
+                          className="grid two"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            if (editingSalonId !== selectedSalon.id) {
+                              startEditSalon(selectedSalon);
+                              return;
+                            }
+                            void saveSalonInfo(selectedSalon);
+                          }}
+                        >
+                          <TextInput
+                            label={t("superadmin.form.salonName")}
+                            value={editingSalonId === selectedSalon.id ? salonEditDraft.name : selectedSalon.name || ""}
+                            onChange={(e) => {
+                              if (editingSalonId !== selectedSalon.id) startEditSalon(selectedSalon);
+                              setSalonEditDraft((p) => ({ ...p, name: e.target.value }));
+                            }}
+                          />
+                          <TextInput
+                            label={t("superadmin.form.slug")}
+                            value={editingSalonId === selectedSalon.id ? salonEditDraft.slug : normalizeSalonSlug(selectedSalon.slug || selectedSalon.name || "")}
+                            onChange={(e) => {
+                              if (editingSalonId !== selectedSalon.id) startEditSalon(selectedSalon);
+                              setSalonEditDraft((p) => ({ ...p, slug: normalizeSalonSlug(e.target.value) }));
+                            }}
+                          />
+                          <TextInput
+                            label={t("superadmin.form.area")}
+                            value={editingSalonId === selectedSalon.id ? salonEditDraft.area : selectedSalon.area || ""}
+                            onChange={(e) => {
+                              if (editingSalonId !== selectedSalon.id) startEditSalon(selectedSalon);
+                              setSalonEditDraft((p) => ({ ...p, area: e.target.value }));
+                            }}
+                          />
+                          <TextInput
+                            label={t("superadmin.form.whatsapp")}
+                            value={editingSalonId === selectedSalon.id ? salonEditDraft.whatsapp : selectedSalon.whatsapp || ""}
+                            onChange={(e) => {
+                              if (editingSalonId !== selectedSalon.id) startEditSalon(selectedSalon);
+                              setSalonEditDraft((p) => ({ ...p, whatsapp: e.target.value }));
+                            }}
+                          />
+                          <SelectInput
+                            label={t("superadmin.country")}
+                            value={editingSalonId === selectedSalon.id ? salonEditDraft.country_code : selectedSalon.country_code || "IQ"}
+                            onChange={(e) => {
+                              if (editingSalonId !== selectedSalon.id) startEditSalon(selectedSalon);
+                              setSalonEditDraft((p) => ({ ...p, country_code: e.target.value }));
+                            }}
+                          >
+                            {countries.map((country) => (
+                              <option value={country.code} key={`detail-country-${country.code}`}>
+                                {country.code} - {country[countryNameField] || country.name_en}
+                              </option>
+                            ))}
+                          </SelectInput>
+                          <div className="row-actions" style={{ alignSelf: "end" }}>
+                            <Button type="submit" variant="primary" disabled={rowLoading.includes(selectedSalon.id)}>
+                              {rowLoading.includes(selectedSalon.id) ? t("superadmin.saving") : t("common.save")}
+                            </Button>
+                            <Button type="button" variant="ghost" onClick={stopEditSalon}>
+                              {t("common.cancel")}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="danger"
+                              onClick={() =>
+                                setConfirmState({
+                                  title: t("superadmin.confirmDeleteTitle", "Delete salon"),
+                                  text: t("superadmin.confirmDeleteText", {
+                                    name: selectedSalon.name,
+                                    defaultValue: "Are you sure you want to permanently delete {{name}}?",
+                                  }),
+                                  onConfirm: async () => {
+                                    await deleteSalon(selectedSalon);
+                                  },
+                                })
+                              }
+                            >
+                              {t("common.delete")}
+                            </Button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
                   </div>
+
+                  <Card className="superadmin-health-panel" style={{ marginTop: 12 }}>
+                    <div className="row-actions space-between" style={{ marginBottom: 8 }}>
+                      <b>{t("superadmin.health.title", "Salon health")}</b>
+                      <Button type="button" variant="ghost" onClick={loadOverviewMetrics}>
+                        {overviewLoading ? t("common.loading") : t("common.refresh")}
+                      </Button>
+                    </div>
+                    {selectedSalonHealth ? (
+                      <div className="superadmin-health-grid">
+                        {(() => {
+                          const totalCustomers = Number(selectedSalonHealth.total_customers || 0);
+                          const customers30 = Number(selectedSalonHealth.customers_last_30_days || 0);
+                          const repeat30 = Number(selectedSalonHealth.repeat_customers_last_30_days || 0);
+                          const new30 = Number(selectedSalonHealth.new_customers_last_30_days || 0);
+                          const repeatRate = customers30 > 0 ? Math.round((repeat30 / customers30) * 100) : 0;
+                          const engagementScore = Number(selectedSalonHealth.bookings_last_7_days || 0) * 2 + repeat30;
+                          return (
+                            <>
+                              <div className="superadmin-health-metric">
+                                <span>{t("superadmin.health.totalCustomers", "Total customers")}</span>
+                                <strong>{totalCustomers}</strong>
+                              </div>
+                              <div className="superadmin-health-metric">
+                                <span>{t("superadmin.health.newCustomers30", "New customers (30d)")}</span>
+                                <strong>{new30}</strong>
+                              </div>
+                              <div className="superadmin-health-metric">
+                                <span>{t("superadmin.health.repeatRate", "Repeat rate")}</span>
+                                <strong>{repeatRate}%</strong>
+                              </div>
+                              <div className="superadmin-health-metric">
+                                <span>{t("superadmin.health.bookings7", "Bookings 7d")}</span>
+                                <strong>{Number(selectedSalonHealth.bookings_last_7_days || 0)}</strong>
+                              </div>
+                              <div className="superadmin-health-metric">
+                                <span>{t("superadmin.health.bookings30", "Bookings 30d")}</span>
+                                <strong>{Number(selectedSalonHealth.bookings_last_30_days || 0)}</strong>
+                              </div>
+                              <div className="superadmin-health-metric">
+                                <span>{t("superadmin.health.lastBooking", "Last booking")}</span>
+                                <strong>{formatBillingDate(selectedSalonHealth.last_booking_at)}</strong>
+                              </div>
+                              <div className="superadmin-health-metric">
+                                <span>{t("superadmin.health.trialCountdown", "Trial countdown")}</span>
+                                <strong>{getTrialRemainingLabel(selectedSalon.trial_end_at || selectedSalon.trial_end) || "-"}</strong>
+                              </div>
+                              <div className="superadmin-health-metric">
+                                <span>{t("superadmin.health.engagementScore", "Engagement score")}</span>
+                                <strong>{engagementScore}</strong>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      <p className="muted">{t("superadmin.overview.empty", "No data yet.")}</p>
+                    )}
+                  </Card>
 
                   {(() => {
                     const country = countryNameByCode[selectedSalon.country_code || "IQ"];
@@ -1293,7 +2070,7 @@ export default function SuperAdminPage() {
             </section>
           ) : null}
 
-          {!isApprovalsPage && !isDetailPage ? (
+          {isMainPage && activeMainTab === "countries" ? (
           <section className="panel superadmin-salons-panel">
             <h3>{t("superadmin.countriesConfig")}</h3>
             <div className="settings-list">
