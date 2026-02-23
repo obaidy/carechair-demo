@@ -35,19 +35,19 @@ export default async function CalendarPage({params}: Props) {
   const rows = Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0]));
 
   return (
-    <div className="container page-stack">
-      <section className="section-stack">
+    <div className="cc-section">
+      <section className="panel hero-lite">
         <h1>{t('dashboard.calendar', {defaultValue: 'Calendar'})}</h1>
         <p className="muted">{t('dashboard.calendarHint', {defaultValue: 'Daily booking timeline grouped by date.'})}</p>
       </section>
 
       {rows.map(([dateKey, items]) => (
-        <section key={dateKey} className="salon-info-card">
+        <section key={dateKey} className="panel">
           <h2>{dateKey}</h2>
-          <div className="dashboard-list">
+          <div className="grid">
             {items.map((booking) => (
-              <article key={booking.id} className="dashboard-item-card">
-                <div className="dashboard-item-main">
+              <article key={booking.id} className="booking-card">
+                <div className="booking-info">
                   <h3>{booking.customer_name}</h3>
                   <p className="muted">{new Date(booking.appointment_start).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</p>
                   <p className="muted">{serviceById[booking.service_id || '']?.name || '-'}</p>

@@ -15,20 +15,20 @@ export default async function StaffPage({params}: Props) {
   const staff = await getSalonStaff(salon.id);
 
   return (
-    <div className="container page-stack">
-      <section className="section-stack">
+    <div className="cc-section">
+      <section className="panel hero-lite">
         <h1>{t('dashboard.staff', {defaultValue: 'Staff'})}</h1>
       </section>
 
-      <section className="salon-info-card">
+      <section className="panel">
         <h2>{t('dashboard.addStaff', {defaultValue: 'Add staff member'})}</h2>
-        <form action={createStaffAction} className="inline-form-grid">
+        <form action={createStaffAction} className="grid two">
           <input type="hidden" name="path" value={`/${locale}/app/staff`} />
-          <label className="form-field">
+          <label className="field">
             <span>{t('dashboard.name', {defaultValue: 'Name'})}</span>
             <input className="input" name="name" required minLength={2} />
           </label>
-          <label className="form-field">
+          <label className="field">
             <span>{t('dashboard.sortOrder', {defaultValue: 'Sort order'})}</span>
             <input className="input" type="number" name="sortOrder" defaultValue={0} min={0} />
           </label>
@@ -36,10 +36,10 @@ export default async function StaffPage({params}: Props) {
         </form>
       </section>
 
-      <section className="dashboard-list">
+      <section className="grid">
         {staff.map((member) => (
-          <article className="dashboard-item-card" key={member.id}>
-            <div className="dashboard-item-main">
+          <article className="booking-card" key={member.id}>
+            <div className="booking-info">
               <h3>{member.name}</h3>
               <p className="muted">{member.is_active ? 'Active' : 'Inactive'}</p>
             </div>

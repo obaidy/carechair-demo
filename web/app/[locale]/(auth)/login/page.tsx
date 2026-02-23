@@ -1,6 +1,7 @@
 import {redirect} from 'next/navigation';
 import {getMessages} from 'next-intl/server';
 import {z} from 'zod';
+import PageShell from '@/components/PageShell';
 import {getSuperadminCode} from '@/lib/auth/config';
 import {setSalonAdminSession, setSuperadminSession} from '@/lib/auth/server';
 import {tx} from '@/lib/messages';
@@ -97,27 +98,29 @@ export default async function LoginPage({params, searchParams}: Props) {
   const errorCode = String(query.error || '');
 
   return (
-    <div className="container page-stack">
-      <section className="hero-card">
-        <p className="eyebrow">CareChair</p>
-        <h1>{tx(messages, 'nav.login', 'Login')}</h1>
-        <p>{tx(messages, 'common.loginHint', 'Use salon passcode or superadmin passcode to open dashboards.')}</p>
+    <PageShell
+      title={tx(messages, 'nav.login', 'Login')}
+      subtitle={tx(messages, 'common.loginHint', 'Use salon passcode or superadmin passcode to open dashboards.')}
+      mobileMenuDisabled
+    >
+      <section className="panel hero-lite">
+        <h2>{tx(messages, 'nav.login', 'Login')}</h2>
       </section>
 
-      {errorCode ? <p className="error-text">{errorCode.replace(/_/g, ' ')}</p> : null}
+      {errorCode ? <p className="muted" style={{color: 'var(--danger)'}}>{errorCode.replace(/_/g, ' ')}</p> : null}
 
-      <section className="auth-grid">
+      <section className="grid two">
         <article className="booking-card">
           <h2>{tx(messages, 'nav.dashboard', 'Salon Dashboard')}</h2>
-          <form action={salonLoginAction} className="booking-card">
+          <form action={salonLoginAction} className="stack-sm">
             <input type="hidden" name="next" value={safeNext} />
 
-            <label className="form-field">
+            <label className="field">
               <span>Salon slug</span>
               <input className="input" name="slug" placeholder="my-salon" required minLength={2} />
             </label>
 
-            <label className="form-field">
+            <label className="field">
               <span>Admin passcode</span>
               <input className="input" name="passcode" type="password" required minLength={3} />
             </label>
@@ -128,10 +131,10 @@ export default async function LoginPage({params, searchParams}: Props) {
 
         <article className="booking-card">
           <h2>{tx(messages, 'nav.superadmin', 'Superadmin')}</h2>
-          <form action={superadminLoginAction} className="booking-card">
+          <form action={superadminLoginAction} className="stack-sm">
             <input type="hidden" name="next" value={safeNext} />
 
-            <label className="form-field">
+            <label className="field">
               <span>Superadmin passcode</span>
               <input className="input" name="passcode" type="password" required minLength={3} />
             </label>
@@ -140,6 +143,6 @@ export default async function LoginPage({params, searchParams}: Props) {
           </form>
         </article>
       </section>
-    </div>
+    </PageShell>
   );
 }

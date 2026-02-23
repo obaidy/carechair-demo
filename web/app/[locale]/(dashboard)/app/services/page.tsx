@@ -15,27 +15,27 @@ export default async function ServicesPage({params}: Props) {
   const services = await getSalonServices(salon.id);
 
   return (
-    <div className="container page-stack">
-      <section className="section-stack">
+    <div className="cc-section">
+      <section className="panel hero-lite">
         <h1>{t('dashboard.services', {defaultValue: 'Services'})}</h1>
       </section>
 
-      <section className="salon-info-card">
+      <section className="panel">
         <h2>{t('dashboard.addService', {defaultValue: 'Add service'})}</h2>
-        <form action={createServiceAction} className="inline-form-grid">
+        <form action={createServiceAction} className="grid two">
           <input type="hidden" name="path" value={`/${locale}/app/services`} />
-          <label className="form-field"><span>{t('dashboard.name', {defaultValue: 'Name'})}</span><input className="input" name="name" required minLength={2} /></label>
-          <label className="form-field"><span>{t('dashboard.duration', {defaultValue: 'Duration (min)'})}</span><input className="input" name="durationMinutes" type="number" min={5} defaultValue={45} /></label>
-          <label className="form-field"><span>{t('dashboard.price', {defaultValue: 'Price'})}</span><input className="input" name="price" type="number" min={0} defaultValue={0} /></label>
-          <label className="form-field"><span>{t('dashboard.sortOrder', {defaultValue: 'Sort order'})}</span><input className="input" name="sortOrder" type="number" min={0} defaultValue={0} /></label>
+          <label className="field"><span>{t('dashboard.name', {defaultValue: 'Name'})}</span><input className="input" name="name" required minLength={2} /></label>
+          <label className="field"><span>{t('dashboard.duration', {defaultValue: 'Duration (min)'})}</span><input className="input" name="durationMinutes" type="number" min={5} defaultValue={45} /></label>
+          <label className="field"><span>{t('dashboard.price', {defaultValue: 'Price'})}</span><input className="input" name="price" type="number" min={0} defaultValue={0} /></label>
+          <label className="field"><span>{t('dashboard.sortOrder', {defaultValue: 'Sort order'})}</span><input className="input" name="sortOrder" type="number" min={0} defaultValue={0} /></label>
           <button className="btn btn-primary" type="submit">{t('dashboard.add', {defaultValue: 'Add'})}</button>
         </form>
       </section>
 
-      <section className="dashboard-list">
+      <section className="grid">
         {services.map((service) => (
-          <article className="dashboard-item-card" key={service.id}>
-            <div className="dashboard-item-main">
+          <article className="booking-card" key={service.id}>
+            <div className="booking-info">
               <h3>{service.name}</h3>
               <p className="muted">{service.duration_minutes} min • {service.price ?? 0}</p>
               <p className="muted">{service.is_active ? 'Active' : 'Inactive'}</p>

@@ -21,13 +21,13 @@ export default async function SalonDashboardLayout({children, params}: Props) {
   ];
 
   return (
-    <>
+    <div className="platform-page">
       <DashboardNav
         title={t('dashboard.salonTitle', {defaultValue: 'Salon Admin'})}
         items={items}
         logoutHref={`/api/auth/logout?next=/${locale}/login`}
       />
-      <main className="site-main dashboard-main">{children}</main>
-    </>
+      <main className="platform-main">{children}</main>
+    </div>
   );
 }

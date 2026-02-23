@@ -15,12 +15,12 @@ export default async function SettingsPage({params}: Props) {
   const isPublic = Boolean(salon.is_public ?? salon.is_listed ?? false);
 
   return (
-    <div className="container page-stack">
-      <section className="section-stack">
+    <div className="cc-section">
+      <section className="panel hero-lite">
         <h1>{t('dashboard.settings', {defaultValue: 'Settings'})}</h1>
       </section>
 
-      <section className="salon-info-card">
+      <section className="panel">
         <h2>{t('dashboard.visibility', {defaultValue: 'Visibility on explore'})}</h2>
         <p className="muted">{isPublic ? 'Public' : 'Private'}</p>
 
@@ -31,7 +31,7 @@ export default async function SettingsPage({params}: Props) {
         </form>
       </section>
 
-      <section className="salon-info-card">
+      <section className="panel">
         <h2>{t('dashboard.account', {defaultValue: 'Account'})}</h2>
         <p className="muted">{salon.slug}</p>
         <p className="muted">{salon.country_code || '-'}</p>

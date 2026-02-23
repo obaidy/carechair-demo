@@ -1,8 +1,10 @@
 'use client';
 
 import {useEffect, useMemo, useState, type FormEvent} from 'react';
+import {useLocale} from 'next-intl';
 import {z} from 'zod';
 import {createBrowserSupabaseClient} from '@/lib/supabase/browser';
+import SafeImage from '@/components/SafeImage';
 import {useTx} from '@/lib/messages-client';
 import {
   combineDateTime,
@@ -12,6 +14,8 @@ import {
   SLOT_STEP_MINUTES,
   toDateInput
 } from '@/lib/booking';
+import {formatSalonOperationalCurrency} from '@/lib/format';
+import {getDefaultAvatar, getInitials, getServiceImage} from '@/lib/media';
 import type {
   EmployeeHourRow,
   SalonHourRow,
@@ -81,6 +85,7 @@ export default function BookingForm({
   hours,
   employeeHours
 }: BookingFormProps) {
+  const locale = useLocale();
   const tx = useTx();
   const t = (key: string, vars?: Record<string, string | number | boolean | null | undefined>) =>
     tx(`booking.${key}`, key, vars);
@@ -526,149 +531,248 @@ export default function BookingForm({
     }
   }
 
+  const quickDates = useMemo(() => {
+    return Array.from({length: 5}).map((_, index) => {
+      const date = new Date();
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() + index);
+      return {
+        value: toDateInput(date),
+        label: date.toLocaleDateString(locale.startsWith('ar') ? 'ar-IQ' : locale, {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
+        })
+      };
+    });
+  }, [locale]);
+
+  const currentStep =
+    bookingMode === 'auto_assign'
+      ? slotIso
+        ? 3
+        : serviceId
+          ? 2
+          : 1
+      : slotIso
+        ? 3
+        : staffId
+          ? 2
+          : serviceId
+            ? 1
+            : 1;
+
+  const summary = {
+    service: selectedService?.name || t('notSelected'),
+    staff: bookingMode === 'auto_assign' ? t('autoAssignByAvailability') : selectedStaff?.name || t('notSelected'),
+    price: selectedService ? formatSalonOperationalCurrency(selectedService.price, salon, locale) : '-',
+    time: slotIso ? formatDateTime(slotIso, locale, salon.timezone || 'UTC') : t('pickTime')
+  };
+
   if (!mounted) {
     return (
-      <section className="booking-card" aria-busy="true" aria-live="polite">
+      <section className="booking-form-modern" aria-busy="true" aria-live="polite">
         <h3>{t('formTitle')}</h3>
-        <div className="slots-empty">{tCommon('loading')}</div>
+        <div className="empty-box">{tCommon('loading')}</div>
       </section>
     );
   }
 
   if (success) {
     return (
-      <section className="booking-card">
+      <section className="success-screen">
+        <div className="success-icon">✓</div>
         <h3>{t('success.title')}</h3>
         <p>{t('success.message')}</p>
-        <ul className="booking-success-list">
-          <li>{t('success.id')}: {success.id}</li>
-          <li>{t('success.service')}: {success.service}</li>
-          <li>{t('success.staff')}: {success.staff}</li>
-          <li>{t('success.time')}: {formatDateTime(success.appointment, undefined, salon.timezone || 'UTC')}</li>
-        </ul>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => setSuccess(null)}
-        >
-          {t('success.newBooking')}
-        </button>
+        <div className="success-details">
+          <p><b>{t('success.id')}:</b> {success.id}</p>
+          <p><b>{t('success.service')}:</b> {success.service}</p>
+          <p><b>{t('success.staff')}:</b> {success.staff}</p>
+          <p><b>{t('success.time')}:</b> {formatDateTime(success.appointment, locale, salon.timezone || 'UTC')}</p>
+        </div>
+        <div className="row-actions center">
+          <button type="button" className="btn btn-secondary" onClick={() => setSuccess(null)}>
+            {t('success.newBooking')}
+          </button>
+        </div>
       </section>
     );
   }
 
   return (
-    <form className="booking-card" onSubmit={submit}>
-      <h3>{t('formTitle')}</h3>
-
-      <label className="form-field">
-        <span>{t('service')}</span>
-        <select
-          value={serviceId}
-          onChange={(event) => setServiceId(event.target.value)}
-          className="input"
-          required
+    <form className="booking-form-modern" onSubmit={submit}>
+      <div className="steps-wrap full">
+        <div className={`step-item${currentStep === 1 ? ' active' : ''}${serviceId ? ' done' : ''}`}>
+          <span className="step-index">{serviceId ? '✓' : 1}</span>
+          <b>{t('stepService')}</b>
+        </div>
+        <div
+          className={`step-item${currentStep === 2 ? ' active' : ''}${
+            bookingMode === 'auto_assign' ? (serviceId ? ' done' : '') : (staffId ? ' done' : '')
+          }`}
         >
-          {filteredServices.map((service) => (
-            <option value={service.id} key={service.id}>
-              {service.name} ({service.duration_minutes}m)
-            </option>
-          ))}
-        </select>
-      </label>
-
-      {bookingMode === 'choose_employee' ? (
-        <label className="form-field">
-          <span>{t('staff')}</span>
-          <select
-            value={staffId}
-            onChange={(event) => setStaffId(event.target.value)}
-            className="input"
-            required
-          >
-            {filteredStaff.map((member) => (
-              <option value={member.id} key={member.id}>
-                {member.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : (
-        <p className="muted">{t('autoAssign')}</p>
-      )}
-
-      <label className="form-field">
-        <span>{t('date')}</span>
-        <input
-          type="date"
-          value={dateValue}
-          onChange={(event) => setDateValue(event.target.value)}
-          className="input"
-          required
-        />
-      </label>
-
-      <div className="form-field">
-        <span>{t('timeSlots', {step: SLOT_STEP_MINUTES})}</span>
-
-        {!isValidPair ? (
-          <div className="slots-empty">{t('errors.invalidServiceStaff')}</div>
-        ) : loadingSlots ? (
-          <div className="slots-empty">{tCommon('loading')}</div>
-        ) : availableSlots.length === 0 ? (
-          <div className="slots-empty">{t('errors.noSlots')}</div>
-        ) : (
-          <div className="slots-grid">
-            {availableSlots.map((slot) => (
-              <button
-                key={slot.startIso}
-                type="button"
-                className={`slot-btn${slotIso === slot.startIso ? ' is-active' : ''}`}
-                onClick={() => setSlotIso(slot.startIso)}
-              >
-                {formatTime(slot.startIso, undefined, salon.timezone || 'UTC')}
-              </button>
-            ))}
-          </div>
-        )}
+          <span className="step-index">{bookingMode === 'auto_assign' ? (serviceId ? '✓' : 2) : (staffId ? '✓' : 2)}</span>
+          <b>{bookingMode === 'auto_assign' ? t('stepAutoAssign') : t('stepStaff')}</b>
+        </div>
+        <div className={`step-item${currentStep === 3 ? ' active' : ''}${slotIso ? ' done' : ''}`}>
+          <span className="step-index">{slotIso ? '✓' : 3}</span>
+          <b>{t('stepTime')}</b>
+        </div>
       </div>
 
-      <label className="form-field">
+      <label className="field full">
         <span>{t('name')}</span>
-        <input
-          type="text"
-          value={customerName}
-          onChange={(event) => setCustomerName(event.target.value)}
-          className="input"
-          required
-        />
+        <input type="text" value={customerName} onChange={(event) => setCustomerName(event.target.value)} className="input" required />
       </label>
 
-      <label className="form-field">
+      <label className="field full">
         <span>{t('phone')}</span>
         <input
           type="tel"
           value={customerPhone}
           onChange={(event) => setCustomerPhone(event.target.value)}
           className="input"
+          placeholder="07xxxxxxxxx"
           required
         />
       </label>
 
-      <label className="form-field">
+      <div className="field full">
+        <span>{t('service')}</span>
+        {filteredServices.length === 0 ? (
+          <div className="empty-box">{t('noActiveServices')}</div>
+        ) : (
+          <div className="service-grid-compact">
+            {filteredServices.map((service) => {
+              const disabled = bookingMode === 'choose_employee' && Boolean(staffId) && !assignmentSet.has(`${staffId}:${service.id}`);
+              const active = serviceId === service.id;
+
+              return (
+                <button
+                  type="button"
+                  key={service.id}
+                  disabled={disabled}
+                  className={`service-mini-card${active ? ' active' : ''}${disabled ? ' disabled' : ''}`}
+                  onClick={() => setServiceId(service.id)}
+                >
+                  <SafeImage
+                    src={service.image_url || getServiceImage(service.name)}
+                    alt={service.name}
+                    className="service-mini-image"
+                    fallbackIcon="✨"
+                    fallbackKey="service"
+                  />
+                  <div className="service-mini-meta">
+                    <b>{service.name}</b>
+                    <small>{t('minutes', {count: service.duration_minutes})}</small>
+                    <span>{formatSalonOperationalCurrency(service.price, salon, locale)}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {bookingMode === 'choose_employee' ? (
+        <div className="field full">
+          <span>{t('staff')}</span>
+          {filteredStaff.length === 0 ? (
+            <div className="empty-box">{t('noAssignedStaffForService')}</div>
+          ) : (
+            <div className="staff-avatar-grid">
+              {filteredStaff.map((member) => {
+                const active = staffId === member.id;
+                return (
+                  <button
+                    type="button"
+                    key={member.id}
+                    className={`staff-avatar-card${active ? ' active' : ''}`}
+                    onClick={() => setStaffId(member.id)}
+                  >
+                    <SafeImage
+                      src={member.photo_url || getDefaultAvatar(member.id || member.name)}
+                      alt={member.name}
+                      className="staff-avatar-image"
+                      fallbackText={getInitials(member.name)}
+                      fallbackKey="staff"
+                    />
+                    <b>{member.name}</b>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="field full">
+          <span>{t('staffAssignment')}</span>
+          <div className="empty-box">{t('autoAssignNote')}</div>
+        </div>
+      )}
+
+      <div className="field full">
+        <span>{t('pickDay')}</span>
+        <div className="quick-dates-wrap">
+          {quickDates.map((day) => (
+            <button
+              type="button"
+              key={day.value}
+              className={`date-pill${dateValue === day.value ? ' active' : ''}`}
+              onClick={() => setDateValue(day.value)}
+            >
+              {day.label}
+            </button>
+          ))}
+        </div>
+        <input type="date" value={dateValue} onChange={(event) => setDateValue(event.target.value)} className="input" required />
+      </div>
+
+      <div className="field full">
+        <span>{t('timeSlots', {step: SLOT_STEP_MINUTES})}</span>
+        {!isValidPair ? (
+          <div className="empty-box">{t('errors.invalidServiceStaff')}</div>
+        ) : loadingSlots ? (
+          <div className="slots-wrap">
+            {Array.from({length: 4}).map((_, index) => (
+              <div key={`slot-sk-${index}`} className="skeleton skeleton-slot" />
+            ))}
+          </div>
+        ) : availableSlots.length === 0 ? (
+          <div className="empty-box">{t('errors.noSlots')}</div>
+        ) : (
+          <div className="slots-wrap">
+            {availableSlots.map((slot) => (
+              <button
+                key={slot.startIso}
+                type="button"
+                className={`slot-pill${slotIso === slot.startIso ? ' active' : ''}`}
+                onClick={() => setSlotIso(slot.startIso)}
+              >
+                <b>{formatTime(slot.startIso, locale, salon.timezone || 'UTC')}</b>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <label className="field full">
         <span>{t('notes')}</span>
-        <textarea
-          value={notes}
-          onChange={(event) => setNotes(event.target.value)}
-          className="input textarea"
-          rows={3}
-        />
+        <textarea value={notes} onChange={(event) => setNotes(event.target.value)} className="input textarea" rows={3} />
       </label>
 
-      {error ? <p className="error-text">{error}</p> : null}
+      <section className="summary-card full">
+        <h4>{t('summaryTitle')}</h4>
+        <p><b>{t('service')}:</b> {summary.service}</p>
+        <p><b>{t('staff')}:</b> {summary.staff}</p>
+        <p><b>{t('price')}:</b> {summary.price}</p>
+        <p><b>{t('time')}:</b> {summary.time}</p>
+      </section>
 
-      <button type="submit" className="btn btn-primary" disabled={submitting || !slotIso}>
-        {submitting ? tCommon('saving') : t('submit')}
+      {error ? <p className="muted" style={{color: 'var(--danger)'}}>{error}</p> : null}
+
+      <button type="submit" className="btn btn-primary full" disabled={submitting || !slotIso || !isValidPair}>
+        {submitting ? tCommon('saving') : t('confirmBooking')}
       </button>
     </form>
   );

@@ -84,6 +84,27 @@ export type SalonLocationRow = {
   updated_at: string;
 };
 
+export type ExploreRow = {
+  salon: SalonRow;
+  services: ServiceRow[];
+  location: SalonLocationRow | null;
+};
+
+export type PublicSalonPayload = {
+  salon: SalonRow;
+  location: SalonLocationRow | null;
+  services: ServiceRow[];
+  staff: StaffRow[];
+  staffServices: StaffServiceRow[];
+  hours: SalonHourRow[];
+  employeeHours: EmployeeHourRow[];
+};
+
+export type SafeQueryResult<T> = {
+  data: T;
+  error: string | null;
+};
+
 const SALON_SELECT = [
   'id',
   'slug',
@@ -333,7 +354,7 @@ export async function getExploreData() {
     salon,
     services: servicesBySalon[salon.id] || [],
     location: locationsBySalon[salon.id] || mapLocationFallback(salon)
-  }));
+  })) as ExploreRow[];
 }
 
 export async function getCityListingData(country: string, city: string) {
@@ -419,11 +440,11 @@ export async function getPublicSalonByPath(country: string, city: string, salonS
     staffServices: (staffServicesRes.data || []) as unknown as StaffServiceRow[],
     hours: (hoursRes.data || []) as unknown as SalonHourRow[],
     employeeHours: (employeeHoursRes.data || []) as unknown as EmployeeHourRow[]
-  };
+  } as PublicSalonPayload;
 }
 
 export async function getSiteMapData() {
-  const explore = await getExploreData();
+  const {data: explore} = await getExploreDataSafe();
   const cityPaths = new Set<string>();
   const servicePaths = new Set<string>();
   const salonPaths = new Set<string>();
@@ -444,4 +465,50 @@ export async function getSiteMapData() {
     servicePaths: Array.from(servicePaths),
     salonPaths: Array.from(salonPaths)
   };
+}
+
+function toErrorMessage(error: unknown): string {
+  if (!error) return 'Unknown error';
+  const text = String((error as {message?: string})?.message || error);
+  return text.trim() || 'Unknown error';
+}
+
+export async function getExploreDataSafe(): Promise<SafeQueryResult<ExploreRow[]>> {
+  try {
+    const data = await getExploreData();
+    return {data, error: null};
+  } catch (error) {
+    return {data: [], error: toErrorMessage(error)};
+  }
+}
+
+export async function getCityListingDataSafe(country: string, city: string): Promise<SafeQueryResult<ExploreRow[]>> {
+  try {
+    const data = await getCityListingData(country, city);
+    return {data, error: null};
+  } catch (error) {
+    return {data: [], error: toErrorMessage(error)};
+  }
+}
+
+export async function getServiceListingDataSafe(country: string, city: string, serviceSlug: string): Promise<SafeQueryResult<ExploreRow[]>> {
+  try {
+    const data = await getServiceListingData(country, city, serviceSlug);
+    return {data, error: null};
+  } catch (error) {
+    return {data: [], error: toErrorMessage(error)};
+  }
+}
+
+export async function getPublicSalonByPathSafe(
+  country: string,
+  city: string,
+  salonSlug: string
+): Promise<SafeQueryResult<PublicSalonPayload | null>> {
+  try {
+    const data = await getPublicSalonByPath(country, city, salonSlug);
+    return {data, error: null};
+  } catch (error) {
+    return {data: null, error: toErrorMessage(error)};
+  }
 }

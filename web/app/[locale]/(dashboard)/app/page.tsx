@@ -17,10 +17,9 @@ export default async function SalonDashboardPage({params}: Props) {
   const overview = await getSalonOverview(salon.id);
 
   return (
-    <div className="container page-stack">
-      <section className="hero-card">
-        <p className="eyebrow">{salon.slug}</p>
-        <h1 className="hero-title-clamp">{salon.name}</h1>
+    <div className="cc-section">
+      <section className="panel hero-lite">
+        <h2>{salon.name}</h2>
         <p>{salon.area || '-'}</p>
       </section>
 
@@ -33,7 +32,7 @@ export default async function SalonDashboardPage({params}: Props) {
         <article className="kpi-card"><span>{t('dashboard.revenue30d', {defaultValue: 'Revenue 30d'})}</span><strong>{overview.revenue30d.toFixed(0)}</strong></article>
       </section>
 
-      <section className="salon-info-card">
+      <section className="panel">
         <h2>{t('dashboard.quickActions', {defaultValue: 'Quick actions'})}</h2>
         <div className="row-actions">
           <Link href="/app/bookings" className="btn btn-primary">{t('dashboard.bookings', {defaultValue: 'Bookings'})}</Link>

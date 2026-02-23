@@ -2,7 +2,7 @@ import {notFound} from 'next/navigation';
 import {getMessages} from 'next-intl/server';
 import {tx} from '@/lib/messages';
 import {buildMetadata} from '@/lib/seo';
-import {getCityListingData, countrySlugFromSalon, citySlugFromSalon} from '@/lib/data/public';
+import {getCityListingDataSafe, countrySlugFromSalon, citySlugFromSalon} from '@/lib/data/public';
 import {Link} from '@/i18n/navigation';
 import {normalizeSlug} from '@/lib/slug';
 import {Card} from '@/components/ui';
@@ -30,7 +30,17 @@ export default async function CityPage({params}: PageProps) {
   const {locale, country, city} = await params;
   const messages = await getMessages({locale});
 
-  const rows = await getCityListingData(country, city);
+  const {data: rows, error} = await getCityListingDataSafe(country, city);
+  if (error) {
+    return (
+      <PageShell title={decodeURIComponent(city).replace(/-/g, ' ')} subtitle={tx(messages, 'city.subtitle', 'Listed salons and services in this city.')}>
+        <Card>
+          <p className="muted">{tx(messages, 'city.loadError', 'Could not load this city right now.')}</p>
+          <p className="muted">{error}</p>
+        </Card>
+      </PageShell>
+    );
+  }
   if (!rows.length) notFound();
 
   const cityName = decodeURIComponent(city).replace(/-/g, ' ');
@@ -53,7 +63,7 @@ export default async function CityPage({params}: PageProps) {
                 <p className="muted">{salon.area || '-'}</p>
                 <p className="muted">{services.slice(0, 4).map((service) => service.name).join(' • ')}</p>
                 <div className="row-actions">
-                  <Link href={`/${countryPath}/${cityPath}/${salon.slug}`} className="btn btn-primary">
+                  <Link href={`/${countryPath}/${cityPath}/${normalizeSlug(salon.slug)}`} className="btn btn-primary">
                     {tx(messages, 'city.viewSalon', 'View salon')}
                   </Link>
                   {services[0] ? (

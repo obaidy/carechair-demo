@@ -7,10 +7,9 @@ export default async function ForbiddenPage() {
   const messages = await getMessages({locale});
 
   return (
-    <main className="site-main">
-      <div className="container page-stack">
-        <section className="hero-card">
-          <p className="eyebrow">403</p>
+    <div className="platform-page">
+      <main className="platform-main">
+        <section className="panel hero-lite">
           <h1>{tx(messages, 'common.forbidden', 'Access denied')}</h1>
           <p>{tx(messages, 'common.forbiddenHint', 'You do not have permission to open this page.')}</p>
           <div className="row-actions">
@@ -22,7 +21,7 @@ export default async function ForbiddenPage() {
             </Link>
           </div>
         </section>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

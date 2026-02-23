@@ -2,7 +2,7 @@ import {getMessages} from 'next-intl/server';
 import {tx} from '@/lib/messages';
 import {buildMetadata} from '@/lib/seo';
 import {Link} from '@/i18n/navigation';
-import {citySlugFromSalon, countrySlugFromSalon, getExploreData} from '@/lib/data/public';
+import {citySlugFromSalon, countrySlugFromSalon, getExploreDataSafe} from '@/lib/data/public';
 import SafeImage from '@/components/SafeImage';
 import {Badge, Button, Card} from '@/components/ui';
 import {formatSalonOperationalCurrency} from '@/lib/format';
@@ -36,7 +36,7 @@ export default async function ExplorePage({params, searchParams}: Props) {
   const cityFilter = String(queryParams.city || '').trim().toLowerCase();
   const query = String(queryParams.q || '').trim().toLowerCase();
 
-  const rows = await getExploreData();
+  const {data: rows, error} = await getExploreDataSafe();
 
   const filtered = rows.filter(({salon, services}) => {
     const country = countrySlugFromSalon(salon);
@@ -56,6 +56,10 @@ export default async function ExplorePage({params, searchParams}: Props) {
     filtered.length <= 5
       ? tx(messages, 'explore.socialProofEarly', 'Centers that started using CareChair ({{count}})', {count: filtered.length})
       : tx(messages, 'explore.socialProof', 'Centers using CareChair to organize bookings ({{count}})', {count: filtered.length});
+  const platformWhatsapp = normalizeIraqiPhone(
+    process.env.NEXT_PUBLIC_PLATFORM_WHATSAPP_NUMBER || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || ''
+  );
+  const hasPlatformWhatsapp = isValidE164WithoutPlus(platformWhatsapp);
 
   return (
     <PageShell title={tx(messages, 'common.explore', 'Explore')} subtitle={tx(messages, 'explore.subtitle', 'Find salons by area and services')}>
@@ -72,7 +76,22 @@ export default async function ExplorePage({params, searchParams}: Props) {
         </div>
       </Card>
 
-      {filtered.length === 0 ? (
+      {error ? (
+        <Card>
+          <p className="muted">{tx(messages, 'explore.errors.loadFailed', 'Could not load salons right now.')}</p>
+          <p className="muted">{error}</p>
+          <div className="row-actions">
+            {hasPlatformWhatsapp ? (
+              <Button as="a" href={`https://wa.me/${platformWhatsapp}`} target="_blank" rel="noreferrer">
+                {tx(messages, 'common.whatsappDemo', 'WhatsApp Demo')}
+              </Button>
+            ) : null}
+            <Button as={Link as any} variant="secondary" href="/">
+              {tx(messages, 'nav.home', 'Home')}
+            </Button>
+          </div>
+        </Card>
+      ) : filtered.length === 0 ? (
         <Card>
           <p className="muted">{tx(messages, 'explore.empty', 'No salons match the current filters.')}</p>
         </Card>

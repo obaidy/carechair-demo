@@ -1,7 +1,9 @@
 'use client';
 
+import {useState} from 'react';
 import BrandLogo from '@/components/BrandLogo';
 import {Link, usePathname} from '@/i18n/navigation';
+import MobileDrawer from '@/components/MobileDrawer';
 import {useTx} from '@/lib/messages-client';
 
 type DashboardNavItem = {
@@ -20,21 +22,34 @@ export default function DashboardNav({
 }) {
   const pathname = usePathname();
   const t = useTx();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="dashboard-header cc-sticky-nav">
-      <div className="container dashboard-header__inner">
-        <div className="dashboard-brand-wrap">
-          <BrandLogo className="site-brand" to="/" />
-          <strong className="dashboard-title">{title}</strong>
+    <header className="platform-header cc-sticky-nav">
+      <div className="platform-header-main">
+        <BrandLogo className="platform-brand" to="/" />
+        <div className="platform-header-copy">
+          <h1>{title}</h1>
         </div>
+      </div>
 
-        <nav className="dashboard-tabs" aria-label={t('nav.menu', 'Menu')}>
+      <button
+        type="button"
+        className="platform-menu-toggle"
+        onClick={() => setMenuOpen((v) => !v)}
+        aria-expanded={menuOpen}
+        aria-controls="dashboard-mobile-drawer"
+      >
+        {menuOpen ? '✕' : '☰'}
+      </button>
+
+      <div className="header-actions">
+        <nav aria-label={t('nav.menu', 'Menu')}>
           {items.map((item) => (
             <Link
               key={item.href}
               href={item.href as any}
-              className={`dash-tab${pathname === item.href ? ' is-active' : ''}`}
+              className={`ghost-link${pathname === item.href ? ' is-active' : ''}`}
             >
               {item.label}
             </Link>
@@ -45,6 +60,24 @@ export default function DashboardNav({
           {t('nav.logout', 'Logout')}
         </a>
       </div>
+
+      <MobileDrawer open={menuOpen} onClose={() => setMenuOpen(false)} id="dashboard-mobile-drawer" title={t('nav.menu', 'Menu')}>
+        <div className="platform-mobile-drawer-links">
+          {items.map((item) => (
+            <Link
+              key={`mobile-${item.href}`}
+              href={item.href as any}
+              className={`platform-mobile-link${pathname === item.href ? ' is-active' : ''}`}
+              onClick={() => setMenuOpen(false)}
+            >
+              {item.label}
+            </Link>
+          ))}
+          <a className="platform-mobile-link" href={logoutHref} onClick={() => setMenuOpen(false)}>
+            {t('nav.logout', 'Logout')}
+          </a>
+        </div>
+      </MobileDrawer>
     </header>
   );
 }

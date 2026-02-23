@@ -22,16 +22,16 @@ export default async function BookingsPage({params}: Props) {
   const staffById = Object.fromEntries(staff.map((row) => [row.id, row]));
 
   return (
-    <div className="container page-stack">
-      <section className="section-stack">
+    <div className="cc-section">
+      <section className="panel hero-lite">
         <h1>{t('dashboard.bookings', {defaultValue: 'Bookings'})}</h1>
         <p className="muted">{t('dashboard.bookingsHint', {defaultValue: 'Recent appointments and status updates.'})}</p>
       </section>
 
-      <section className="dashboard-list">
+      <section className="grid">
         {bookings.map((booking) => (
-          <article key={booking.id} className="dashboard-item-card">
-            <div className="dashboard-item-main">
+          <article key={booking.id} className="booking-card">
+            <div className="booking-info">
               <h3>{booking.customer_name || 'Customer'}</h3>
               <p className="muted">{new Date(booking.appointment_start).toLocaleString()}</p>
               <p className="muted">{serviceById[booking.service_id || '']?.name || '-'}</p>

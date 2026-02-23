@@ -23,10 +23,9 @@ export default async function SuperadminSalonDetailPage({params}: Props) {
   const isPublic = Boolean(salon.is_public ?? salon.is_listed ?? false);
 
   return (
-    <div className="container page-stack">
-      <section className="hero-card">
-        <p className="eyebrow">/{salon.slug}</p>
-        <h1 className="hero-title-clamp">{salon.name}</h1>
+    <div className="cc-section">
+      <section className="panel hero-lite">
+        <h2>{salon.name}</h2>
         <p>{salon.area || '-'}</p>
       </section>
 
@@ -37,7 +36,7 @@ export default async function SuperadminSalonDetailPage({params}: Props) {
         <article className="kpi-card"><span>Status</span><strong>{String(salon.status || salon.subscription_status || 'draft')}</strong></article>
       </section>
 
-      <section className="salon-info-card">
+      <section className="panel">
         <h2>{t('superadmin.actions', {defaultValue: 'Actions'})}</h2>
         <div className="row-actions">
           <form action={superadminSalonAction}>
@@ -73,12 +72,12 @@ export default async function SuperadminSalonDetailPage({params}: Props) {
         </div>
       </section>
 
-      <section className="salon-info-card">
+      <section className="panel">
         <h2>{t('superadmin.recentBookings', {defaultValue: 'Recent bookings'})}</h2>
-        <div className="dashboard-list">
+        <div className="grid">
           {bookings.slice(0, 30).map((booking) => (
-            <article key={booking.id} className="dashboard-item-card">
-              <div className="dashboard-item-main">
+            <article key={booking.id} className="booking-card">
+              <div className="booking-info">
                 <h3>{booking.customer_name}</h3>
                 <p className="muted">{booking.customer_phone}</p>
                 <p className="muted">{new Date(booking.appointment_start).toLocaleString()}</p>

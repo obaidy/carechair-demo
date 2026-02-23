@@ -26,7 +26,7 @@ export default async function SuperadminOverviewPage({params}: Props) {
   };
 
   return (
-    <div className="container page-stack">
+    <div className="cc-section">
       <section className="kpi-grid">
         <article className="kpi-card"><span>{t('superadmin.totalSalons', {defaultValue: 'Total salons'})}</span><strong>{totals.all}</strong></article>
         <article className="kpi-card"><span>{t('superadmin.active', {defaultValue: 'Active'})}</span><strong>{totals.active}</strong></article>
@@ -34,13 +34,13 @@ export default async function SuperadminOverviewPage({params}: Props) {
         <article className="kpi-card"><span>{t('superadmin.suspended', {defaultValue: 'Suspended'})}</span><strong>{totals.suspended}</strong></article>
       </section>
 
-      <section className="dashboard-list">
+      <section className="grid">
         {salons.map((salon) => {
           const isPublic = Boolean(salon.is_public ?? salon.is_listed ?? false);
 
           return (
-            <article key={salon.id} className="dashboard-item-card">
-              <div className="dashboard-item-main">
+            <article key={salon.id} className="booking-card">
+              <div className="booking-info">
                 <h3>{salon.name}</h3>
                 <p className="muted">/{salon.slug}</p>
                 <p className="muted">{salon.country_code || '-'} • {salon.currency_code || '-'}</p>
