@@ -22,7 +22,8 @@
     "edit": "Edit",
     "hide": "Hide",
     "show": "Show",
-    "add": "Add"
+    "add": "Add",
+    "actions": "Actions"
   },
   "errors": {
     "supabaseConfigMissing": "Supabase configuration is missing."
@@ -270,6 +271,10 @@
     "countriesConfig": "Countries Configuration",
     "enableCountry": "Enable country",
     "disableCountry": "Disable country",
+    "makeCountryPrivate": "Public country (shown in onboarding)",
+    "makeCountryPublic": "Private country (invite only)",
+    "manualBillingEnabled": "Manual billing enabled",
+    "manualBillingDisabled": "Use Stripe billing",
     "extendTrial": "Extend Trial",
     "forceStatus": "Force Status",
     "internalOnly": "Internal Use Only",
@@ -391,10 +396,14 @@
       "suspended": "Salon suspended.",
       "unsuspended": "Suspension removed.",
       "approvedTrialing": "Approved. Trial started for 7 days.",
+      "approvedManualBilling": "Approved with manual billing.",
       "approvedPendingBilling": "Approved - payment required to start access.",
       "rejected": "Salon rejected.",
       "salonInfoUpdated": "Salon info updated.",
-      "deleted": "Salon deleted."
+      "deleted": "Salon deleted.",
+      "inviteCreated": "Invite created successfully.",
+      "inviteRevoked": "Invite revoked.",
+      "inviteCopied": "Invite link copied."
     },
     "errors": {
       "codeMissing": "Super admin code is not set. Configure VITE_SUPERADMIN_CODE then restart dev.",
@@ -414,9 +423,27 @@
       "salonNotFound": "Salon not found.",
       "slugTaken": "Slug is already used by another salon.",
       "deleteFailed": "Failed to delete salon: {{message}}",
-      "metricsLoadFailed": "Failed to load overview metrics: {{message}}"
+      "metricsLoadFailed": "Failed to load overview metrics: {{message}}",
+      "invitesLoadFailed": "Failed to load invites: {{message}}",
+      "inviteCreateFailed": "Failed to create invite: {{message}}",
+      "inviteRevokeFailed": "Failed to revoke invite: {{message}}",
+      "inviteCopyFailed": "Failed to copy invite link.",
+      "inviteCountryRequired": "Please select country for invite."
     },
     "approvals": "Approvals",
+    "invites": "Invites",
+    "invitesPageTitle": "Invite links",
+    "inviteCountry": "Invite country",
+    "inviteMaxUses": "Max uses",
+    "inviteExpiresAt": "Expires at (optional)",
+    "createInvite": "Create invite",
+    "copyLink": "Copy link",
+    "copied": "Copied",
+    "revokeInvite": "Revoke",
+    "inviteRevoked": "Revoked",
+    "inviteToken": "Token",
+    "inviteUsage": "Usage",
+    "noInvites": "No invites yet.",
     "approvalsQueue": "Pending approvals",
     "noPendingApprovals": "No salons pending approval.",
     "approve": "Approve",
@@ -431,6 +458,8 @@
     "confirmApproveText": "Approve {{name}} now?",
     "confirmRejectTitle": "Reject salon",
     "confirmRejectText": "Reject {{name}}?",
+    "confirmRevokeInviteTitle": "Revoke invite",
+    "confirmRevokeInviteText": "Do you want to revoke this invite token?",
     "confirmDeleteTitle": "Delete salon",
     "confirmDeleteText": "Are you sure you want to permanently delete {{name}}?",
     "resume": "Resume",
@@ -1050,6 +1079,11 @@
       "submitting": "Submitting..."
     },
     "reviewText": "Review your setup and submit to create the full salon structure.",
+    "invite": {
+      "label": "Private invite",
+      "active": "Your country is set automatically through a private invite.",
+      "validating": "Validating invite..."
+    },
     "review": {
       "basic": "Basic information",
       "resources": "Resources",
@@ -1081,6 +1115,9 @@
     "errors": {
       "supabaseMissing": "Supabase is not configured.",
       "loadCountries": "Failed to load countries: {{message}}",
+      "publicCountriesMigrationMissing": "Public countries migration is missing. Please run latest DB migrations.",
+      "inviteInvalid": "This invite is invalid or expired.",
+      "inviteValidationFailed": "Failed to validate invite: {{message}}",
       "nameRequired": "Salon name is required.",
       "countryRequired": "Please select country.",
       "invalidSalonHours": "Please fix salon working hours for {{day}}.",

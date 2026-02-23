@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PageShell from "../../components/PageShell";
 import Toast from "../../components/Toast";
@@ -59,6 +59,11 @@ function localizeCountryName(country, lang) {
   if (l.startsWith("cs")) return country?.name_cs || country?.name_en || country?.code;
   if (l.startsWith("ru")) return country?.name_ru || country?.name_en || country?.code;
   return country?.name_en || country?.code;
+}
+
+function isMissingColumnError(error, column) {
+  const message = String(error?.message || "").toLowerCase();
+  return error?.code === "42703" || (message.includes("column") && message.includes(String(column).toLowerCase()));
 }
 
 function normalizeDraft(raw) {
@@ -138,9 +143,15 @@ function normalizeDraft(raw) {
 export default function SalonSetupPage() {
   const { t, i18n } = useTranslation();
   const { toast, showToast } = useToast();
+  const [searchParams] = useSearchParams();
+  const inviteToken = useMemo(() => String(searchParams.get("invite") || "").trim(), [searchParams]);
 
   const [countries, setCountries] = useState([]);
   const [loadingCountries, setLoadingCountries] = useState(true);
+  const [validatingInvite, setValidatingInvite] = useState(false);
+  const [inviteValid, setInviteValid] = useState(false);
+  const [inviteCountryCode, setInviteCountryCode] = useState("");
+  const [inviteError, setInviteError] = useState("");
 
   const [logoFile, setLogoFile] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
@@ -165,6 +176,9 @@ export default function SalonSetupPage() {
   const workingHours = draft.working_hours;
   const employees = draft.employees;
   const services = draft.services;
+  const isInviteFlow = inviteValid && !!inviteCountryCode;
+  const hasInviteParam = !!inviteToken;
+  const shouldHideCountryField = hasInviteParam && (validatingInvite || isInviteFlow);
 
   const localizedDays = useMemo(() => {
     const locale = String(i18n.language || "en");
@@ -192,21 +206,25 @@ export default function SalonSetupPage() {
     let active = true;
     async function loadCountries() {
       setLoadingCountries(true);
-      const { data, error } = await supabase
+      let result = await supabase
         .from("countries")
-        .select("code,name_en,name_ar,name_cs,name_ru,default_currency,is_enabled")
+        .select("code,name_en,name_ar,name_cs,name_ru,is_enabled,is_public")
         .eq("is_enabled", true)
+        .eq("is_public", true)
         .order("code", { ascending: true });
 
       if (!active) return;
 
-      if (error) {
+      if (result.error) {
         showToast(
           "error",
-          t("onboarding.errors.loadCountries", "Failed to load countries: {{message}}", { message: error.message })
+          isMissingColumnError(result.error, "is_public")
+            ? t("onboarding.errors.publicCountriesMigrationMissing", "Public countries migration is missing. Please run latest DB migrations.")
+            : t("onboarding.errors.loadCountries", "Failed to load countries: {{message}}", { message: result.error.message })
         );
+        setCountries([]);
       } else {
-        setCountries(data || []);
+        setCountries(result.data || []);
       }
       setLoadingCountries(false);
     }
@@ -216,6 +234,65 @@ export default function SalonSetupPage() {
       active = false;
     };
   }, [showToast, t]);
+
+  useEffect(() => {
+    if (!supabase) return;
+    if (!inviteToken) {
+      setInviteValid(false);
+      setInviteCountryCode("");
+      setInviteError("");
+      return;
+    }
+
+    let active = true;
+    async function validateInvite() {
+      setValidatingInvite(true);
+      setInviteError("");
+      const { data, error } = await supabase.rpc("validate_salon_invite", { p_token: inviteToken });
+      if (!active) return;
+
+      if (error || !data?.ok || !data?.country_code) {
+        setInviteValid(false);
+        setInviteCountryCode("");
+        setInviteError(t("onboarding.errors.inviteInvalid", "This invite is invalid or expired."));
+        if (error) {
+          showToast(
+            "error",
+            t("onboarding.errors.inviteValidationFailed", "Failed to validate invite: {{message}}", {
+              message: error.message,
+            })
+          );
+        } else {
+          showToast("error", t("onboarding.errors.inviteInvalid", "This invite is invalid or expired."));
+        }
+      } else {
+        const countryCode = String(data.country_code || "").toUpperCase();
+        setInviteValid(true);
+        setInviteCountryCode(countryCode);
+        setDraft((prev) => ({
+          ...prev,
+          basic: {
+            ...prev.basic,
+            country_code: countryCode,
+          },
+        }));
+      }
+      setValidatingInvite(false);
+    }
+
+    void validateInvite();
+    return () => {
+      active = false;
+    };
+  }, [inviteToken, showToast, t]);
+
+  useEffect(() => {
+    if (!countries.length || isInviteFlow) return;
+    const hasCountry = countries.some((country) => country.code === basic.country_code);
+    if (!hasCountry) {
+      patchBasic("country_code", countries[0].code);
+    }
+  }, [countries, isInviteFlow, basic.country_code]);
 
   useEffect(() => {
     const safeDraft = {
@@ -509,11 +586,12 @@ export default function SalonSetupPage() {
       setUploadStage(t("onboarding.upload.finalizing", "Finalizing setup..."));
 
       const payload = {
+        invite_token: isInviteFlow ? inviteToken : null,
         salon: {
           id: salonId,
           name: basic.name.trim(),
           slug: normalizeSalonSlug(basic.name.trim()),
-          country_code: basic.country_code,
+          country_code: isInviteFlow ? inviteCountryCode : basic.country_code,
           city: basic.city.trim(),
           whatsapp: basic.whatsapp.trim(),
           admin_passcode: basic.admin_passcode.trim(),
@@ -694,18 +772,29 @@ export default function SalonSetupPage() {
                   onChange={(e) => patchBasic("name", e.target.value)}
                   placeholder={t("onboarding.placeholders.salonName", "Example: Queen Beauty Center")}
                 />
-                <SelectInput
-                  label={t("onboarding.fields.country", "Country")}
-                  value={basic.country_code}
-                  onChange={(e) => patchBasic("country_code", e.target.value)}
-                  disabled={loadingCountries}
-                >
-                  {countries.map((country) => (
-                    <option key={country.code} value={country.code}>
-                      {localizeCountryName(country, i18n.language)} ({country.default_currency})
-                    </option>
-                  ))}
-                </SelectInput>
+                {shouldHideCountryField ? (
+                  <div className="onboarding-file-field">
+                    <span>{t("onboarding.invite.label", "Private invite")}</span>
+                    <small>
+                      {validatingInvite
+                        ? t("onboarding.invite.validating", "Validating invite...")
+                        : t("onboarding.invite.active", "Your country is set automatically through a private invite.")}
+                    </small>
+                  </div>
+                ) : (
+                  <SelectInput
+                    label={t("onboarding.fields.country", "Country")}
+                    value={basic.country_code}
+                    onChange={(e) => patchBasic("country_code", e.target.value)}
+                    disabled={loadingCountries || validatingInvite}
+                  >
+                    {countries.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {localizeCountryName(country, i18n.language)}
+                      </option>
+                    ))}
+                  </SelectInput>
+                )}
                 <TextInput
                   label={t("onboarding.fields.city", "City")}
                   value={basic.city}
@@ -725,6 +814,7 @@ export default function SalonSetupPage() {
                   placeholder={t("onboarding.placeholders.adminPasscode", "Example: 1234")}
                 />
               </div>
+              {inviteError ? <p className="onboarding-upload-stage onboarding-upload-stage-error">{inviteError}</p> : null}
 
               <div className="onboarding-grid-2 onboarding-upload-grid">
                 <label className="onboarding-file-field">
@@ -977,7 +1067,7 @@ export default function SalonSetupPage() {
                   <h4>{t("onboarding.review.basic", "Basic information")}</h4>
                   <ul>
                     <li>{t("onboarding.fields.salonName", "Salon name")}: {basic.name || "-"}</li>
-                    <li>{t("onboarding.fields.country", "Country")}: {basic.country_code || "-"}</li>
+                    {!isInviteFlow ? <li>{t("onboarding.fields.country", "Country")}: {basic.country_code || "-"}</li> : null}
                     <li>{t("onboarding.fields.city", "City")}: {basic.city || "-"}</li>
                     <li>{t("onboarding.fields.whatsapp", "WhatsApp")}: {basic.whatsapp || "-"}</li>
                   </ul>

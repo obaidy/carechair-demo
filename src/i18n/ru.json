@@ -22,7 +22,8 @@
     "edit": "Изменить",
     "hide": "Скрыть",
     "show": "Показать",
-    "add": "Add"
+    "add": "Добавить",
+    "actions": "Действия"
   },
   "errors": {
     "supabaseConfigMissing": "Настройки Supabase не заполнены."
@@ -270,6 +271,10 @@
     "countriesConfig": "Настройки стран",
     "enableCountry": "Включить страну",
     "disableCountry": "Отключить страну",
+    "makeCountryPrivate": "Публичная страна (видна в onboarding)",
+    "makeCountryPublic": "Скрытая страна (только по приглашению)",
+    "manualBillingEnabled": "Включена ручная оплата",
+    "manualBillingDisabled": "Использовать Stripe",
     "extendTrial": "Продлить trial",
     "forceStatus": "Принудительный статус",
     "internalOnly": "Только для внутреннего использования",
@@ -391,10 +396,14 @@
       "suspended": "Салон заблокирован.",
       "unsuspended": "Блокировка снята.",
       "approvedTrialing": "Одобрено. Пробный период активирован на 7 дней.",
+      "approvedManualBilling": "Одобрено с ручной оплатой.",
       "approvedPendingBilling": "Одобрено — для запуска требуется оплата.",
       "rejected": "Салон отклонён.",
       "salonInfoUpdated": "Информация о салоне обновлена.",
-      "deleted": "Салон удалён."
+      "deleted": "Салон удалён.",
+      "inviteCreated": "Приглашение успешно создано.",
+      "inviteRevoked": "Приглашение отозвано.",
+      "inviteCopied": "Ссылка приглашения скопирована."
     },
     "errors": {
       "codeMissing": "Код суперадмина не задан. Укажите VITE_SUPERADMIN_CODE и перезапустите dev.",
@@ -414,9 +423,27 @@
       "salonNotFound": "Салон не найден.",
       "slugTaken": "Этот slug уже используется другим салоном.",
       "deleteFailed": "Не удалось удалить салон: {{message}}",
-      "metricsLoadFailed": "Не удалось загрузить метрики обзора: {{message}}"
+      "metricsLoadFailed": "Не удалось загрузить метрики обзора: {{message}}",
+      "invitesLoadFailed": "Не удалось загрузить приглашения: {{message}}",
+      "inviteCreateFailed": "Не удалось создать приглашение: {{message}}",
+      "inviteRevokeFailed": "Не удалось отозвать приглашение: {{message}}",
+      "inviteCopyFailed": "Не удалось скопировать ссылку приглашения.",
+      "inviteCountryRequired": "Выберите страну для приглашения."
     },
     "approvals": "Одобрения",
+    "invites": "Приглашения",
+    "invitesPageTitle": "Ссылки-приглашения",
+    "inviteCountry": "Страна приглашения",
+    "inviteMaxUses": "Максимум использований",
+    "inviteExpiresAt": "Действует до (необязательно)",
+    "createInvite": "Создать приглашение",
+    "copyLink": "Копировать ссылку",
+    "copied": "Скопировано",
+    "revokeInvite": "Отозвать",
+    "inviteRevoked": "Отозвано",
+    "inviteToken": "Токен",
+    "inviteUsage": "Использование",
+    "noInvites": "Приглашений пока нет.",
     "approvalsQueue": "Очередь одобрений",
     "noPendingApprovals": "Нет салонов, ожидающих одобрения.",
     "approve": "Одобрить",
@@ -431,6 +458,8 @@
     "confirmApproveText": "Одобрить {{name}}?",
     "confirmRejectTitle": "Отклонить салон",
     "confirmRejectText": "Отклонить {{name}}?",
+    "confirmRevokeInviteTitle": "Отозвать приглашение",
+    "confirmRevokeInviteText": "Отозвать этот токен приглашения?",
     "confirmDeleteTitle": "Удалить салон",
     "confirmDeleteText": "Вы уверены, что хотите навсегда удалить салон {{name}}?",
     "resume": "Возобновить",
@@ -954,6 +983,11 @@
       "submitting": "Отправка..."
     },
     "reviewText": "Проверьте данные и отправьте создание полной структуры салона.",
+    "invite": {
+      "label": "Приватное приглашение",
+      "active": "Страна установлена автоматически по приватному приглашению.",
+      "validating": "Проверка приглашения..."
+    },
     "review": {
       "basic": "Основная информация",
       "resources": "Ресурсы",
@@ -985,6 +1019,9 @@
     "errors": {
       "supabaseMissing": "Supabase не настроен.",
       "loadCountries": "Не удалось загрузить страны: {{message}}",
+      "publicCountriesMigrationMissing": "Миграция публичных стран не применена. Запустите последние миграции БД.",
+      "inviteInvalid": "Это приглашение недействительно или истекло.",
+      "inviteValidationFailed": "Не удалось проверить приглашение: {{message}}",
       "nameRequired": "Название салона обязательно.",
       "countryRequired": "Выберите страну.",
       "invalidSalonHours": "Исправьте рабочие часы для {{day}}.",

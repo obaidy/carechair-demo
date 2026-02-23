@@ -42,6 +42,8 @@ const FALLBACK_COUNTRIES = [
     trial_days_default: 7,
     vat_percent: 0,
     is_enabled: true,
+    is_public: true,
+    requires_manual_billing: false,
   },
   {
     code: "AE",
@@ -54,6 +56,8 @@ const FALLBACK_COUNTRIES = [
     trial_days_default: 7,
     vat_percent: 0,
     is_enabled: true,
+    is_public: true,
+    requires_manual_billing: false,
   },
   {
     code: "CZ",
@@ -66,6 +70,8 @@ const FALLBACK_COUNTRIES = [
     trial_days_default: 7,
     vat_percent: 0,
     is_enabled: true,
+    is_public: true,
+    requires_manual_billing: false,
   },
   {
     code: "EU",
@@ -78,6 +84,8 @@ const FALLBACK_COUNTRIES = [
     trial_days_default: 7,
     vat_percent: 0,
     is_enabled: true,
+    is_public: true,
+    requires_manual_billing: false,
   },
 ];
 
@@ -152,6 +160,15 @@ export default function SuperAdminPage() {
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [salonHealthRows, setSalonHealthRows] = useState([]);
   const [globalStats, setGlobalStats] = useState(null);
+  const [invitesLoading, setInvitesLoading] = useState(false);
+  const [invites, setInvites] = useState([]);
+  const [creatingInvite, setCreatingInvite] = useState(false);
+  const [inviteForm, setInviteForm] = useState({
+    country_code: "SY",
+    max_uses: "1",
+    expires_at: "",
+  });
+  const [inviteLinkCopied, setInviteLinkCopied] = useState("");
 
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
@@ -193,8 +210,9 @@ export default function SuperAdminPage() {
 
   const isOverviewPage = location.pathname.startsWith("/superadmin/overview") || location.pathname.startsWith("/admin/overview");
   const isApprovalsPage = location.pathname.startsWith("/superadmin/approvals") || location.pathname.startsWith("/admin/approvals");
+  const isInvitesPage = location.pathname.startsWith("/superadmin/invites") || location.pathname.startsWith("/admin/invites");
   const isDetailPage = Boolean(detailSalonId);
-  const isMainPage = !isOverviewPage && !isApprovalsPage && !isDetailPage;
+  const isMainPage = !isOverviewPage && !isApprovalsPage && !isInvitesPage && !isDetailPage;
 
   async function loadAll() {
     if (!supabase) {
@@ -261,9 +279,18 @@ export default function SuperAdminPage() {
           trial_days_default: String(row.trial_days_default ?? 7),
           vat_percent: String(row.vat_percent ?? 0),
           is_enabled: Boolean(row.is_enabled),
+          is_public: row.is_public !== false,
+          requires_manual_billing: Boolean(row.requires_manual_billing),
         };
       }
       setCountryDrafts(draftMap);
+      setInviteForm((prev) => {
+        const enabledCountries = countryRows.filter((row) => row.is_enabled !== false);
+        const preferred = enabledCountries.find((row) => row.code === "SY") || enabledCountries[0] || countryRows[0];
+        if (!preferred) return prev;
+        if (prev.country_code && countryRows.some((row) => row.code === prev.country_code)) return prev;
+        return { ...prev, country_code: preferred.code };
+      });
 
       if (unlocked) {
         const adminCode = verifiedCode || codeInput.trim() || SUPER_ADMIN_CODE;
@@ -345,6 +372,87 @@ export default function SuperAdminPage() {
       showToast("error", t("superadmin.errors.metricsLoadFailed", "Failed to load overview metrics: {{message}}", { message: err?.message || err }));
     } finally {
       setOverviewLoading(false);
+    }
+  }
+
+  function getInviteLink(token) {
+    if (!token) return "";
+    return `${window.location.origin}/apply?invite=${encodeURIComponent(token)}`;
+  }
+
+  async function loadInvites() {
+    if (!supabase || !unlocked) return;
+    setInvitesLoading(true);
+    try {
+      const adminCode = verifiedCode || codeInput.trim() || SUPER_ADMIN_CODE;
+      const { data, error } = await supabase.rpc("superadmin_list_invites", {
+        p_admin_code: adminCode,
+        p_limit: 400,
+      });
+      if (error) throw error;
+      setInvites(data || []);
+    } catch (err) {
+      setInvites([]);
+      showToast("error", t("superadmin.errors.invitesLoadFailed", "Failed to load invites: {{message}}", { message: err?.message || err }));
+    } finally {
+      setInvitesLoading(false);
+    }
+  }
+
+  async function createInvite() {
+    if (!supabase) return;
+    const countryCode = String(inviteForm.country_code || "").toUpperCase();
+    const maxUses = Math.max(1, Number(inviteForm.max_uses || 1));
+    const expiresAt = inviteForm.expires_at ? new Date(inviteForm.expires_at).toISOString() : null;
+    if (!countryCode) {
+      showToast("error", t("superadmin.errors.inviteCountryRequired", "Please select country for invite."));
+      return;
+    }
+
+    setCreatingInvite(true);
+    try {
+      const adminCode = verifiedCode || codeInput.trim() || SUPER_ADMIN_CODE;
+      const { data, error } = await supabase.rpc("superadmin_create_invite", {
+        p_admin_code: adminCode,
+        p_country_code: countryCode,
+        p_expires_at: expiresAt,
+        p_max_uses: maxUses,
+        p_created_by: adminSessionId,
+      });
+      if (error) throw error;
+
+      setInvites((prev) => [data, ...prev]);
+      const link = getInviteLink(data?.token || "");
+      try {
+        await navigator.clipboard.writeText(link);
+        setInviteLinkCopied(String(data?.id || ""));
+      } catch {
+        // Clipboard access may be blocked; keep UI functional.
+      }
+      showToast("success", t("superadmin.messages.inviteCreated", "Invite created successfully."));
+    } catch (err) {
+      showToast("error", t("superadmin.errors.inviteCreateFailed", "Failed to create invite: {{message}}", { message: err?.message || err }));
+    } finally {
+      setCreatingInvite(false);
+    }
+  }
+
+  async function revokeInvite(inviteId) {
+    if (!supabase || !inviteId) return;
+    setRowLoading(`invite-${inviteId}`);
+    try {
+      const adminCode = verifiedCode || codeInput.trim() || SUPER_ADMIN_CODE;
+      const { data, error } = await supabase.rpc("superadmin_revoke_invite", {
+        p_admin_code: adminCode,
+        p_invite_id: inviteId,
+      });
+      if (error) throw error;
+      setInvites((prev) => prev.map((row) => (row.id === inviteId ? data : row)));
+      showToast("success", t("superadmin.messages.inviteRevoked", "Invite revoked."));
+    } catch (err) {
+      showToast("error", t("superadmin.errors.inviteRevokeFailed", "Failed to revoke invite: {{message}}", { message: err?.message || err }));
+    } finally {
+      setRowLoading("");
     }
   }
 
@@ -672,6 +780,8 @@ export default function SuperAdminPage() {
         trial_days_default: Math.max(0, Number(draft.trial_days_default || 0)),
         vat_percent: Number(draft.vat_percent || 0),
         is_enabled: Boolean(draft.is_enabled),
+        is_public: Boolean(draft.is_public),
+        requires_manual_billing: Boolean(draft.requires_manual_billing),
       };
       if (!countriesAvailable) {
         showToast("error", t("superadmin.errors.countriesMigrationMissing"));
@@ -821,9 +931,40 @@ export default function SuperAdminPage() {
     void loadSalonActions(selectedSalon.id);
   }, [unlocked, detailSalonId, selectedSalon?.id]);
 
+  useEffect(() => {
+    if (!unlocked || !isInvitesPage) return;
+    void loadInvites();
+  }, [unlocked, isInvitesPage]);
+
   async function approveSalon(row) {
-    const isIraq = String(row.country_code || "IQ").toUpperCase() === "IQ";
+    const countryCode = String(row.country_code || "IQ").toUpperCase();
+    const countryConfig = countryNameByCode[countryCode] || null;
+    const requiresManualBilling = Boolean(countryConfig?.requires_manual_billing);
+    const isIraq = countryCode === "IQ";
     const nowIso = new Date().toISOString();
+
+    if (requiresManualBilling) {
+      await patchSalon(
+        row,
+        {
+          status: "active",
+          subscription_status: "active",
+          billing_status: "active",
+          billing_mode: "manual",
+          trial_end_at: null,
+          trial_end: null,
+          is_active: true,
+        },
+        t("superadmin.messages.approvedManualBilling", "Approved with manual billing.")
+      );
+      await logAdminAction(row.id, "approve_salon", {
+        mode: "manual_billing",
+        approved_at: nowIso,
+        country_code: countryCode,
+      });
+      return;
+    }
+
     if (isIraq) {
       const trialEnd = addDaysIso(7);
       await patchSalon(
@@ -832,6 +973,7 @@ export default function SuperAdminPage() {
           status: "trialing",
           subscription_status: "trialing",
           billing_status: "trialing",
+          billing_mode: "stripe",
           trial_end_at: trialEnd,
           trial_end: trialEnd,
           is_active: true,
@@ -848,6 +990,7 @@ export default function SuperAdminPage() {
         status: "pending_billing",
         subscription_status: "inactive",
         billing_status: "inactive",
+        billing_mode: "stripe",
         is_active: true,
       },
       t("superadmin.messages.approvedPendingBilling")
@@ -989,6 +1132,13 @@ export default function SuperAdminPage() {
                 onClick={() => navigate("/superadmin/approvals")}
               >
                 {t("superadmin.approvals")}
+              </Button>
+              <Button
+                type="button"
+                variant={isInvitesPage ? "primary" : "ghost"}
+                onClick={() => navigate("/superadmin/invites")}
+              >
+                {t("superadmin.invites")}
               </Button>
               {isDetailPage && selectedSalon ? (
                 <Badge variant="neutral">{selectedSalon.name}</Badge>
@@ -1751,6 +1901,132 @@ export default function SuperAdminPage() {
             </section>
           ) : null}
 
+          {isInvitesPage ? (
+            <section className="panel superadmin-salons-panel">
+              <div className="row-actions space-between" style={{ marginBottom: 10 }}>
+                <h3>{t("superadmin.invitesPageTitle", "Invite links")}</h3>
+                <Button type="button" variant="ghost" onClick={loadInvites}>
+                  {invitesLoading ? t("common.loading") : t("common.refresh")}
+                </Button>
+              </div>
+
+              <Card className="superadmin-table-card" style={{ marginBottom: 12 }}>
+                <div className="grid three">
+                  <SelectInput
+                    label={t("superadmin.inviteCountry", "Invite country")}
+                    value={inviteForm.country_code}
+                    onChange={(e) => setInviteForm((prev) => ({ ...prev, country_code: e.target.value }))}
+                  >
+                    {countries.map((country) => (
+                      <option value={country.code} key={`invite-country-${country.code}`} disabled={country.is_enabled === false}>
+                        {country.code} - {country[countryNameField] || country.name_en}
+                      </option>
+                    ))}
+                  </SelectInput>
+
+                  <TextInput
+                    label={t("superadmin.inviteMaxUses", "Max uses")}
+                    type="number"
+                    value={inviteForm.max_uses}
+                    onChange={(e) => setInviteForm((prev) => ({ ...prev, max_uses: e.target.value }))}
+                  />
+
+                  <TextInput
+                    label={t("superadmin.inviteExpiresAt", "Expires at (optional)")}
+                    type="datetime-local"
+                    value={inviteForm.expires_at}
+                    onChange={(e) => setInviteForm((prev) => ({ ...prev, expires_at: e.target.value }))}
+                  />
+                </div>
+
+                <div className="row-actions" style={{ marginTop: 10 }}>
+                  <Button type="button" variant="primary" disabled={creatingInvite} onClick={createInvite}>
+                    {creatingInvite ? t("common.processing") : t("superadmin.createInvite", "Create invite")}
+                  </Button>
+                </div>
+              </Card>
+
+              <Card className="superadmin-table-card">
+                <div className="superadmin-table-wrap">
+                  <table className="superadmin-table">
+                    <thead>
+                      <tr>
+                        <th>{t("superadmin.inviteToken", "Token")}</th>
+                        <th>{t("superadmin.country", "Country")}</th>
+                        <th>{t("superadmin.inviteUsage", "Usage")}</th>
+                        <th>{t("superadmin.inviteExpiresAt", "Expires at")}</th>
+                        <th>{t("common.actions", "Actions")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invitesLoading ? (
+                        <tr>
+                          <td colSpan={5}>{t("common.loading")}</td>
+                        </tr>
+                      ) : invites.length === 0 ? (
+                        <tr>
+                          <td colSpan={5}>{t("superadmin.noInvites", "No invites yet.")}</td>
+                        </tr>
+                      ) : (
+                        invites.map((invite) => {
+                          const inviteLink = getInviteLink(invite.token);
+                          const usageLabel = `${Number(invite.uses || 0)} / ${Number(invite.max_uses || 1)}`;
+                          const revoked = invite.expires_at && new Date(invite.expires_at).getTime() <= Date.now();
+                          return (
+                            <tr key={invite.id}>
+                              <td>
+                                <div className="superadmin-invite-token">
+                                  <code>{invite.token}</code>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={async () => {
+                                      try {
+                                        await navigator.clipboard.writeText(inviteLink);
+                                        setInviteLinkCopied(String(invite.id));
+                                        showToast("success", t("superadmin.messages.inviteCopied", "Invite link copied."));
+                                      } catch {
+                                        showToast("error", t("superadmin.errors.inviteCopyFailed", "Failed to copy invite link."));
+                                      }
+                                    }}
+                                  >
+                                    {inviteLinkCopied === String(invite.id) ? t("superadmin.copied", "Copied") : t("superadmin.copyLink", "Copy link")}
+                                  </Button>
+                                </div>
+                                <small className="muted">{inviteLink}</small>
+                              </td>
+                              <td>{invite.country_code}</td>
+                              <td>{usageLabel}</td>
+                              <td>{formatBillingDate(invite.expires_at)}</td>
+                              <td>
+                                <Button
+                                  type="button"
+                                  variant="danger"
+                                  disabled={rowLoading === `invite-${invite.id}` || revoked}
+                                  onClick={() =>
+                                    setConfirmState({
+                                      title: t("superadmin.confirmRevokeInviteTitle", "Revoke invite"),
+                                      text: t("superadmin.confirmRevokeInviteText", "Do you want to revoke this invite token?"),
+                                      onConfirm: async () => {
+                                        await revokeInvite(invite.id);
+                                      },
+                                    })
+                                  }
+                                >
+                                  {revoked ? t("superadmin.inviteRevoked", "Revoked") : t("superadmin.revokeInvite", "Revoke")}
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </section>
+          ) : null}
+
           {isDetailPage ? (
             <section className="panel superadmin-salons-panel">
               {!selectedSalon ? (
@@ -2091,6 +2367,8 @@ export default function SuperAdminPage() {
                   trial_days_default: "7",
                   vat_percent: "0",
                   is_enabled: true,
+                  is_public: true,
+                  requires_manual_billing: false,
                 };
                 return (
                   <div className="settings-row" key={country.code}>
@@ -2148,6 +2426,30 @@ export default function SuperAdminPage() {
                           }))}
                         />
                         {draft.is_enabled ? t("superadmin.disableCountry") : t("superadmin.enableCountry")}
+                      </label>
+
+                      <label className="switch-pill" style={{ gridColumn: "1 / -1" }}>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(draft.is_public)}
+                          onChange={(e) => setCountryDrafts((prev) => ({
+                            ...prev,
+                            [country.code]: { ...draft, is_public: e.target.checked },
+                          }))}
+                        />
+                        {draft.is_public ? t("superadmin.makeCountryPrivate", "Public country (shown in onboarding)") : t("superadmin.makeCountryPublic", "Private country (invite only)")}
+                      </label>
+
+                      <label className="switch-pill" style={{ gridColumn: "1 / -1" }}>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(draft.requires_manual_billing)}
+                          onChange={(e) => setCountryDrafts((prev) => ({
+                            ...prev,
+                            [country.code]: { ...draft, requires_manual_billing: e.target.checked },
+                          }))}
+                        />
+                        {draft.requires_manual_billing ? t("superadmin.manualBillingEnabled", "Manual billing enabled") : t("superadmin.manualBillingDisabled", "Use Stripe billing")}
                       </label>
 
                       <Button

@@ -25,10 +25,12 @@ export default function App() {
         <Route path="/admin" element={<SuperAdminPage />} />
         <Route path="/admin/overview" element={<SuperAdminPage />} />
         <Route path="/admin/approvals" element={<SuperAdminPage />} />
+        <Route path="/admin/invites" element={<SuperAdminPage />} />
         <Route path="/admin/salons/:id" element={<SuperAdminPage />} />
         <Route path="/superadmin" element={<SuperAdminPage />} />
         <Route path="/superadmin/overview" element={<SuperAdminPage />} />
         <Route path="/superadmin/approvals" element={<SuperAdminPage />} />
+        <Route path="/superadmin/invites" element={<SuperAdminPage />} />
         <Route path="/superadmin/salons/:id" element={<SuperAdminPage />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
@@ -36,6 +38,7 @@ export default function App() {
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/cancellation" element={<Cancellation />} />
         <Route path="/onboarding" element={<SalonSetupPage />} />
+        <Route path="/apply" element={<SalonSetupPage />} />
         <Route path="/onboarding/salon-setup" element={<SalonSetupPage />} />
         <Route path="/s/:slug" element={<SalonBookingPage />} />
         <Route path="/s/:slug/admin" element={<SalonAdminPage />} />

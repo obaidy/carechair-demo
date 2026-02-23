@@ -21,7 +21,8 @@
     "edit": "تعديل",
     "show": "إظهار",
     "hide": "إخفاء",
-    "delete": "حذف"
+    "delete": "حذف",
+    "actions": "الإجراءات"
   },
   "errors": {
     "supabaseConfigMissing": "إعدادات Supabase غير مكتملة."
@@ -269,6 +270,10 @@
     "countriesConfig": "إعدادات الدول",
     "enableCountry": "تفعيل الدولة",
     "disableCountry": "تعطيل الدولة",
+    "makeCountryPrivate": "دولة عامة (تظهر بالـ onboarding)",
+    "makeCountryPublic": "دولة خاصة (رابط دعوة فقط)",
+    "manualBillingEnabled": "الفوترة اليدوية مفعلة",
+    "manualBillingDisabled": "استخدام فوترة Stripe",
     "extendTrial": "تمديد التجربة",
     "forceStatus": "فرض الحالة",
     "internalOnly": "للاستخدام الداخلي فقط",
@@ -390,10 +395,14 @@
       "suspended": "تم إيقاف الصالون.",
       "unsuspended": "تم رفع الإيقاف.",
       "approvedTrialing": "تمت الموافقة وبدأت فترة تجريبية 7 أيام.",
+      "approvedManualBilling": "تمت الموافقة مع فوترة يدوية.",
       "approvedPendingBilling": "تمت الموافقة - مطلوب الدفع قبل بدء الاستخدام.",
       "rejected": "تم رفض الصالون.",
       "salonInfoUpdated": "تم تحديث معلومات الصالون.",
-      "deleted": "تم حذف الصالون."
+      "deleted": "تم حذف الصالون.",
+      "inviteCreated": "تم إنشاء الدعوة بنجاح.",
+      "inviteRevoked": "تم إلغاء الدعوة.",
+      "inviteCopied": "تم نسخ رابط الدعوة."
     },
     "errors": {
       "codeMissing": "رمز السوبر أدمن غير مضبوط. تأكد من VITE_SUPERADMIN_CODE ثم أعد تشغيل dev.",
@@ -413,9 +422,27 @@
       "salonNotFound": "الصالون غير موجود.",
       "slugTaken": "هذا الـ slug مستخدم مسبقاً من صالون آخر.",
       "deleteFailed": "تعذر حذف الصالون: {{message}}",
-      "metricsLoadFailed": "تعذر تحميل إحصائيات النظرة العامة: {{message}}"
+      "metricsLoadFailed": "تعذر تحميل إحصائيات النظرة العامة: {{message}}",
+      "invitesLoadFailed": "تعذر تحميل الدعوات: {{message}}",
+      "inviteCreateFailed": "تعذر إنشاء الدعوة: {{message}}",
+      "inviteRevokeFailed": "تعذر إلغاء الدعوة: {{message}}",
+      "inviteCopyFailed": "تعذر نسخ رابط الدعوة.",
+      "inviteCountryRequired": "اختر دولة للدعوة."
     },
     "approvals": "الموافقات",
+    "invites": "الدعوات",
+    "invitesPageTitle": "روابط الدعوات",
+    "inviteCountry": "دولة الدعوة",
+    "inviteMaxUses": "أقصى عدد استخدام",
+    "inviteExpiresAt": "انتهاء الرابط (اختياري)",
+    "createInvite": "إنشاء دعوة",
+    "copyLink": "نسخ الرابط",
+    "copied": "تم النسخ",
+    "revokeInvite": "إلغاء الدعوة",
+    "inviteRevoked": "الدعوة ملغية",
+    "inviteToken": "الرمز",
+    "inviteUsage": "الاستخدام",
+    "noInvites": "لا توجد دعوات حالياً.",
     "approvalsQueue": "طلبات بانتظار الموافقة",
     "noPendingApprovals": "ماكو صالونات بانتظار الموافقة حالياً.",
     "approve": "موافقة",
@@ -430,6 +457,8 @@
     "confirmApproveText": "تريد توافق على {{name}}؟",
     "confirmRejectTitle": "رفض الصالون",
     "confirmRejectText": "تريد ترفض {{name}}؟",
+    "confirmRevokeInviteTitle": "إلغاء الدعوة",
+    "confirmRevokeInviteText": "هل تريد إلغاء رمز الدعوة هذا؟",
     "confirmDeleteTitle": "حذف الصالون",
     "confirmDeleteText": "متأكد تريد حذف {{name}} نهائياً؟",
     "resume": "استئناف",
@@ -806,6 +835,11 @@
       "submitting": "جاري الإرسال..."
     },
     "reviewText": "راجع المعلومات وبعدين أكد حتى ينشأ الصالون بالكامل.",
+    "invite": {
+      "label": "دعوة خاصة",
+      "active": "تم تحديد الدولة تلقائياً من خلال دعوة خاصة.",
+      "validating": "جاري التحقق من الدعوة..."
+    },
     "review": {
       "basic": "المعلومات الأساسية",
       "resources": "الموارد",
@@ -837,6 +871,9 @@
     "errors": {
       "supabaseMissing": "إعدادات Supabase غير مكتملة.",
       "loadCountries": "تعذر تحميل الدول: {{message}}",
+      "publicCountriesMigrationMissing": "ميزة الدول العامة غير مفعلة بعد. شغّل آخر migration.",
+      "inviteInvalid": "رابط الدعوة غير صالح أو منتهي.",
+      "inviteValidationFailed": "فشل التحقق من الدعوة: {{message}}",
       "nameRequired": "اسم الصالون مطلوب.",
       "countryRequired": "اختار الدولة.",
       "invalidSalonHours": "صحح ساعات العمل ليوم {{day}}.",

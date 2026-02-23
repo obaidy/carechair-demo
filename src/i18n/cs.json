@@ -22,7 +22,8 @@
     "edit": "Upravit",
     "hide": "Skrýt",
     "show": "Zobrazit",
-    "add": "Add"
+    "add": "Přidat",
+    "actions": "Akce"
   },
   "errors": {
     "supabaseConfigMissing": "Nastavení Supabase chybí."
@@ -270,6 +271,10 @@
     "countriesConfig": "Nastavení zemí",
     "enableCountry": "Povolit zemi",
     "disableCountry": "Zakázat zemi",
+    "makeCountryPrivate": "Veřejná země (viditelná v onboardingu)",
+    "makeCountryPublic": "Soukromá země (jen přes pozvánku)",
+    "manualBillingEnabled": "Manuální fakturace zapnuta",
+    "manualBillingDisabled": "Použít Stripe fakturaci",
     "extendTrial": "Prodloužit trial",
     "forceStatus": "Vynutit stav",
     "internalOnly": "Pouze interní použití",
@@ -391,10 +396,14 @@
       "suspended": "Salon pozastaven.",
       "unsuspended": "Pozastavení zrušeno.",
       "approvedTrialing": "Schváleno. Trial aktivní na 7 dní.",
+      "approvedManualBilling": "Schváleno s manuální fakturací.",
       "approvedPendingBilling": "Schváleno - před startem je vyžadována platba.",
       "rejected": "Salon byl zamítnut.",
       "salonInfoUpdated": "Informace o salonu byly aktualizovány.",
-      "deleted": "Salon byl smazán."
+      "deleted": "Salon byl smazán.",
+      "inviteCreated": "Pozvánka byla úspěšně vytvořena.",
+      "inviteRevoked": "Pozvánka byla zneplatněna.",
+      "inviteCopied": "Odkaz pozvánky byl zkopírován."
     },
     "errors": {
       "codeMissing": "Kód super admina není nastaven. Nastavte VITE_SUPERADMIN_CODE a restartujte dev.",
@@ -414,9 +423,27 @@
       "salonNotFound": "Salon nebyl nalezen.",
       "slugTaken": "Tento slug už používá jiný salon.",
       "deleteFailed": "Nepodařilo se smazat salon: {{message}}",
-      "metricsLoadFailed": "Nepodařilo se načíst metriky přehledu: {{message}}"
+      "metricsLoadFailed": "Nepodařilo se načíst metriky přehledu: {{message}}",
+      "invitesLoadFailed": "Nepodařilo se načíst pozvánky: {{message}}",
+      "inviteCreateFailed": "Nepodařilo se vytvořit pozvánku: {{message}}",
+      "inviteRevokeFailed": "Nepodařilo se zneplatnit pozvánku: {{message}}",
+      "inviteCopyFailed": "Nepodařilo se zkopírovat odkaz pozvánky.",
+      "inviteCountryRequired": "Vyberte zemi pro pozvánku."
     },
     "approvals": "Schválení",
+    "invites": "Pozvánky",
+    "invitesPageTitle": "Odkazy pozvánek",
+    "inviteCountry": "Země pozvánky",
+    "inviteMaxUses": "Maximální počet použití",
+    "inviteExpiresAt": "Platnost do (volitelné)",
+    "createInvite": "Vytvořit pozvánku",
+    "copyLink": "Kopírovat odkaz",
+    "copied": "Zkopírováno",
+    "revokeInvite": "Zneplatnit",
+    "inviteRevoked": "Zneplatněno",
+    "inviteToken": "Token",
+    "inviteUsage": "Použití",
+    "noInvites": "Zatím žádné pozvánky.",
     "approvalsQueue": "Čekající schválení",
     "noPendingApprovals": "Žádné salony nečekají na schválení.",
     "approve": "Schválit",
@@ -431,6 +458,8 @@
     "confirmApproveText": "Schválit {{name}}?",
     "confirmRejectTitle": "Zamítnout salon",
     "confirmRejectText": "Zamítnout {{name}}?",
+    "confirmRevokeInviteTitle": "Zneplatnit pozvánku",
+    "confirmRevokeInviteText": "Chcete zneplatnit tento token pozvánky?",
     "confirmDeleteTitle": "Smazat salon",
     "confirmDeleteText": "Opravdu chcete trvale smazat salon {{name}}?",
     "resume": "Obnovit",
@@ -954,6 +983,11 @@
       "submitting": "Odesílání..."
     },
     "reviewText": "Zkontrolujte nastavení a odešlete vytvoření celého salonu.",
+    "invite": {
+      "label": "Soukromá pozvánka",
+      "active": "Země je nastavena automaticky pomocí soukromé pozvánky.",
+      "validating": "Ověřování pozvánky..."
+    },
     "review": {
       "basic": "Základní informace",
       "resources": "Kapacity",
@@ -985,6 +1019,9 @@
     "errors": {
       "supabaseMissing": "Supabase není nakonfigurován.",
       "loadCountries": "Nepodařilo se načíst země: {{message}}",
+      "publicCountriesMigrationMissing": "Migrace veřejných zemí chybí. Spusťte nejnovější migrace DB.",
+      "inviteInvalid": "Tato pozvánka je neplatná nebo expirovaná.",
+      "inviteValidationFailed": "Ověření pozvánky selhalo: {{message}}",
       "nameRequired": "Název salonu je povinný.",
       "countryRequired": "Vyberte zemi.",
       "invalidSalonHours": "Opravte pracovní dobu pro {{day}}.",

@@ -574,6 +574,24 @@ select:disabled {
   font-weight: 700;
 }
 
+.superadmin-invite-token {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.superadmin-invite-token code {
+  display: inline-flex;
+  align-items: center;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 4px 8px;
+  background: var(--surface-2);
+  font-size: 12px;
+  direction: ltr;
+}
+
 .superadmin-health-panel {
   border: 1px solid var(--line);
 }
@@ -4498,6 +4516,10 @@ select:disabled {
   margin: 0;
   color: var(--primary-700);
   font-weight: 700;
+}
+
+.onboarding-upload-stage-error {
+  color: var(--danger, #dc2626);
 }
 
 .onboarding-actions {
