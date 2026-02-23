@@ -1,19 +1,21 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import PageShell from "../components/PageShell";
 
 export default function Terms() {
+  const { t } = useTranslation();
   return (
-    <PageShell title="شروط الخدمة" subtitle="ملخص بالعربي وبعدين النص القانوني بالإنكليزي">
+    <PageShell title={t("legal.termsTitle")} subtitle={t("legal.subtitle")}>
       <section className="panel legal-summary">
-        <h3>ملخص سريع</h3>
+        <h3>{t("legal.quickSummary")}</h3>
         <ul>
-          <li>CareChair منصة حجوزات للصالونات، وتشغّلها شركة Infraengineering s.r.o.</li>
-          <li>الخدمة موجهة للأعمال (B2B) مو للاستخدام الشخصي.</li>
-          <li>رسوم الإعداد مرة وحدة وغير قابلة للاسترجاع.</li>
-          <li>الاشتراك الشهري ينحسب مقدماً، وتكدرين توقفينه بأي وقت.</li>
-          <li>بالإلغاء، يبقى الوصول لنهاية الدورة المدفوعة فقط.</li>
-          <li>إذا ماكو دفع، الحساب يتعلّق تلقائياً لحين تسوية الفاتورة.</li>
-          <li>المرجعية القانونية هي قانون جمهورية التشيك ومحاكمها.</li>
+          <li>{t("legal.termsSummary.1")}</li>
+          <li>{t("legal.termsSummary.2")}</li>
+          <li>{t("legal.termsSummary.3")}</li>
+          <li>{t("legal.termsSummary.4")}</li>
+          <li>{t("legal.termsSummary.5")}</li>
+          <li>{t("legal.termsSummary.6")}</li>
+          <li>{t("legal.termsSummary.7")}</li>
         </ul>
       </section>
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import PageShell from "../components/PageShell";
 import SafeImage from "../components/SafeImage";
 import Toast from "../components/Toast";
@@ -7,23 +8,15 @@ import { Badge, Button, Card, SelectInput, Skeleton, TextInput } from "../compon
 import { supabase } from "../lib/supabase";
 import { getInitials, getSalonMedia, hashStringToIndex } from "../lib/media";
 import {
-  formatCurrencyIQD,
+  formatSalonOperationalCurrency,
   isValidE164WithoutPlus,
   normalizeIraqiPhone,
   sortByOrderThenName,
 } from "../lib/utils";
 import { useToast } from "../lib/useToast";
 
-const CATEGORY_CHIPS = [
-  { key: "all", label: "الكل", keywords: [] },
-  { key: "haircut", label: "قص شعر", keywords: ["قص", "شعر"] },
-  { key: "color", label: "صبغ", keywords: ["صبغ", "لون"] },
-  { key: "nails", label: "أظافر", keywords: ["اظافر", "أظافر", "مانيكير", "باديكير"] },
-  { key: "facial", label: "بشرة", keywords: ["بشرة", "تنظيف"] },
-  { key: "makeup", label: "مكياج", keywords: ["مكياج", "ميكاب"] },
-];
-
 export default function ExplorePage() {
+  const { t, i18n } = useTranslation();
   const { toast, showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [salons, setSalons] = useState([]);
@@ -32,12 +25,23 @@ export default function ExplorePage() {
   const [searchText, setSearchText] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
+  const chips = useMemo(
+    () => [
+      { key: "all", label: t("explore.categories.all"), keywords: [] },
+      { key: "haircut", label: t("explore.categories.haircut"), keywords: ["قص", "شعر", "hair", "cut"] },
+      { key: "color", label: t("explore.categories.color"), keywords: ["صبغ", "لون", "color"] },
+      { key: "nails", label: t("explore.categories.nails"), keywords: ["اظافر", "أظافر", "مانيكير", "باديكير", "nail"] },
+      { key: "facial", label: t("explore.categories.facial"), keywords: ["بشرة", "تنظيف", "facial", "skin"] },
+      { key: "makeup", label: t("explore.categories.makeup"), keywords: ["مكياج", "ميكاب", "makeup"] },
+    ],
+    [t]
+  );
 
   useEffect(() => {
     async function loadExplore() {
       if (!supabase) {
         setLoading(false);
-        showToast("error", "إعدادات Supabase غير مكتملة.");
+        showToast("error", t("errors.supabaseConfigMissing"));
         return;
       }
 
@@ -71,14 +75,14 @@ export default function ExplorePage() {
         if (serviceRes.error) throw serviceRes.error;
         setServices((serviceRes.data || []).sort(sortByOrderThenName));
       } catch (err) {
-        showToast("error", `تعذر تحميل صفحة الاستكشاف: ${err?.message || err}`);
+        showToast("error", t("explore.errors.loadFailed", { message: err?.message || err }));
       } finally {
         setLoading(false);
       }
     }
 
     loadExplore();
-  }, [showToast]);
+  }, [showToast, t]);
 
   const servicesBySalon = useMemo(() => {
     const map = {};
@@ -91,12 +95,12 @@ export default function ExplorePage() {
 
   const areaOptions = useMemo(() => {
     const set = new Set(salons.map((s) => s.area).filter(Boolean));
-    return Array.from(set).sort((a, b) => String(a).localeCompare(String(b), "ar"));
-  }, [salons]);
+    return Array.from(set).sort((a, b) => String(a).localeCompare(String(b), i18n.language || "en"));
+  }, [salons, i18n.language]);
 
   const filteredSalons = useMemo(() => {
     const q = searchText.trim().toLowerCase();
-    const activeCategory = CATEGORY_CHIPS.find((x) => x.key === categoryFilter) || CATEGORY_CHIPS[0];
+    const activeCategory = chips.find((x) => x.key === categoryFilter) || chips[0];
 
     const list = salons.filter((salon) => {
       if (areaFilter !== "all" && salon.area !== areaFilter) return false;
@@ -129,33 +133,33 @@ export default function ExplorePage() {
         const aCount = (servicesBySalon[a.id] || []).length;
         return bCount - aCount;
       }
-      return String(a.name || "").localeCompare(String(b.name || ""), "ar");
+      return String(a.name || "").localeCompare(String(b.name || ""), i18n.language || "en");
     });
     return sorted;
-  }, [salons, servicesBySalon, areaFilter, searchText, categoryFilter, sortBy]);
+  }, [salons, servicesBySalon, areaFilter, searchText, categoryFilter, sortBy, i18n.language, chips]);
 
   const socialProofText =
     salons.length <= 5
-      ? `مراكز بدأت تستخدم CareChair لتنظيم المواعيد (${salons.length})`
-      : `مراكز تستخدم CareChair لتنظيم المواعيد (${salons.length})`;
+      ? t("explore.socialProofEarly", { count: salons.length })
+      : t("explore.socialProof", { count: salons.length });
 
   return (
-    <PageShell title="استكشاف الصالونات" subtitle="اختاري المنطقة والخدمة وشوفي أفضل المراكز القريبة">
+    <PageShell title={t("common.explore")} subtitle={t("explore.subtitle")}>
       <Card className="explore-social-proof">
         <b>{socialProofText}</b>
       </Card>
 
       <Card className="explore-hero">
         <div>
-          <Badge variant="featured">منصّة CareChair</Badge>
-          <h2>اكتشفي أفضل صالونات بغداد</h2>
-          <p>اختاري الخدمة، قارني المراكز، واحجزي بنفس اللحظة.</p>
+          <Badge variant="featured">{t("explore.platformBadge")}</Badge>
+          <h2>{t("explore.heroTitle")}</h2>
+          <p>{t("explore.heroText")}</p>
         </div>
       </Card>
 
       <Card>
         <div className="category-chips-wrap">
-          {CATEGORY_CHIPS.map((chip) => (
+          {chips.map((chip) => (
             <button
               type="button"
               key={chip.key}
@@ -168,8 +172,8 @@ export default function ExplorePage() {
         </div>
 
         <div className="grid three">
-          <SelectInput label="المنطقة" value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)}>
-            <option value="all">كل المناطق</option>
+          <SelectInput label={t("explore.filters.area")} value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)}>
+            <option value="all">{t("explore.filters.allAreas")}</option>
             {areaOptions.map((area) => (
               <option value={area} key={area}>
                 {area}
@@ -178,17 +182,17 @@ export default function ExplorePage() {
           </SelectInput>
 
           <TextInput
-            label="بحث بالصالون أو الخدمة"
+            label={t("explore.filters.search")}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            placeholder="مثال: صبغ، تنظيف بشرة، المنصور"
+            placeholder={t("explore.filters.searchPlaceholder")}
           />
 
-          <SelectInput label="الترتيب" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-            <option value="nearest">الأقرب (قريباً)</option>
-            <option value="top-rated">الأعلى تقييماً</option>
-            <option value="most-booked">الأكثر حجزاً</option>
-            <option value="newest">الأحدث</option>
+          <SelectInput label={t("explore.filters.sort")} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="nearest">{t("explore.sort.nearest")}</option>
+            <option value="top-rated">{t("explore.sort.topRated")}</option>
+            <option value="most-booked">{t("explore.sort.mostBooked")}</option>
+            <option value="newest">{t("explore.sort.newest")}</option>
           </SelectInput>
         </div>
       </Card>
@@ -206,7 +210,7 @@ export default function ExplorePage() {
         </section>
       ) : filteredSalons.length === 0 ? (
         <Card>
-          <p className="muted">حالياً ماكو صالونات مطابقة للفلتر المختار.</p>
+          <p className="muted">{t("explore.empty")}</p>
         </Card>
       ) : (
         <section className="explore-grid">
@@ -227,7 +231,7 @@ export default function ExplorePage() {
                 <div className="explore-cover-wrap">
                   <SafeImage src={media.cover} alt={salon.name} className="explore-cover" fallbackIcon="✨" />
                   <Badge variant="featured" className="floating-featured">
-                    مميز
+                    {t("explore.featured")}
                   </Badge>
                 </div>
 
@@ -242,27 +246,29 @@ export default function ExplorePage() {
                       />
                       <h3>{salon.name}</h3>
                     </div>
-                    <span className="area-badge">{salon.area || "بغداد"}</span>
+                    <span className="area-badge">{salon.area || t("explore.defaultArea")}</span>
                   </div>
 
                   <div className="salon-trust-badges">
-                    <Badge variant="neutral">تأكيد سريع</Badge>
-                    <Badge variant="neutral">حجز سهل</Badge>
-                    {hasWhats ? <Badge variant="featured">واتساب متوفر</Badge> : null}
-                    {!salonActive ? <Badge variant="pending">بانتظار التفعيل</Badge> : null}
+                    <Badge variant="neutral">{t("explore.badges.fastConfirm")}</Badge>
+                    <Badge variant="neutral">{t("explore.badges.easyBooking")}</Badge>
+                    {hasWhats ? <Badge variant="featured">{t("explore.badges.whatsappAvailable")}</Badge> : null}
+                    {!salonActive ? <Badge variant="pending">{t("explore.badges.pendingActivation")}</Badge> : null}
                   </div>
 
                   {Number.isFinite(minPrice) ? (
-                    <p className="starting-price">يبدأ من {formatCurrencyIQD(minPrice)}</p>
+                    <p className="starting-price">
+                      {t("explore.startingFrom")} {formatSalonOperationalCurrency(minPrice, salon, i18n.language)}
+                    </p>
                   ) : null}
 
                   <div className="mini-services">
                     {previewServices.length === 0 ? (
-                      <p className="muted">لا توجد خدمات مفعلة بعد.</p>
+                      <p className="muted">{t("explore.noServices")}</p>
                     ) : (
                       previewServices.map((srv) => (
                         <span className="service-tag" key={srv.id}>
-                          {srv.name} • {formatCurrencyIQD(srv.price)}
+                          {srv.name} • {formatSalonOperationalCurrency(srv.price, salon, i18n.language)}
                         </span>
                       ))
                     )}
@@ -274,11 +280,11 @@ export default function ExplorePage() {
                       to={`/s/${salon.slug}`}
                       variant="primary"
                     >
-                      احجز الآن
+                      {t("explore.bookNow")}
                     </Button>
                     {hasWhats ? (
                       <Button as="a" variant="secondary" href={`https://wa.me/${phone}`} target="_blank" rel="noreferrer">
-                        واتساب
+                        {t("common.whatsapp")}
                       </Button>
                     ) : null}
                   </div>

@@ -1,21 +1,23 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import PageShell from "../components/PageShell";
 
 export default function Billing() {
+  const { t } = useTranslation();
   const [agree, setAgree] = useState(false);
 
   return (
-    <PageShell title="الفوترة والاسترجاع" subtitle="ملخص بالعربي وبعدين النص القانوني بالإنكليزي">
+    <PageShell title={t("common.billing")} subtitle={t("legal.billingSubtitle")}>
       <section className="panel legal-summary">
-        <h3>ملخص سريع</h3>
+        <h3>{t("legal.quickSummary")}</h3>
         <ul>
-          <li>ماكو تجربة مجانية حالياً لخدمة CareChair.</li>
-          <li>رسوم الإعداد تتراوح بين 300 و 500 دولار وغير قابلة للاسترجاع.</li>
-          <li>الاشتراك الشهري بين 30 و 50 دولار ويندفع مقدماً.</li>
-          <li>الدفع يتم عبر Stripe ، وممكن تصير خصومات حسب الاتفاق.</li>
-          <li>ماكو استرجاع للاشتراك بعد إصدار الفاتورة.</li>
-          <li>إذا تم الإلغاء، الوصول يبقى لنهاية الفترة المدفوعة فقط.</li>
-          <li>تأخير الدفع يسبب تعليق تلقائي للخدمة.</li>
+          <li>{t("legal.billingSummary.1")}</li>
+          <li>{t("legal.billingSummary.2")}</li>
+          <li>{t("legal.billingSummary.3")}</li>
+          <li>{t("legal.billingSummary.4")}</li>
+          <li>{t("legal.billingSummary.5")}</li>
+          <li>{t("legal.billingSummary.6")}</li>
+          <li>{t("legal.billingSummary.7")}</li>
         </ul>
       </section>
 
@@ -71,19 +73,19 @@ export default function Billing() {
       </article>
 
       <section className="panel subscription-mock" dir="ltr">
-        <h3>Start Subscription (Mock)</h3>
+        <h3>{t("legal.startSubscriptionMock")}</h3>
         <p>
-          This is a UI mock showing mandatory legal consent before checkout. Connect this block to your real Stripe
-          checkout when ready.
+          {t("legal.subscriptionMockText")}
         </p>
         <label className="consent-row" dir="ltr">
           <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
           <span>
-            I agree to the <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.
+            {t("legal.consentPrefix")} <a href="/terms">{t("footer.terms")}</a> {t("legal.and")}{" "}
+            <a href="/privacy">{t("footer.privacy")}</a>.
           </span>
         </label>
         <button className="primary-link" disabled={!agree} type="button">
-          Start Subscription
+          {t("legal.startSubscription")}
         </button>
       </section>
     </PageShell>

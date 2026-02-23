@@ -46,6 +46,7 @@ const ADMIN_SIDEBAR_ITEMS = [
   { key: "clients", labelKey: "admin.sections.clients" },
   { key: "employees", labelKey: "admin.sections.employees" },
   { key: "services", labelKey: "admin.sections.services" },
+  { key: "media", labelKey: "admin.sections.media" },
   { key: "schedules", labelKey: "admin.sections.schedules" },
   { key: "commissions", labelKey: "admin.sections.commissions" },
   { key: "expenses", labelKey: "admin.sections.expenses" },
@@ -2498,7 +2499,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                     </div>
                     <div className="billing-stat-card">
                       <span>{tr("admin.billing.monthlySubscription", "Monthly subscription")}</span>
-                      <b>{getBillingStatusLabel(salon.subscription_status || salon.billing_status)}</b>
+                      <b>{getBillingStatusLabel(salon.status || salon.subscription_status || salon.billing_status)}</b>
                     </div>
                     <div className="billing-stat-card">
                       <span>{tr("admin.billing.subscriptionEnds", "Subscription ends")}</span>
@@ -3235,7 +3236,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             </Card>
           ) : null}
 
-          {activeSection === "settings" && activeSettingsSection === "media" ? (
+          {(activeSection === "settings" && activeSettingsSection === "media") || activeSection === "media" ? (
             <Card>
               <h3>{t("admin.settings.media")}</h3>
               <p className="muted">{tr("admin.media.subtitle", "Upload salon media. If empty, default images are used automatically.")}</p>

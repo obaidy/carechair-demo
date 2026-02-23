@@ -1,19 +1,21 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import PageShell from "../components/PageShell";
 
 export default function Privacy() {
+  const { t } = useTranslation();
   return (
-    <PageShell title="سياسة الخصوصية" subtitle="ملخص بالعربي وبعدين النص القانوني بالإنكليزي">
+    <PageShell title={t("legal.privacyTitle")} subtitle={t("legal.subtitle")}>
       <section className="panel legal-summary">
-        <h3>ملخص سريع</h3>
+        <h3>{t("legal.quickSummary")}</h3>
         <ul>
-          <li>احنا نجمع بيانات ضرورية لإدارة حجوزات الصالون وتشغيل النظام.</li>
-          <li>البيانات تشمل معلومات الصالون، الموظفين، الزبائن، والمواعيد.</li>
-          <li>نستخدم مزودين مثل Supabase وStripe وMeta WhatsApp وNetlify.</li>
-          <li>نلتزم بمبادئ GDPR مثل الشفافية وتقليل البيانات والحق بالوصول.</li>
-          <li>ما نبيع بياناتج، ونشاركها فقط للتشغيل أو الالتزام القانوني.</li>
-          <li>عندج حق طلب نسخة، تصحيح، أو حذف حسب المتطلبات القانونية.</li>
-          <li>أي استفسار خصوصية تواصلين ويانا عبر الإيميل الرسمي.</li>
+          <li>{t("legal.privacySummary.1")}</li>
+          <li>{t("legal.privacySummary.2")}</li>
+          <li>{t("legal.privacySummary.3")}</li>
+          <li>{t("legal.privacySummary.4")}</li>
+          <li>{t("legal.privacySummary.5")}</li>
+          <li>{t("legal.privacySummary.6")}</li>
+          <li>{t("legal.privacySummary.7")}</li>
         </ul>
       </section>
 

@@ -1,4 +1,5 @@
 import React from "react";
+import i18n from "../i18n";
 
 export function Button({
   as: Component = "button",
@@ -67,8 +68,9 @@ export function SelectInput({ label, className = "", children, ...props }) {
   );
 }
 
-export function ConfirmModal({ open, title, text, loading, confirmText = "تأكيد", onCancel, onConfirm }) {
+export function ConfirmModal({ open, title, text, loading, confirmText, onCancel, onConfirm }) {
   if (!open) return null;
+  const effectiveConfirmText = confirmText || i18n.t("common.confirm");
   return (
     <div className="modal-bg" role="dialog" aria-modal="true">
       <div className="modal">
@@ -76,10 +78,10 @@ export function ConfirmModal({ open, title, text, loading, confirmText = "تأك
         <p>{text}</p>
         <div className="actions">
           <Button variant="ghost" type="button" onClick={onCancel} disabled={loading}>
-            رجوع
+            {i18n.t("common.back")}
           </Button>
           <Button variant="danger" type="button" onClick={onConfirm} disabled={loading}>
-            {loading ? "جاري التنفيذ..." : confirmText}
+            {loading ? i18n.t("common.processing") : effectiveConfirmText}
           </Button>
         </div>
       </div>

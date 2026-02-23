@@ -18,7 +18,7 @@
   top: 0;
   right: 0;
   left: auto;
-  width: min(85vw, 360px);
+  width: min(88vw, 360px);
   height: 100dvh;
   max-height: 100dvh;
   background: var(--surface);
@@ -34,6 +34,15 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+}
+
+.cc-mobile-drawer-panel[dir="ltr"],
+html[dir="ltr"] .cc-mobile-drawer-panel {
+  right: auto;
+  left: 0;
+  border-inline-start: none;
+  border-inline-end: 1px solid var(--border);
+  transform: translateX(-100%);
 }
 
 .cc-mobile-drawer-panel.open {

@@ -607,18 +607,28 @@ export default function SuperAdminPage() {
     if (!supabase || !row?.id) return;
     setRowLoading(`delete-${row.id}`);
     try {
-      await logAdminAction(row.id, "delete_salon", {
-        name: row.name,
-        slug: row.slug,
+      const adminCode = verifiedCode || codeInput.trim() || SUPER_ADMIN_CODE;
+      const { data, error } = await supabase.rpc("admin_delete_salon", {
+        p_admin_code: adminCode,
+        p_salon_id: row.id,
+        p_admin_user_id: adminSessionId,
+        p_payload: {
+          name: row.name,
+          slug: row.slug,
+        },
       });
-      const del = await supabase.from("salons").delete().eq("id", row.id);
-      if (del.error) throw del.error;
+      if (error) throw error;
+      if (!data?.ok) {
+        throw new Error("salon_not_deleted");
+      }
+
       setSalons((prev) => prev.filter((x) => x.id !== row.id));
       if (selectedSalon?.id === row.id) {
-        navigate("/superadmin");
+        navigate("/superadmin/overview");
       }
       showToast("success", t("superadmin.messages.deleted", "Salon deleted."));
       stopEditSalon();
+      await loadAll();
     } catch (err) {
       showToast("error", t("superadmin.errors.deleteFailed", "Failed to delete salon: {{message}}", { message: err?.message || err }));
     } finally {

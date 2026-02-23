@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import "./mobile-drawer.css";
 
 export default function MobileDrawer({ open, onClose, title = "القائمة", children, id, className = "" }) {
+  const direction = typeof document !== "undefined" ? document.documentElement.getAttribute("dir") || "rtl" : "rtl";
+
   useEffect(() => {
     if (!open || typeof window === "undefined") return undefined;
     const prevOverflow = document.body.style.overflow || "";
@@ -29,6 +31,7 @@ export default function MobileDrawer({ open, onClose, title = "القائمة", 
       <aside
         id={id}
         className={`cc-mobile-drawer-panel${open ? " open" : ""}${className ? ` ${className}` : ""}`}
+        dir={direction}
         aria-hidden={!open}
         role="dialog"
         aria-modal="true"
@@ -45,4 +48,3 @@ export default function MobileDrawer({ open, onClose, title = "القائمة", 
     document.body
   );
 }
-

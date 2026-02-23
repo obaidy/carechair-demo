@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import PageShell from "../components/PageShell";
 import SafeImage from "../components/SafeImage";
 import Toast from "../components/Toast";
@@ -15,7 +16,7 @@ import { combineDateTime, generateSlots } from "../lib/slots";
 import { formatWhatsappAppointment, sendWhatsappTemplate } from "../lib/whatsapp";
 import { deriveSalonAccess } from "../lib/billing";
 import {
-  formatCurrencyIQD,
+  formatSalonOperationalCurrency,
   formatDateTime,
   formatTime,
   isValidE164WithoutPlus,
@@ -45,6 +46,7 @@ function Step({ index, label, active, done }) {
 
 export default function SalonBookingPage() {
   const { slug } = useParams();
+  const { t, i18n } = useTranslation();
   const { toast, showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ export default function SalonBookingPage() {
     async function loadPage() {
       if (!supabase) {
         setLoading(false);
-        showToast("error", "إعدادات Supabase غير مكتملة.");
+        showToast("error", t("errors.supabaseConfigMissing"));
         return;
       }
 
@@ -134,14 +136,14 @@ export default function SalonBookingPage() {
         setServiceId(serviceRows[0]?.id || "");
         setStaffId(staffRows[0]?.id || "");
       } catch (err) {
-        showToast("error", `تعذر تحميل بيانات الصالون: ${err?.message || err}`);
+        showToast("error", t("booking.errors.loadSalonFailed", { message: err?.message || err }));
       } finally {
         setLoading(false);
       }
     }
 
     loadPage();
-  }, [slug, showToast]);
+  }, [slug, showToast, t]);
 
   const servicesById = useMemo(() => Object.fromEntries(services.map((x) => [x.id, x])), [services]);
   const staffById = useMemo(() => Object.fromEntries(staff.map((x) => [x.id, x])), [staff]);
@@ -223,14 +225,14 @@ export default function SalonBookingPage() {
         if (res.error) throw res.error;
         setDayBookings(res.data || []);
       } catch (err) {
-        showToast("error", `تعذر تحميل الأوقات: ${err?.message || err}`);
+        showToast("error", t("booking.errors.loadSlotsFailed", { message: err?.message || err }));
       } finally {
         setSlotsLoading(false);
       }
     }
 
     loadDayBookings();
-  }, [salon?.id, staffId, eligibleStaffIds, dateValue, showToast, isValidPair, bookingMode, salonAccess.canCreateBookings]);
+  }, [salon?.id, staffId, eligibleStaffIds, dateValue, showToast, isValidPair, bookingMode, salonAccess.canCreateBookings, t]);
 
   useEffect(() => {
     async function loadDayTimeOff() {
@@ -263,14 +265,14 @@ export default function SalonBookingPage() {
         if (res.error) throw res.error;
         setDayTimeOff(res.data || []);
       } catch (err) {
-        showToast("error", `تعذر تحميل إجازات الموظفين: ${err?.message || err}`);
+        showToast("error", t("booking.errors.loadTimeOffFailed", { message: err?.message || err }));
       } finally {
         setTimeOffLoading(false);
       }
     }
 
     loadDayTimeOff();
-  }, [salon?.id, staffId, eligibleStaffIds, dateValue, showToast, isValidPair, bookingMode, salonAccess.canCreateBookings]);
+  }, [salon?.id, staffId, eligibleStaffIds, dateValue, showToast, isValidPair, bookingMode, salonAccess.canCreateBookings, t]);
 
   const hoursByDay = useMemo(() => {
     const map = {};
@@ -402,13 +404,13 @@ export default function SalonBookingPage() {
             : 1;
 
   const summary = {
-    service: selectedService?.name || "لم يتم الاختيار",
+    service: selectedService?.name || t("booking.notSelected"),
     staff:
       bookingMode === "auto_assign"
-        ? "توزيع تلقائي حسب التوفر"
-        : selectedStaff?.name || "لم يتم الاختيار",
-    price: selectedService ? formatCurrencyIQD(selectedService.price) : "-",
-    time: slotIso ? formatDateTime(slotIso) : "اختاري الموعد",
+        ? t("booking.autoAssignByAvailability")
+        : selectedStaff?.name || t("booking.notSelected"),
+    price: selectedService ? formatSalonOperationalCurrency(selectedService.price, salon, i18n.language) : "-",
+    time: slotIso ? formatDateTime(slotIso) : t("booking.pickTime"),
   };
 
   function resetBookingFlow() {
@@ -420,20 +422,20 @@ export default function SalonBookingPage() {
 
   async function verifySlotStillAvailable({ targetStaffId, selectedSlot }) {
     if (!supabase || !salon?.id || !targetStaffId || !selectedSlot || !selectedService || !dateValue) {
-      return { ok: false, reason: "تعذر التحقق من الموعد." };
+      return { ok: false, reason: t("booking.errors.slotVerifyFailed") };
     }
 
     const dayDate = new Date(`${dateValue}T00:00:00`);
     const dayIndex = dayDate.getDay();
     const dayRule = hoursByDay[dayIndex];
     if (!dayRule || dayRule.is_closed) {
-      return { ok: false, reason: "المركز مغلق بهذا اليوم." };
+      return { ok: false, reason: t("booking.errors.salonClosedDay") };
     }
 
     const slotStart = new Date(selectedSlot.startIso);
     const slotEnd = new Date(selectedSlot.endIso);
     if (Number.isNaN(slotStart.getTime()) || Number.isNaN(slotEnd.getTime()) || slotEnd <= slotStart) {
-      return { ok: false, reason: "وقت الموعد غير صالح." };
+      return { ok: false, reason: t("booking.errors.invalidAppointmentTime") };
     }
 
     const slotStartMin = slotStart.getHours() * 60 + slotStart.getMinutes();
@@ -441,7 +443,7 @@ export default function SalonBookingPage() {
     const salonOpen = toMinutesOfDay(dayRule.open_time);
     const salonClose = toMinutesOfDay(dayRule.close_time);
     if (slotStartMin < salonOpen || slotEndMin > salonClose) {
-      return { ok: false, reason: "الموعد خارج ساعات عمل المركز." };
+      return { ok: false, reason: t("booking.errors.outsideSalonHours") };
     }
 
     const [employeeHoursRes, bookingsRes, timeOffRes] = await Promise.all([
@@ -476,7 +478,7 @@ export default function SalonBookingPage() {
 
     const staffDayRules = employeeHoursRes.data || [];
     if (staffDayRules.some((row) => Boolean(row.is_off))) {
-      return { ok: false, reason: "هذا الموظف بإجازة بهذا اليوم." };
+      return { ok: false, reason: t("booking.errors.staffOffThisDay") };
     }
 
     const effectiveRule = staffDayRules[0];
@@ -484,7 +486,7 @@ export default function SalonBookingPage() {
       const empStart = toMinutesOfDay(effectiveRule.start_time || dayRule.open_time);
       const empEnd = toMinutesOfDay(effectiveRule.end_time || dayRule.close_time);
       if (slotStartMin < empStart || slotEndMin > empEnd) {
-        return { ok: false, reason: "الموعد خارج دوام الموظف." };
+        return { ok: false, reason: t("booking.errors.outsideStaffHours") };
       }
 
       const breakStart = effectiveRule.break_start ? toMinutesOfDay(effectiveRule.break_start) : null;
@@ -496,16 +498,16 @@ export default function SalonBookingPage() {
         slotStartMin < breakEnd &&
         slotEndMin > breakStart
       ) {
-        return { ok: false, reason: "الموعد يقع ضمن وقت الاستراحة." };
+        return { ok: false, reason: t("booking.errors.insideBreakTime") };
       }
     }
 
     if ((timeOffRes.data || []).length > 0) {
-      return { ok: false, reason: "هذا الموظف بإجازة في هذا الوقت." };
+      return { ok: false, reason: t("booking.errors.staffOffThisTime") };
     }
 
     if ((bookingsRes.data || []).length > 0) {
-      return { ok: false, reason: "هذا الوقت انحجز قبل لحظات." };
+      return { ok: false, reason: t("booking.errors.slotJustBooked") };
     }
 
     return { ok: true };
@@ -515,50 +517,50 @@ export default function SalonBookingPage() {
     e.preventDefault();
 
     if (!supabase || !salon) {
-      showToast("error", "تعذر الاتصال بقاعدة البيانات.");
+      showToast("error", t("booking.errors.dbConnectionFailed"));
       return;
     }
 
     if (customerName.trim().length < 2) {
-      showToast("error", "اكتبي الاسم بشكل صحيح.");
+      showToast("error", t("booking.errors.invalidName"));
       return;
     }
 
     const normalizedPhone = normalizeIraqiPhone(customerPhone);
     if (!isValidE164WithoutPlus(normalizedPhone)) {
-      showToast("error", "اكتبي رقم هاتف صحيح مثل 07xxxxxxxxx.");
+      showToast("error", t("booking.errors.invalidPhone"));
       return;
     }
 
     if (!selectedService || !slotIso) {
-      showToast("error", "اختاري الخدمة والموعد.");
+      showToast("error", t("booking.errors.selectServiceAndTime"));
       return;
     }
 
     if (!salonAccess.canCreateBookings) {
-      showToast("error", salonAccess.lockMessage || "الحجز غير متاح حالياً.");
+      showToast("error", salonAccess.lockMessage || t("booking.errors.bookingUnavailable"));
       return;
     }
 
     if (bookingMode === "choose_employee" && !selectedStaff) {
-      showToast("error", "اختاري الموظفة/الموظف.");
+      showToast("error", t("booking.errors.selectStaff"));
       return;
     }
 
     if (bookingMode === "choose_employee" && !assignmentSet.has(`${selectedStaff.id}:${selectedService.id}`)) {
-      showToast("error", "هاي الموظفة ما تقدم هالخدمة.");
+      showToast("error", t("booking.errors.staffServiceMismatch"));
       return;
     }
 
     const selectedSlot = availableSlots.find((s) => s.startIso === slotIso);
     if (!selectedSlot) {
-      showToast("error", "هذا الموعد لم يعد متاحاً.");
+      showToast("error", t("booking.errors.slotNoLongerAvailable"));
       return;
     }
 
     const assignedStaff = staffById[selectedSlot.staffId] || selectedStaff || null;
     if (!assignedStaff) {
-      showToast("error", "تعذر تحديد الموظف لهذا الموعد.");
+      showToast("error", t("booking.errors.staffAssignFailed"));
       return;
     }
 
@@ -569,7 +571,7 @@ export default function SalonBookingPage() {
         selectedSlot,
       });
       if (!availabilityCheck.ok) {
-        showToast("error", availabilityCheck.reason || "الموعد لم يعد متاحاً.");
+        showToast("error", availabilityCheck.reason || t("booking.errors.slotNoLongerAvailable"));
         return;
       }
 
@@ -627,11 +629,11 @@ export default function SalonBookingPage() {
         ins.data.appointment_start || ins.data.appointment_at || selectedSlot.startIso,
         salon.timezone || "Asia/Baghdad"
       );
-      const manualMessage = `مرحبا، اريد أكد حجزي:
-الاسم: ${customerName.trim()}
-الخدمة: ${selectedService.name}
-الموعد: ${appointmentLocal}
-رقم الهاتف: ${normalizedPhone}`;
+      const manualMessage = `${t("booking.whatsappFallback.greeting")}
+${t("booking.whatsappFallback.name")}: ${customerName.trim()}
+${t("booking.whatsappFallback.service")}: ${selectedService.name}
+${t("booking.whatsappFallback.time")}: ${appointmentLocal}
+${t("booking.whatsappFallback.phone")}: ${normalizedPhone}`;
       const manualWhatsappHref = isValidE164WithoutPlus(salonWhatsapp)
         ? `https://wa.me/${salonWhatsapp}?text=${encodeURIComponent(manualMessage)}`
         : "";
@@ -671,12 +673,12 @@ export default function SalonBookingPage() {
       }
 
       if (whatsappUnavailable) {
-        showToast("success", "تم الحفظ ✅ (إشعار واتساب التلقائي غير مفعل حالياً)");
+        showToast("success", t("booking.messages.savedWhatsappOff"));
       } else {
-        showToast("success", "تم إرسال طلب الحجز بنجاح.");
+        showToast("success", t("booking.messages.sentSuccess"));
       }
     } catch (err) {
-      showToast("error", `تعذر إرسال الحجز: ${err?.message || err}`);
+      showToast("error", t("booking.errors.sendFailed", { message: err?.message || err }));
     } finally {
       setSubmitting(false);
     }
@@ -684,7 +686,7 @@ export default function SalonBookingPage() {
 
   if (loading) {
     return (
-      <PageShell title="الحجز" subtitle="جاري تحميل بيانات الصالون">
+      <PageShell title={t("booking.pageTitle")} subtitle={t("booking.loadingSalonData")}>
         <Card>
           <Skeleton className="skeleton-cover" />
           <Skeleton className="skeleton-line" />
@@ -696,11 +698,11 @@ export default function SalonBookingPage() {
 
   if (!salon) {
     return (
-      <PageShell title="الرابط غير متوفر" subtitle="هذا الرابط غير متوفر">
+      <PageShell title={t("booking.linkUnavailableTitle")} subtitle={t("booking.linkUnavailableText")}>
         <Card>
-          <p className="muted">هذا الرابط غير متوفر</p>
+          <p className="muted">{t("booking.linkUnavailableText")}</p>
           <Button as={Link} to="/explore" variant="secondary">
-            العودة للاستكشاف
+            {t("booking.backToExplore")}
           </Button>
         </Card>
       </PageShell>
@@ -713,36 +715,36 @@ export default function SalonBookingPage() {
   return (
     <PageShell
       title={salon.name}
-      subtitle="احجزي موعدج خلال دقيقة"
+      subtitle={t("booking.subtitle")}
       right={
         <Button as={Link} variant="ghost" to={`/s/${salon.slug}/admin`}>
-          إدارة الصالون
+          {t("booking.salonAdmin")}
         </Button>
       }
     >
       <section className="salon-hero" style={{ backgroundImage: `url('${media.cover}')` }}>
         <div className="salon-hero-overlay">
           <div className="salon-hero-content">
-            <Badge variant="featured">★ 4.8 (تجريبي)</Badge>
+            <Badge variant="featured">{t("booking.demoRating")}</Badge>
             <div className="salon-hero-brand">
               <SafeImage
                 src={salon.logo_url || ""}
-                alt={`شعار ${salon.name}`}
+                alt={`${t("booking.salonLogo")} ${salon.name}`}
                 className="salon-hero-logo"
                 fallbackText={getInitials(salon.name)}
               />
               <div>
                 <h2>{salon.name}</h2>
-                <p>{salon.area ? `${salon.area} - بغداد` : "بغداد"}</p>
+                <p>{salon.area ? `${salon.area}` : t("booking.defaultCity")}</p>
               </div>
             </div>
             <div className="row-actions">
               <Button as="a" href="#booking-form" variant="primary">
-                احجزي الآن
+                {t("booking.bookNow")}
               </Button>
               {hasWhatsapp ? (
                 <Button as="a" variant="secondary" href={`https://wa.me/${whatsappPhone}`} target="_blank" rel="noreferrer">
-                  تواصل واتساب
+                  {t("booking.contactWhatsapp")}
                 </Button>
               ) : null}
             </div>
@@ -751,25 +753,25 @@ export default function SalonBookingPage() {
       </section>
 
       <Card>
-        <h3 className="section-title">ليش تحجزين من CareChair؟</h3>
+        <h3 className="section-title">{t("booking.whyTitle")}</h3>
         <div className="trust-grid">
           <div className="trust-item">
-            <b>تأكيد سريع</b>
-            <p>طلبج يوصل فوراً للمركز.</p>
+            <b>{t("booking.trust.fastConfirm.title")}</b>
+            <p>{t("booking.trust.fastConfirm.text")}</p>
           </div>
           <div className="trust-item">
-            <b>تنظيم المواعيد</b>
-            <p>أوقات متاحة حقيقية حسب الموظفة.</p>
+            <b>{t("booking.trust.scheduling.title")}</b>
+            <p>{t("booking.trust.scheduling.text")}</p>
           </div>
           <div className="trust-item">
-            <b>بدون مكالمات</b>
-            <p>كلشي يصير أونلاين بخطوات بسيطة.</p>
+            <b>{t("booking.trust.noCalls.title")}</b>
+            <p>{t("booking.trust.noCalls.text")}</p>
           </div>
         </div>
       </Card>
 
       <Card>
-        <h3 className="section-title">صور من المركز</h3>
+        <h3 className="section-title">{t("booking.galleryTitle")}</h3>
         <div className="gallery-grid">
           {galleryImages.map((img, idx) => (
             <button
@@ -778,7 +780,7 @@ export default function SalonBookingPage() {
               className="gallery-lightbox-btn"
               onClick={() => setLightboxIndex(idx)}
             >
-              <SafeImage src={img} alt={`صورة ${idx + 1}`} className="gallery-tile" fallbackIcon="🌸" />
+              <SafeImage src={img} alt={`${t("booking.image")} ${idx + 1}`} className="gallery-tile" fallbackIcon="🌸" />
             </button>
           ))}
         </div>
@@ -790,26 +792,26 @@ export default function SalonBookingPage() {
           <form onSubmit={submitBooking} className="booking-form-modern">
             {!salonAccess.canCreateBookings ? (
               <div className="full lock-banner">
-                <b>الحساب غير مفعل حالياً</b>
-                <p>{salonAccess.lockMessage || "الحجز غير متاح حالياً."}</p>
+                <b>{t("booking.accountInactive")}</b>
+                <p>{salonAccess.lockMessage || t("booking.errors.bookingUnavailable")}</p>
               </div>
             ) : null}
             <div className="steps-wrap full">
-              <Step index={1} label="اختاري الخدمة" active={currentStep === 1} done={Boolean(serviceId)} />
+              <Step index={1} label={t("booking.stepService")} active={currentStep === 1} done={Boolean(serviceId)} />
               <Step
                 index={2}
-                label={bookingMode === "auto_assign" ? "توزيع تلقائي للموظف" : "اختاري الموظفة/الموظف"}
+                label={bookingMode === "auto_assign" ? t("booking.stepAutoAssign") : t("booking.stepStaff")}
                 active={currentStep === 2}
                 done={bookingMode === "auto_assign" ? Boolean(serviceId) : Boolean(staffId)}
               />
-              <Step index={3} label="اختاري الوقت" active={currentStep === 3} done={Boolean(slotIso)} />
+              <Step index={3} label={t("booking.stepTime")} active={currentStep === 3} done={Boolean(slotIso)} />
             </div>
 
-            <TextInput className="full" label="الاسم" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+            <TextInput className="full" label={t("booking.name")} value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
 
             <TextInput
               className="full"
-              label="رقم الهاتف"
+              label={t("booking.phone")}
               inputMode="tel"
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
@@ -817,9 +819,9 @@ export default function SalonBookingPage() {
             />
 
             <div className="field full">
-              <span>الخدمة</span>
+              <span>{t("booking.service")}</span>
               {services.length === 0 ? (
-                <div className="empty-box">لا توجد خدمات مفعلة حالياً.</div>
+                <div className="empty-box">{t("booking.noActiveServices")}</div>
               ) : (
                 <div className="service-grid-compact">
                   {services.map((srv) => {
@@ -841,8 +843,8 @@ export default function SalonBookingPage() {
                         />
                         <div className="service-mini-meta">
                           <b>{srv.name}</b>
-                          <small>{srv.duration_minutes} دقيقة</small>
-                          <span>{formatCurrencyIQD(srv.price)}</span>
+                          <small>{t("booking.minutes", { count: srv.duration_minutes })}</small>
+                          <span>{formatSalonOperationalCurrency(srv.price, salon, i18n.language)}</span>
                         </div>
                       </button>
                     );
@@ -853,9 +855,9 @@ export default function SalonBookingPage() {
 
             {bookingMode === "choose_employee" ? (
               <div className="field full">
-                <span>الموظفة/الموظف</span>
+                <span>{t("booking.staff")}</span>
                 {filteredStaff.length === 0 ? (
-                  <div className="empty-box">لا يوجد موظف/موظفة مخصص(ة) لهذه الخدمة حالياً.</div>
+                  <div className="empty-box">{t("booking.noAssignedStaffForService")}</div>
                 ) : (
                   <div className="staff-avatar-grid">
                     {filteredStaff.map((st) => {
@@ -882,13 +884,13 @@ export default function SalonBookingPage() {
               </div>
             ) : (
               <div className="field full">
-                <span>توزيع الموظف</span>
-                <div className="empty-box">راح يتم اختيار الموظف/الموظفة تلقائياً حسب أول وقت متاح.</div>
+                <span>{t("booking.staffAssignment")}</span>
+                <div className="empty-box">{t("booking.autoAssignNote")}</div>
               </div>
             )}
 
             <div className="field full">
-              <span>اختاري اليوم</span>
+              <span>{t("booking.pickDay")}</span>
               <div className="quick-dates-wrap">
                 {quickDates.map((day) => (
                   <button
@@ -905,14 +907,14 @@ export default function SalonBookingPage() {
             </div>
 
             <div className="field full">
-              <span>المواعيد المتاحة ({SLOT_STEP_MINUTES} دقيقة)</span>
+              <span>{t("booking.availableSlots", { step: SLOT_STEP_MINUTES })}</span>
               {!salonAccess.canCreateBookings ? (
-                <div className="empty-box">{salonAccess.lockMessage || "الحجز غير متاح حالياً."}</div>
+                <div className="empty-box">{salonAccess.lockMessage || t("booking.errors.bookingUnavailable")}</div>
               ) : !isValidPair && selectedService ? (
                 <div className="empty-box">
                   {bookingMode === "auto_assign"
-                    ? "لا يوجد موظف متاح لهذه الخدمة حالياً."
-                    : "اختيار الخدمة مع الموظفة غير متوافق."}
+                    ? t("booking.noAvailableStaffForService")
+                    : t("booking.serviceStaffInvalidSelection")}
                 </div>
               ) : availabilityLoading ? (
                 <div className="slots-wrap">
@@ -921,7 +923,7 @@ export default function SalonBookingPage() {
                   ))}
                 </div>
               ) : availableSlots.length === 0 ? (
-                <div className="empty-box">لا توجد مواعيد متاحة لهذا اليوم.</div>
+                <div className="empty-box">{t("booking.noSlotsThisDay")}</div>
               ) : (
                 <div className="slots-wrap">
                   {availableSlots.map((slot) => (
@@ -939,23 +941,23 @@ export default function SalonBookingPage() {
             </div>
 
             <label className="field full">
-              <span>ملاحظات (اختياري)</span>
+              <span>{t("booking.notesOptional")}</span>
               <textarea className="input textarea" value={notes} onChange={(e) => setNotes(e.target.value)} />
             </label>
 
             <Card className="summary-card full">
-              <h4>ملخص الحجز</h4>
+              <h4>{t("booking.summaryTitle")}</h4>
               <p>
-                <b>الخدمة:</b> {summary.service}
+                <b>{t("booking.service")}:</b> {summary.service}
               </p>
               <p>
-                <b>الموظفة/الموظف:</b> {summary.staff}
+                <b>{t("booking.staff")}:</b> {summary.staff}
               </p>
               <p>
-                <b>السعر:</b> {summary.price}
+                <b>{t("booking.price")}:</b> {summary.price}
               </p>
               <p>
-                <b>الموعد:</b> {summary.time}
+                <b>{t("booking.time")}:</b> {summary.time}
               </p>
             </Card>
 
@@ -964,29 +966,29 @@ export default function SalonBookingPage() {
               className="full"
               disabled={submitting || !slotIso || !isValidPair || !salonAccess.canCreateBookings}
             >
-              {submitting ? "جاري الإرسال..." : "تأكيد الحجز"}
+              {submitting ? t("booking.submitting") : t("booking.confirmBooking")}
             </Button>
           </form>
         ) : (
           <div className="success-screen">
             <div className="success-icon">✓</div>
-            <h3>تم إرسال طلب الحجز ✅</h3>
-            <p>راح يتم تأكيد الموعد من المركز قريباً</p>
+            <h3>{t("booking.successTitle")}</h3>
+            <p>{t("booking.successSubtitle")}</p>
             <div className="success-details">
               <p>
-                <b>رقم الطلب:</b> {successData.id}
+                <b>{t("booking.requestId")}:</b> {successData.id}
               </p>
               <p>
-                <b>الخدمة:</b> {successData.service}
+                <b>{t("booking.service")}:</b> {successData.service}
               </p>
               <p>
-                <b>الموظف/الموظفة:</b> {successData.staff}
+                <b>{t("booking.staff")}:</b> {successData.staff}
               </p>
               <p>
-                <b>الوقت:</b> {formatDateTime(successData.time)}
+                <b>{t("booking.time")}:</b> {formatDateTime(successData.time)}
               </p>
               <p>
-                <b>رقم الهاتف:</b> {successData.phone}
+                <b>{t("booking.phone")}:</b> {successData.phone}
               </p>
             </div>
             <div className="row-actions center">
@@ -998,15 +1000,15 @@ export default function SalonBookingPage() {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  تواصل واتساب مع المركز
+                  {t("booking.contactWhatsappSalon")}
                 </Button>
               ) : (
                 <Button type="button" variant="ghost" disabled>
-                  رقم واتساب المركز غير متوفر
+                  {t("booking.salonWhatsappMissing")}
                 </Button>
               )}
               <Button type="button" variant="secondary" onClick={resetBookingFlow}>
-                رجوع للحجز / تعديل موعد
+                {t("booking.backOrEdit")}
               </Button>
             </div>
           </div>
@@ -1028,7 +1030,7 @@ export default function SalonBookingPage() {
           </button>
           <SafeImage
             src={galleryImages[lightboxIndex]}
-            alt={`صورة ${lightboxIndex + 1}`}
+            alt={`${t("booking.image")} ${lightboxIndex + 1}`}
             className="lightbox-image"
             fallbackIcon="🌸"
           />

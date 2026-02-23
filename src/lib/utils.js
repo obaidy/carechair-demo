@@ -1,3 +1,5 @@
+import i18n from "../i18n";
+
 export const SLOT_STEP_MINUTES = 15;
 
 export const DAYS = [
@@ -41,7 +43,7 @@ export const STATUS_LABELS = {
 export function sortByOrderThenName(a, b) {
   const diff = (a.sort_order || 0) - (b.sort_order || 0);
   if (diff !== 0) return diff;
-  return String(a.name || "").localeCompare(String(b.name || ""), "ar");
+  return String(a.name || "").localeCompare(String(b.name || ""), i18n.language || "en");
 }
 
 export function digitsOnly(value) {
@@ -69,8 +71,8 @@ export function toDateInput(value) {
 
 export function formatDate(value) {
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "تاريخ غير معروف";
-  return d.toLocaleDateString("ar-IQ", {
+  if (Number.isNaN(d.getTime())) return "Invalid date";
+  return d.toLocaleDateString(i18n.language || "en-US", {
     weekday: "long",
     year: "numeric",
     month: "2-digit",
@@ -80,14 +82,14 @@ export function formatDate(value) {
 
 export function formatDateTime(value) {
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "غير معروف";
-  return d.toLocaleString("ar-IQ", { dateStyle: "medium", timeStyle: "short" });
+  if (Number.isNaN(d.getTime())) return "Unknown";
+  return d.toLocaleString(i18n.language || "en-US", { dateStyle: "medium", timeStyle: "short" });
 }
 
 export function formatTime(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "--:--";
-  return d.toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString(i18n.language || "en-US", { hour: "2-digit", minute: "2-digit" });
 }
 
 export function formatDateKey(value) {
@@ -96,8 +98,51 @@ export function formatDateKey(value) {
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export function formatCurrencyIQD(value) {
-  return `${Number(value || 0).toLocaleString("en-US")} د.ع`;
+export function formatCurrency(value, currencyCode = "USD", locale = "en-US") {
+  const amount = Number(value || 0);
+  const code = String(currencyCode || "USD").toUpperCase();
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: code,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${amount.toLocaleString("en-US")} ${code}`;
+  }
+}
+
+export function formatCurrencyIQD(value, currencyCode = "IQD", locale = "") {
+  const lang = String(locale || i18n.language || "en-US");
+  const safeLocale = lang.startsWith("ar") ? "ar-IQ-u-nu-latn" : lang;
+  return formatCurrency(value, currencyCode, safeLocale);
+}
+
+export function getSalonOperationalCurrencyCode(salon) {
+  const country = String(salon?.country_code || "").toUpperCase();
+  if (country === "IQ") return "IQD";
+  return String(salon?.currency_code || "USD").toUpperCase();
+}
+
+export function formatSalonOperationalCurrency(value, salon, locale = "") {
+  const code = getSalonOperationalCurrencyCode(salon);
+  const lang = String(locale || i18n.language || "en-US");
+  const safeLocale = lang.startsWith("ar") ? "ar-IQ-u-nu-latn" : lang;
+
+  if (code === "IQD") {
+    const amount = Number(value || 0);
+    try {
+      const numberPart = new Intl.NumberFormat(safeLocale, {
+        maximumFractionDigits: 0,
+      }).format(amount);
+      const suffix = lang.startsWith("ar") ? "د.ع" : "IQD";
+      return `${numberPart} ${suffix}`;
+    } catch {
+      return `${Math.round(amount).toLocaleString("en-US")} IQD`;
+    }
+  }
+
+  return formatCurrency(value, code, safeLocale);
 }
 
 export function serviceIcon(name) {

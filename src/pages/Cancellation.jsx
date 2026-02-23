@@ -1,19 +1,21 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import PageShell from "../components/PageShell";
 
 export default function Cancellation() {
+  const { t } = useTranslation();
   return (
-    <PageShell title="الإلغاء والتعليق" subtitle="ملخص بالعربي وبعدين النص القانوني بالإنكليزي">
+    <PageShell title={t("legal.cancellationTitle")} subtitle={t("legal.subtitle")}>
       <section className="panel legal-summary">
-        <h3>ملخص سريع</h3>
+        <h3>{t("legal.quickSummary")}</h3>
         <ul>
-          <li>تكدرين تلغين الاشتراك بأي وقت بدون فترة إشعار.</li>
-          <li>الإلغاء يوقف التجديد القادم، مو يقطع الوصول فوراً.</li>
-          <li>يبقى عندج وصول لنهاية دورة الدفع الحالية.</li>
-          <li>بعد نهاية الدورة، الحساب يصير غير نشط.</li>
-          <li>إذا ماكو دفع، النظام يعلّق الحساب تلقائياً.</li>
-          <li>نقدر نعلّق الحساب لأسباب أمان أو إساءة استخدام.</li>
-          <li>أي نزاع قانوني يخضع لقانون ومحاكم التشيك.</li>
+          <li>{t("legal.cancellationSummary.1")}</li>
+          <li>{t("legal.cancellationSummary.2")}</li>
+          <li>{t("legal.cancellationSummary.3")}</li>
+          <li>{t("legal.cancellationSummary.4")}</li>
+          <li>{t("legal.cancellationSummary.5")}</li>
+          <li>{t("legal.cancellationSummary.6")}</li>
+          <li>{t("legal.cancellationSummary.7")}</li>
         </ul>
       </section>
 
