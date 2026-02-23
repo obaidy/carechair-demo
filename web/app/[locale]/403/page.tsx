@@ -1,25 +1,26 @@
-import {getTranslations} from 'next-intl/server';
+import {getMessages} from 'next-intl/server';
 import {Link} from '@/i18n/navigation';
+import {tx} from '@/lib/messages';
 
 type Props = {params: Promise<{locale: string}>};
 
 export default async function ForbiddenPage({params}: Props) {
-  await params;
-  const t = await getTranslations();
+  const {locale} = await params;
+  const messages = await getMessages({locale});
 
   return (
     <main className="site-main">
       <div className="container page-stack">
         <section className="hero-card">
           <p className="eyebrow">403</p>
-          <h1>{t('common.forbidden', {defaultValue: 'Access denied'})}</h1>
-          <p>{t('common.forbiddenHint', {defaultValue: 'You do not have permission to open this page.'})}</p>
+          <h1>{tx(messages, 'common.forbidden', 'Access denied')}</h1>
+          <p>{tx(messages, 'common.forbiddenHint', 'You do not have permission to open this page.')}</p>
           <div className="row-actions">
             <Link href="/" className="btn btn-primary">
-              {t('nav.home', {defaultValue: 'Home'})}
+              {tx(messages, 'nav.home', 'Home')}
             </Link>
             <Link href="/login" className="btn btn-secondary">
-              {t('nav.login', {defaultValue: 'Login'})}
+              {tx(messages, 'nav.login', 'Login')}
             </Link>
           </div>
         </section>

@@ -1,150 +1,892 @@
 {
   "common": {
-    "language": "اللغة",
-    "loading": "جارٍ التحميل...",
-    "saving": "جارٍ الحفظ...",
-    "noData": "لا توجد بيانات",
-    "view": "عرض",
-    "forbidden": "غير مسموح",
-    "forbiddenHint": "ليس لديك صلاحية لفتح هذه الصفحة.",
-    "notFound": "الصفحة غير موجودة",
-    "notFoundHint": "الصفحة المطلوبة غير موجودة.",
-    "loginHint": "استخدم رمز صالونك أو رمز السوبر أدمن لفتح لوحة التحكم."
+    "explore": "استكشف",
+    "dashboard": "لوحة التحكم",
+    "billing": "الفوترة",
+    "staff": "الموظفين",
+    "services": "الخدمات",
+    "subscription": "الاشتراك",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "refresh": "تحديث",
+    "loading": "جاري التحميل...",
+    "talkToSales": "تحدث مع المبيعات",
+    "bookDemo": "احجز ديمو",
+    "whatsappDemo": "ديمو واتساب",
+    "all": "الكل",
+    "whatsapp": "واتساب",
+    "confirm": "تأكيد",
+    "back": "رجوع",
+    "processing": "جاري التنفيذ...",
+    "edit": "تعديل",
+    "show": "إظهار",
+    "hide": "إخفاء",
+    "delete": "حذف",
+    "actions": "الإجراءات"
+  },
+  "errors": {
+    "supabaseConfigMissing": "إعدادات Supabase غير مكتملة."
   },
   "nav": {
-    "home": "الرئيسية",
-    "explore": "استكشاف",
-    "login": "تسجيل الدخول",
-    "logout": "تسجيل الخروج",
-    "superadmin": "الإدارة العليا",
-    "menu": "القائمة",
+    "centers": "للمراكز",
     "features": "المزايا",
     "pricing": "الأسعار",
-    "faq": "الأسئلة الشائعة",
-    "centers": "لأصحاب الصالونات",
-    "dashboard": "لوحة التحكم"
-  },
-  "meta": {
-    "defaultTitle": "منصة حجز صالونات",
-    "defaultDescription": "ابحث عن الصالونات واحجز بسرعة."
+    "faq": "الأسئلة",
+    "superadmin": "سوبر أدمن",
+    "menu": "القائمة"
   },
   "home": {
-    "metaTitle": "CareChair | احجز الصالونات أونلاين",
-    "metaDescription": "اكتشف الصالونات وقارن الخدمات واحجز خلال دقائق.",
-    "eyebrow": "صفحات عامة محسنة لمحركات البحث",
-    "title": "احجز الصالون المناسب خلال ثوانٍ",
-    "subtitle": "ابحث حسب المدينة، قارن الخدمات، واحجز موعدك فورًا.",
-    "ctaExplore": "استكشف الصالونات",
-    "featured": "صالونات مميزة",
-    "bookNow": "احجز الآن"
-  },
-  "explore": {
-    "metaTitle": "استكشاف الصالونات حسب المدينة والخدمة",
-    "metaDescription": "اعثر على الصالونات المنشورة وقارن توفر الخدمات.",
-    "title": "استكشاف الصالونات",
-    "subtitle": "صالونات منشورة ومتاحة للحجز.",
-    "viewSalon": "عرض الصالون",
-    "cityPage": "صفحة المدينة"
-  },
-  "city": {
-    "metaTitle": "صالونات المدينة | CareChair",
-    "metaDescription": "تصفح الصالونات المنشورة في هذه المدينة.",
-    "subtitle": "الصالونات والخدمات المتاحة في هذه المدينة.",
-    "viewSalon": "عرض الصالون",
-    "viewService": "عرض صالونات الخدمة"
-  },
-  "service": {
-    "metaDescription": "اعثر على الصالونات التي تقدم هذه الخدمة واحجز أونلاين.",
-    "subtitle": "الصالونات التي تقدم هذه الخدمة حالياً.",
-    "bookSalon": "احجز هذا الصالون"
-  },
-  "salon": {
-    "metaDescription": "عرض ملف الصالون والخدمات والحجز أونلاين.",
-    "directions": "الاتجاهات",
-    "appleMaps": "خرائط آبل",
-    "googleMaps": "خرائط جوجل",
-    "mapPreview": "معاينة الموقع",
-    "mapUnavailable": "معاينة الخريطة غير متاحة",
-    "hours": "ساعات العمل",
-    "closed": "مغلق",
-    "services": "الخدمات",
-    "staff": "الفريق",
-    "addressUnavailable": "العنوان غير متاح"
-  },
-  "booking": {
-    "formTitle": "حجز موعد",
-    "service": "الخدمة",
-    "staff": "الموظف",
-    "autoAssign": "سيتم اختيار الموظف تلقائيًا حسب التوفر.",
-    "date": "التاريخ",
-    "timeSlots": "الأوقات المتاحة (كل {step} دقيقة)",
-    "name": "الاسم",
-    "phone": "رقم الهاتف",
-    "notes": "ملاحظات (اختياري)",
-    "submit": "تأكيد الحجز",
-    "success": {
-      "title": "تم إنشاء الحجز",
-      "message": "تم إرسال طلب موعدك بنجاح.",
-      "id": "رقم الطلب",
-      "service": "الخدمة",
-      "staff": "الموظف",
-      "time": "الوقت",
-      "newBooking": "حجز موعد آخر"
+    "headline1": "حول حجوزات مركزك",
+    "headline2": "إلى نظام احترافي",
+    "headline3": "بدون فوضى واتساب",
+    "subheadline": "رابط حجز ذكي + لوحة إدارة متقدمة + تنظيم كامل للموظفين والخدمات خلال 24 ساعة.",
+    "sectionBeforeAfter": "قبل وبعد CareChair",
+    "sectionShow": "شوف النظام",
+    "sectionFeatures": "مميزات النظام",
+    "sectionPricing": "الخطط المرنة",
+    "sectionTestimonials": "آراء المراكز",
+    "sectionFaq": "الأسئلة الشائعة",
+    "ctaMain": "اطلب نسخة لمركزك",
+    "ctaExplore": "استعرض المراكز",
+    "finalTitle": "جاهز نخلي مركزك يستقبل حجوزات مرتبة؟",
+    "finalSubtitle": "نجهز النظام بسرعة حتى تبدأ التشغيل بثقة من أول يوم.",
+    "tag1": "يفتح على أكثر من جهاز",
+    "tag2": "ترتيب المواعيد",
+    "tag3": "إلغاء بأي وقت",
+    "heroImageAlt": "صالون فاخر في بغداد",
+    "beforeTitle": "قبل CareChair",
+    "afterTitle": "بعد CareChair",
+    "before": {
+      "1": "مكالمات كثيرة",
+      "2": "ضياع مواعيد",
+      "3": "ضغط على الموظفين"
     },
-    "errors": {
-      "loadSlots": "تعذر تحميل المواعيد حالياً.",
-      "slotUnavailable": "الوقت المحدد لم يعد متاحاً.",
-      "closedDay": "الصالون مغلق في هذا اليوم.",
-      "closedHour": "الوقت خارج ساعات عمل الصالون.",
-      "staffOff": "الموظف غير متاح في هذا اليوم.",
-      "staffHour": "الوقت خارج ساعات عمل الموظف.",
-      "staffBreak": "الوقت يتداخل مع استراحة الموظف.",
-      "slotTaken": "تم حجز هذا الموعد قبل قليل.",
-      "staffOffTime": "الموظف غير متاح في هذا الوقت.",
-      "misconfigured": "إعدادات Supabase غير مكتملة.",
-      "invalidForm": "يرجى إدخال بيانات حجز صحيحة.",
-      "invalidServiceStaff": "اختر خدمة/موظف متطابقين.",
-      "noSlots": "لا توجد مواعيد متاحة في هذا التاريخ.",
-      "generic": "تعذر إتمام الحجز حالياً."
+    "after": {
+      "1": "رابط حجز واحد",
+      "2": "جدول واضح",
+      "3": "قبول ورفض فوري"
+    },
+    "showcase": {
+      "adminTitle": "لوحة الإدارة",
+      "adminCaption": "إدارة الحجوزات اليومية والقبول والرفض بحركة سريعة وواضحة.",
+      "bookingTitle": "صفحة الحجز",
+      "bookingCaption": "تجربة حجز أنيقة وسريعة للعميلة من أي جهاز خلال ثواني.",
+      "exploreTitle": "الاستكشاف",
+      "exploreCaption": "عرض المراكز والخدمات بشكل محترف يدعم التحويل للحجز."
+    },
+    "features": {
+      "link": {
+        "title": "رابط حجز واحد",
+        "text": "تنشرينه بالإنستغرام والواتساب وتبدين تستقبلين حجوزات مباشرة."
+      },
+      "workflow": {
+        "title": "تنظيم الموظفين والخدمات",
+        "text": "ربط واضح بين كل خدمة والموظف المناسب بدون تعارض."
+      },
+      "action": {
+        "title": "إدارة فورية للحجوزات",
+        "text": "قبول أو رفض الطلبات من لوحة واحدة مع حالة واضحة."
+      },
+      "hours": {
+        "title": "ضبط ساعات العمل",
+        "text": "دوام أسبوعي مرن لكل مركز حسب احتياج التشغيل."
+      },
+      "media": {
+        "title": "واجهة مركز احترافية",
+        "text": "صور وخدمات مرتبة تعزز ثقة العميلة قبل الحجز."
+      },
+      "scale": {
+        "title": "جاهز للتوسع",
+        "text": "من فرع واحد إلى عدة فروع بنفس جودة الإدارة."
+      }
+    },
+    "pricingBullets": {
+      "1": "رابط الحجز + لوحة الإدارة + تنظيم الموظفين",
+      "2": "فوترة حسب الدولة والعملة",
+      "3": "فترة تجريبية 7 أيام"
+    },
+    "enterpriseBullets": {
+      "1": "خطة تشغيل متعددة الدول",
+      "2": "دعم متقدم للإطلاق ونقل البيانات",
+      "3": "تخصيصات تشغيل للمراكز المتوسعة"
+    },
+    "testimonials": {
+      "1": {
+        "quote": "الحجوزات صارت مرتبة بوضوح وقلّت المكالمات بشكل ملحوظ.",
+        "name": "صاحبة مركز",
+        "location": "بغداد"
+      },
+      "2": {
+        "quote": "أقوى نقطة كانت سرعة تشغيل النظام وتنظيم فريق العمل من أول يوم.",
+        "name": "مديرة صالون",
+        "location": "البصرة"
+      },
+      "3": {
+        "quote": "واجهة الحجز نظيفة وتعطي انطباع قوي للعميلة قبل ما تتواصل.",
+        "name": "صاحبة مركز",
+        "location": "بغداد"
+      }
+    },
+    "faq": {
+      "1": {
+        "q": "برنامج لو تطبيق؟",
+        "a": "هو نظام ويب يشتغل من رابط مباشر على أي جهاز بدون تثبيت تطبيق."
+      },
+      "2": {
+        "q": "ينفتح بأكثر من جهاز؟",
+        "a": "نعم، الإدارة تقدر تستخدمه من الجوال والآيباد واللابتوب بنفس الوقت."
+      },
+      "3": {
+        "q": "شلون أضيف الرابط بالإنستغرام؟",
+        "a": "نعطيك رابط الحجز الجاهز وتحطيه مباشرة ببايو الإنستغرام أو الواتساب."
+      },
+      "4": {
+        "q": "شلون يتم تأكيد الحجز؟",
+        "a": "الحجز يوصل بلوحة الإدارة فوراً وتقدرين تقبلين أو ترفضين خلال ثواني."
+      }
+    },
+    "trust": {
+      "activeCenters": "+{{count}} مركز نشط",
+      "monthlyBookings": "+{{count}} حجز شهري",
+      "activation": "تفعيل خلال 24 ساعة",
+      "cities": "متوفر في بغداد والبصرة"
     }
   },
-  "dashboard": {
-    "overview": "نظرة عامة",
-    "bookings": "الحجوزات",
-    "calendar": "التقويم",
-    "staff": "الموظفون",
-    "services": "الخدمات",
-    "clients": "العملاء",
-    "settings": "الإعدادات",
-    "salonTitle": "إدارة الصالون",
-    "bookingsToday": "حجوزات اليوم",
-    "bookings30d": "حجوزات 30 يوم",
-    "confirmed30d": "المؤكدة 30 يوم",
-    "pending": "معلّق",
-    "clients30d": "العملاء 30 يوم",
-    "revenue30d": "الإيراد 30 يوم",
-    "quickActions": "إجراءات سريعة",
-    "bookingsHint": "أحدث المواعيد وتحديث الحالة.",
-    "calendarHint": "الجدول اليومي للمواعيد حسب التاريخ.",
-    "addStaff": "إضافة موظف",
-    "addService": "إضافة خدمة",
-    "name": "الاسم",
-    "sortOrder": "الترتيب",
-    "duration": "المدة",
-    "price": "السعر",
-    "add": "إضافة",
-    "markCancelled": "تعيين كملغى",
-    "markConfirmed": "تعيين كمؤكد",
-    "visibility": "الظهور في الاستكشاف",
-    "account": "الحساب"
+  "explore": {
+    "subtitle": "اكتشفي الصالونات حسب المنطقة والخدمات",
+    "platformBadge": "منصّة CareChair",
+    "heroTitle": "اكتشفي أفضل صالونات بغداد",
+    "heroText": "اختاري الخدمة، قارني المراكز، واحجزي بنفس اللحظة.",
+    "socialProof": "مراكز تستخدم CareChair لتنظيم المواعيد ({{count}})",
+    "socialProofEarly": "مراكز بدأت تستخدم CareChair لتنظيم المواعيد ({{count}})",
+    "featured": "مميز",
+    "defaultArea": "بغداد",
+    "startingFrom": "يبدأ من",
+    "noServices": "لا توجد خدمات مفعلة بعد.",
+    "bookNow": "احجز الآن",
+    "empty": "حالياً ماكو صالونات مطابقة للفلتر المختار.",
+    "categories": {
+      "all": "الكل",
+      "haircut": "قص شعر",
+      "color": "صبغ",
+      "nails": "أظافر",
+      "facial": "بشرة",
+      "makeup": "مكياج"
+    },
+    "filters": {
+      "area": "المنطقة",
+      "allAreas": "كل المناطق",
+      "search": "بحث بالصالون أو الخدمة",
+      "searchPlaceholder": "مثال: صبغ، تنظيف بشرة، المنصور",
+      "sort": "الترتيب"
+    },
+    "sort": {
+      "nearest": "الأقرب (قريباً)",
+      "topRated": "الأعلى تقييماً",
+      "mostBooked": "الأكثر حجزاً",
+      "newest": "الأحدث"
+    },
+    "badges": {
+      "fastConfirm": "تأكيد سريع",
+      "easyBooking": "حجز سهل",
+      "whatsappAvailable": "واتساب متوفر",
+      "pendingActivation": "بانتظار التفعيل"
+    },
+    "errors": {
+      "loadFailed": "تعذر تحميل صفحة الاستكشاف: {{message}}"
+    }
+  },
+  "pricing": {
+    "title": "خطط مرنة للمراكز المتنامية",
+    "subtitle": "نحدد السعر النهائي حسب البلد واحتياج المركز بعد مكالمة قصيرة.",
+    "basic": "Basic",
+    "pro": "Pro",
+    "enterprise": "Enterprise",
+    "noPublicPrices": "الأسعار العامة غير منشورة حالياً. تواصل ويّانا لعرض مخصص.",
+    "bookDemo": "احجز ديمو",
+    "talkToSales": "تحدث مع المبيعات"
+  },
+  "billingGate": {
+    "lockedTitle": "الوصول للحساب مقيّد",
+    "lockedText": "الحساب غير مفعل حالياً. كمّل إعداد التجربة/الاشتراك من صفحة الفوترة.",
+    "openBilling": "فتح الفوترة"
+  },
+  "billingAccess": {
+    "badges": {
+      "override": "مفعل يدوياً",
+      "inactive": "غير مفعل",
+      "suspended": "موقوف",
+      "trialing": "فترة تجريبية",
+      "pendingSetup": "بانتظار رسوم الإعداد",
+      "active": "فعال",
+      "pastDue": "دفع متأخر"
+    },
+    "lockMessages": {
+      "inactive": "الحساب غير مفعل حالياً.",
+      "suspended": "الحساب موقوف حالياً. يرجى التواصل مع الإدارة.",
+      "pendingSetup": "حسابك غير مفعل. لإكمال الاستخدام: ادفع رسوم الإعداد + فعّل الاشتراك الشهري.",
+      "pastDue": "الاشتراك متأخر. يرجى تحديث الدفع لتفعيل الحساب.",
+      "default": "الحساب غير مفعل حالياً. يرجى إكمال الإعدادات والدفع.",
+      "pendingApproval": "الصالون بانتظار موافقة السوبر أدمن.",
+      "pendingBilling": "تمت الموافقة، لكن لازم يكتمل الدفع قبل تفعيل الوصول.",
+      "rejected": "تم رفض الصالون. تواصلوا ويا الدعم."
+    },
+    "trialEnded": "انتهت",
+    "hoursRemaining": "{{count}} ساعة",
+    "daysRemaining": "{{count}} يوم"
+  },
+  "footer": {
+    "tagline": "CareChair منصة حجوزات احترافية للصالونات ومراكز التجميل.",
+    "links": "روابط",
+    "legal": "قانوني",
+    "contact": "تواصل",
+    "terms": "الشروط",
+    "privacy": "الخصوصية",
+    "billing": "الفوترة والاسترجاع",
+    "cancellation": "الإلغاء والإيقاف",
+    "whatsappUnavailable": "واتساب غير متوفر حالياً",
+    "whatsappLabel": "واتساب",
+    "demoWhatsappMessage": "مرحبا، اريد احجز ديمو CareChair لمركزي.",
+    "legalLine": "CareChair هو نظام حجوزات تديره شركة Infraengineering s.r.o."
+  },
+  "status": {
+    "inactive": "غير مفعل",
+    "trialing": "تجريبي",
+    "active": "فعال",
+    "past_due": "متأخر بالدفع",
+    "canceled": "ملغي",
+    "suspended": "موقوف",
+    "draft": "مسودة",
+    "pending_approval": "بانتظار الموافقة",
+    "pending_billing": "بانتظار الدفع",
+    "rejected": "مرفوض"
   },
   "superadmin": {
-    "overview": "نظرة عامة",
-    "totalSalons": "إجمالي الصالونات",
-    "active": "نشط",
-    "pending": "قيد الانتظار",
-    "suspended": "معلّق",
-    "actions": "إجراءات",
-    "recentBookings": "أحدث الحجوزات"
+    "title": "لوحة السوبر أدمن",
+    "subtitle": "تحكم شامل بالدول والفوترة والتفعيل",
+    "createSalon": "إنشاء صالون",
+    "country": "الدولة",
+    "allCountries": "كل الدول",
+    "countriesConfig": "إعدادات الدول",
+    "enableCountry": "تفعيل الدولة",
+    "disableCountry": "تعطيل الدولة",
+    "makeCountryPrivate": "دولة عامة (تظهر بالـ onboarding)",
+    "makeCountryPublic": "دولة خاصة (رابط دعوة فقط)",
+    "manualBillingEnabled": "الفوترة اليدوية مفعلة",
+    "manualBillingDisabled": "استخدام فوترة Stripe",
+    "extendTrial": "تمديد التجربة",
+    "forceStatus": "فرض الحالة",
+    "internalOnly": "للاستخدام الداخلي فقط",
+    "internalSubtitle": "تحكم عالمي بالدول والاشتراكات وحالات التفعيل.",
+    "codeLabel": "رمز السوبر أدمن",
+    "login": "دخول",
+    "salonControl": "التحكم بالصالونات",
+    "statusFilter": "فلتر الحالة",
+    "tabs": {
+      "overview": "نظرة عامة",
+      "salons": "الصالونات",
+      "create": "إنشاء صالون",
+      "countries": "الدول"
+    },
+    "kpis": {
+      "totalSalons": "إجمالي الصالونات",
+      "pendingApproval": "بانتظار الموافقة",
+      "active": "نشط / تجريبي",
+      "suspended": "موقوف"
+    },
+    "overview": {
+      "title": "نظرة تشغيلية عامة",
+      "cards": {
+        "totalSalons": "إجمالي الصالونات",
+        "activeSalons": "الصالونات النشطة",
+        "trialing": "تجريبي",
+        "pendingApproval": "بانتظار الموافقة",
+        "pastDue": "متأخر بالدفع",
+        "bookings30": "إجمالي الحجوزات (30 يوم)",
+        "customers30": "إجمالي العملاء (30 يوم)"
+      },
+      "countryBreakdown": "تفصيل حسب الدولة",
+      "topSalons7d": "أفضل الصالونات حسب حجوزات 7 أيام",
+      "atRisk": "الصالونات المعرّضة للخطر",
+      "empty": "لا توجد بيانات حالياً.",
+      "noRisk": "لا توجد صالونات مهددة حالياً.",
+      "table": {
+        "country": "الدولة",
+        "salons": "الصالونات",
+        "active": "النشط",
+        "bookings30": "حجوزات (30 يوم)",
+        "customers30": "عملاء (30 يوم)",
+        "salon": "الصالون",
+        "bookings7": "حجوزات 7 أيام",
+        "lastBooking": "آخر حجز",
+        "status": "الحالة",
+        "risk": "الخطر"
+      },
+      "risks": {
+        "trialEnding": "التجربة تنتهي قريباً",
+        "zeroBookings": "0 حجوزات خلال 7 أيام"
+      }
+    },
+    "health": {
+      "title": "صحة الصالون",
+      "totalCustomers": "إجمالي العملاء",
+      "newCustomers30": "عملاء جدد (30 يوم)",
+      "repeatRate": "معدل التكرار",
+      "bookings7": "حجوزات 7 أيام",
+      "bookings30": "حجوزات 30 يوم",
+      "lastBooking": "آخر حجز",
+      "trialCountdown": "الوقت المتبقي للتجربة",
+      "engagementScore": "درجة التفاعل"
+    },
+    "noSalons": "لا توجد صالونات ضمن هذا الفلتر.",
+    "setupPaid": "رسوم الإعداد مدفوعة",
+    "setupPending": "رسوم الإعداد غير مدفوعة",
+    "endsAt": "ينتهي",
+    "trialEnd": "نهاية التجربة",
+    "suspensionReason": "سبب الإيقاف",
+    "bookingPage": "صفحة الحجز",
+    "salonAdmin": "إدارة الصالون",
+    "changePasscode": "تغيير رمز الإدارة",
+    "newPasscode": "الرمز الجديد",
+    "saving": "جاري الحفظ...",
+    "savePasscode": "حفظ الرمز",
+    "editSalonInfo": "معلومات الصالون",
+    "editSalonInfoHint": "عدّل الاسم ورابط الصالون وبيانات التواصل قبل الموافقة.",
+    "hideFromExplore": "إخفاء من الاستكشاف",
+    "showInExplore": "إظهار بالاستكشاف",
+    "clearSetupPaid": "إلغاء Setup Paid",
+    "markSetupPaid": "تعيين Setup Paid",
+    "disableOverride": "إلغاء Override",
+    "enableOverride": "تفعيل Override",
+    "unsuspend": "رفع الإيقاف",
+    "suspend": "إيقاف",
+    "confirmSuspendTitle": "إيقاف الصالون",
+    "confirmSuspendText": "هل تريد إيقاف {{name}}؟",
+    "currency": "العملة",
+    "timezone": "المنطقة الزمنية",
+    "basicPriceId": "Stripe Basic Price ID",
+    "proPriceId": "Stripe Pro Price ID",
+    "trialDays": "أيام التجربة",
+    "vatPercent": "ضريبة القيمة %",
+    "form": {
+      "salonName": "اسم الصالون",
+      "slug": "Slug",
+      "area": "المنطقة",
+      "whatsapp": "واتساب",
+      "adminPasscode": "رمز إدارة الصالون",
+      "seedDefaults": "إنشاء ساعات/خدمات/موظفات افتراضية",
+      "creating": "جاري الإنشاء...",
+      "create": "إنشاء الصالون"
+    },
+    "messages": {
+      "unlocked": "تم فتح لوحة السوبر أدمن.",
+      "salonCreated": "تم إنشاء الصالون وتحويله إلى بانتظار الموافقة.",
+      "saved": "تم حفظ التحديث.",
+      "passcodeUpdated": "تم تغيير رمز إدارة الصالون.",
+      "countrySaved": "تم تحديث إعدادات {{code}}.",
+      "trialExtended": "تم تمديد التجربة.",
+      "statusUpdated": "تم تحديث حالة الاشتراك.",
+      "overrideEnabled": "تم تفعيل الـ override.",
+      "overrideDisabled": "تم إلغاء الـ override.",
+      "hiddenFromExplore": "تم إخفاء الصالون.",
+      "shownInExplore": "تم إظهار الصالون.",
+      "setupPaymentMarked": "تم تعليم رسوم الإعداد كمدفوعة.",
+      "setupPaymentCleared": "تم إلغاء دفع الإعداد.",
+      "suspended": "تم إيقاف الصالون.",
+      "unsuspended": "تم رفع الإيقاف.",
+      "approvedTrialing": "تمت الموافقة وبدأت فترة تجريبية 7 أيام.",
+      "approvedManualBilling": "تمت الموافقة مع فوترة يدوية.",
+      "approvedPendingBilling": "تمت الموافقة - مطلوب الدفع قبل بدء الاستخدام.",
+      "rejected": "تم رفض الصالون.",
+      "salonInfoUpdated": "تم تحديث معلومات الصالون.",
+      "deleted": "تم حذف الصالون.",
+      "inviteCreated": "تم إنشاء الدعوة بنجاح.",
+      "inviteRevoked": "تم إلغاء الدعوة.",
+      "inviteCopied": "تم نسخ رابط الدعوة."
+    },
+    "errors": {
+      "codeMissing": "رمز السوبر أدمن غير مضبوط. تأكد من VITE_SUPERADMIN_CODE ثم أعد تشغيل dev.",
+      "invalidCode": "رمز السوبر أدمن غير صحيح.",
+      "loadFailed": "تعذر تحميل لوحة السوبر أدمن: {{message}}",
+      "invalidSalonName": "اكتبي اسم صالون صحيح.",
+      "invalidSlug": "اكتبي slug صحيح.",
+      "invalidArea": "اكتبي المنطقة.",
+      "invalidAdminPass": "اكتبي رمز إدارة للصالون.",
+      "countryMissing": "إعدادات الدولة غير متوفرة.",
+      "createFailed": "تعذر إنشاء الصالون: {{message}}",
+      "updateFailed": "تعذر تحديث الصالون: {{message}}",
+      "passcodeTooShort": "رمز الإدارة لازم يكون 3 خانات أو أكثر.",
+      "passcodeUpdateFailed": "تعذر تغيير الرمز: {{message}}",
+      "countrySaveFailed": "تعذر تحديث الدولة: {{message}}",
+      "countriesMigrationMissing": "جدول الدول غير موجود. شغّل آخر migration حتى تتفعل إدارة الدول.",
+      "salonNotFound": "الصالون غير موجود.",
+      "slugTaken": "هذا الـ slug مستخدم مسبقاً من صالون آخر.",
+      "deleteFailed": "تعذر حذف الصالون: {{message}}",
+      "metricsLoadFailed": "تعذر تحميل إحصائيات النظرة العامة: {{message}}",
+      "invitesLoadFailed": "تعذر تحميل الدعوات: {{message}}",
+      "inviteCreateFailed": "تعذر إنشاء الدعوة: {{message}}",
+      "inviteRevokeFailed": "تعذر إلغاء الدعوة: {{message}}",
+      "inviteCopyFailed": "تعذر نسخ رابط الدعوة.",
+      "inviteCountryRequired": "اختر دولة للدعوة."
+    },
+    "approvals": "الموافقات",
+    "invites": "الدعوات",
+    "invitesPageTitle": "روابط الدعوات",
+    "inviteCountry": "دولة الدعوة",
+    "inviteMaxUses": "أقصى عدد استخدام",
+    "inviteExpiresAt": "انتهاء الرابط (اختياري)",
+    "createInvite": "إنشاء دعوة",
+    "copyLink": "نسخ الرابط",
+    "copied": "تم النسخ",
+    "revokeInvite": "إلغاء الدعوة",
+    "inviteRevoked": "الدعوة ملغية",
+    "inviteToken": "الرمز",
+    "inviteUsage": "الاستخدام",
+    "noInvites": "لا توجد دعوات حالياً.",
+    "approvalsQueue": "طلبات بانتظار الموافقة",
+    "noPendingApprovals": "ماكو صالونات بانتظار الموافقة حالياً.",
+    "approve": "موافقة",
+    "reject": "رفض",
+    "view": "عرض",
+    "submittedAt": "وقت الإرسال",
+    "counts": {
+      "staff": "عدد الموظفين",
+      "services": "عدد الخدمات"
+    },
+    "confirmApproveTitle": "موافقة على الصالون",
+    "confirmApproveText": "تريد توافق على {{name}}؟",
+    "confirmRejectTitle": "رفض الصالون",
+    "confirmRejectText": "تريد ترفض {{name}}؟",
+    "confirmRevokeInviteTitle": "إلغاء الدعوة",
+    "confirmRevokeInviteText": "هل تريد إلغاء رمز الدعوة هذا؟",
+    "confirmDeleteTitle": "حذف الصالون",
+    "confirmDeleteText": "متأكد تريد حذف {{name}} نهائياً؟",
+    "resume": "استئناف",
+    "applyOverride": "تطبيق الاستثناء",
+    "clearOverride": "إلغاء الاستثناء",
+    "auditLog": "سجل الإجراءات",
+    "noAuditLogs": "ماكو سجل إجراءات حالياً.",
+    "stripeConfigWarning": "إعدادات Stripe ناقصة لهاي الدولة.",
+    "stripeConfigWarningText": "لازم تضيف Price IDs (Basic/Pro) في إعدادات الدول قبل تفعيل صالونات خارج العراق.",
+    "detail": {
+      "statusSection": "الحالة",
+      "statusHint": "علّق، استأنف، أو غيّر الحالة التشغيلية.",
+      "trialSection": "الفترة التجريبية",
+      "trialHint": "ابدي أو مدّد الفترة التجريبية بسرعة (+3 / +7 / +14).",
+      "overrideSection": "استثناء يدوي",
+      "overrideHint": "فعّل وصول مؤقت لحد تاريخ ووقت محدد.",
+      "visibilitySection": "الظهور",
+      "visibilityHint": "تحكم بظهور الصالون بصفحة الاستكشاف."
+    }
+  },
+  "legal": {
+    "subtitle": "ملخص بالعربي وبعدين النص القانوني بالإنكليزي",
+    "quickSummary": "ملخص سريع",
+    "billingSubtitle": "سياسة الفوترة والاسترجاع",
+    "termsTitle": "شروط الخدمة",
+    "privacyTitle": "سياسة الخصوصية",
+    "cancellationTitle": "الإلغاء والتعليق",
+    "billingSummary": {
+      "1": "ماكو تجربة مجانية حالياً لخدمة CareChair.",
+      "2": "رسوم الإعداد تتراوح بين 300 و 500 دولار وغير قابلة للاسترجاع.",
+      "3": "الاشتراك الشهري بين 30 و 50 دولار ويندفع مقدماً.",
+      "4": "الدفع يتم عبر Stripe، وممكن تصير خصومات حسب الاتفاق.",
+      "5": "ماكو استرجاع للاشتراك بعد إصدار الفاتورة.",
+      "6": "إذا تم الإلغاء، الوصول يبقى لنهاية الفترة المدفوعة فقط.",
+      "7": "تأخير الدفع يسبب تعليق تلقائي للخدمة."
+    },
+    "termsSummary": {
+      "1": "CareChair منصة حجوزات للصالونات وتشغّلها شركة Infraengineering s.r.o.",
+      "2": "الخدمة موجهة للأعمال (B2B) مو للاستخدام الشخصي.",
+      "3": "رسوم الإعداد مرة وحدة وغير قابلة للاسترجاع.",
+      "4": "الاشتراك الشهري ينحسب مقدماً وتكدرين توقفينه بأي وقت.",
+      "5": "بالإلغاء يبقى الوصول لنهاية الدورة المدفوعة فقط.",
+      "6": "إذا ماكو دفع الحساب يتعلّق تلقائياً.",
+      "7": "المرجعية القانونية هي قانون جمهورية التشيك ومحاكمها."
+    },
+    "privacySummary": {
+      "1": "نجمع بيانات ضرورية لإدارة حجوزات الصالون وتشغيل النظام.",
+      "2": "البيانات تشمل معلومات الصالون والموظفين والزبائن والمواعيد.",
+      "3": "نستخدم مزودين مثل Supabase وStripe وMeta WhatsApp وNetlify.",
+      "4": "نلتزم بمبادئ GDPR مثل الشفافية وتقليل البيانات والحق بالوصول.",
+      "5": "ما نبيع البيانات ونشاركها فقط للتشغيل أو الالتزام القانوني.",
+      "6": "عندج حق طلب نسخة أو تصحيح أو حذف حسب القانون.",
+      "7": "لاستفسارات الخصوصية تواصلي ويانا عبر الإيميل الرسمي."
+    },
+    "cancellationSummary": {
+      "1": "تكدرين تلغين الاشتراك بأي وقت بدون فترة إشعار.",
+      "2": "الإلغاء يوقف التجديد القادم، مو يقطع الوصول فوراً.",
+      "3": "يبقى عندج وصول لنهاية دورة الدفع الحالية.",
+      "4": "بعد نهاية الدورة الحساب يصير غير نشط.",
+      "5": "إذا ماكو دفع النظام يعلّق الحساب تلقائياً.",
+      "6": "نقدر نعلّق الحساب لأسباب أمان أو إساءة استخدام.",
+      "7": "أي نزاع قانوني يخضع لقانون ومحاكم التشيك."
+    },
+    "startSubscriptionMock": "بدء الاشتراك (عرض تجريبي)",
+    "subscriptionMockText": "هذا مثال واجهة يوضح شرط الموافقة القانونية قبل الدفع. اربطه مع Stripe الحقيقي عند التفعيل.",
+    "consentPrefix": "أوافق على",
+    "and": "و",
+    "startSubscription": "بدء الاشتراك"
+  },
+  "notFound": {
+    "title": "الصفحة غير موجودة",
+    "subtitle": "تحققي من الرابط",
+    "text": "الرابط غير موجود.",
+    "backToExplore": "العودة إلى الاستكشاف"
+  },
+  "booking": {
+    "pageTitle": "الحجز",
+    "subtitle": "احجزي موعدج خلال دقيقة",
+    "loadingSalonData": "جاري تحميل بيانات الصالون",
+    "linkUnavailableTitle": "الرابط غير متوفر",
+    "linkUnavailableText": "هذا الرابط غير متوفر",
+    "backToExplore": "العودة للاستكشاف",
+    "salonAdmin": "إدارة الصالون",
+    "demoRating": "★ 4.8 (تجريبي)",
+    "defaultCity": "بغداد",
+    "bookNow": "احجزي الآن",
+    "contactWhatsapp": "تواصل واتساب",
+    "whyTitle": "ليش تحجزين من CareChair؟",
+    "galleryTitle": "صور من المركز",
+    "image": "صورة",
+    "accountInactive": "الحساب غير مفعل حالياً",
+    "stepService": "اختاري الخدمة",
+    "stepAutoAssign": "توزيع تلقائي للموظف",
+    "stepStaff": "اختاري الموظفة/الموظف",
+    "stepTime": "اختاري الوقت",
+    "name": "الاسم",
+    "phone": "رقم الهاتف",
+    "service": "الخدمة",
+    "noActiveServices": "لا توجد خدمات مفعلة حالياً.",
+    "minutes": "{{count}} دقيقة",
+    "staff": "الموظفة/الموظف",
+    "noAssignedStaffForService": "لا يوجد موظف/موظفة مخصص(ة) لهذه الخدمة حالياً.",
+    "staffAssignment": "توزيع الموظف",
+    "autoAssignNote": "راح يتم اختيار الموظف/الموظفة تلقائياً حسب أول وقت متاح.",
+    "pickDay": "اختاري اليوم",
+    "pickTime": "اختاري الموعد",
+    "availableSlots": "المواعيد المتاحة ({{step}} دقيقة)",
+    "noAvailableStaffForService": "لا يوجد موظف متاح لهذه الخدمة حالياً.",
+    "serviceStaffInvalidSelection": "اختيار الخدمة مع الموظفة غير متوافق.",
+    "noSlotsThisDay": "لا توجد مواعيد متاحة لهذا اليوم.",
+    "notesOptional": "ملاحظات (اختياري)",
+    "summaryTitle": "ملخص الحجز",
+    "price": "السعر",
+    "time": "الموعد",
+    "submitting": "جاري الإرسال...",
+    "confirmBooking": "تأكيد الحجز",
+    "successTitle": "تم إرسال طلب الحجز ✅",
+    "successSubtitle": "راح يتم تأكيد الموعد من المركز قريباً",
+    "requestId": "رقم الطلب",
+    "contactWhatsappSalon": "تواصل واتساب مع المركز",
+    "salonWhatsappMissing": "رقم واتساب المركز غير متوفر",
+    "backOrEdit": "رجوع للحجز / تعديل موعد",
+    "notSelected": "لم يتم الاختيار",
+    "autoAssignByAvailability": "توزيع تلقائي حسب التوفر",
+    "salonLogo": "شعار",
+    "trust": {
+      "fastConfirm": {
+        "title": "تأكيد سريع",
+        "text": "طلبج يوصل فوراً للمركز."
+      },
+      "scheduling": {
+        "title": "تنظيم المواعيد",
+        "text": "أوقات متاحة حقيقية حسب الموظفة."
+      },
+      "noCalls": {
+        "title": "بدون مكالمات",
+        "text": "كلشي يصير أونلاين بخطوات بسيطة."
+      }
+    },
+    "whatsappFallback": {
+      "greeting": "مرحبا، اريد أكد حجزي:",
+      "name": "الاسم",
+      "service": "الخدمة",
+      "time": "الموعد",
+      "phone": "رقم الهاتف"
+    },
+    "messages": {
+      "savedWhatsappOff": "تم الحفظ ✅ (إشعار واتساب التلقائي غير مفعل حالياً)",
+      "sentSuccess": "تم إرسال طلب الحجز بنجاح."
+    },
+    "errors": {
+      "loadSalonFailed": "تعذر تحميل بيانات الصالون: {{message}}",
+      "loadSlotsFailed": "تعذر تحميل الأوقات: {{message}}",
+      "loadTimeOffFailed": "تعذر تحميل إجازات الموظفين: {{message}}",
+      "slotVerifyFailed": "تعذر التحقق من الموعد.",
+      "salonClosedDay": "المركز مغلق بهذا اليوم.",
+      "invalidAppointmentTime": "وقت الموعد غير صالح.",
+      "outsideSalonHours": "الموعد خارج ساعات عمل المركز.",
+      "staffOffThisDay": "هذا الموظف بإجازة بهذا اليوم.",
+      "outsideStaffHours": "الموعد خارج دوام الموظف.",
+      "insideBreakTime": "الموعد يقع ضمن وقت الاستراحة.",
+      "staffOffThisTime": "هذا الموظف بإجازة في هذا الوقت.",
+      "slotJustBooked": "هذا الوقت انحجز قبل لحظات.",
+      "dbConnectionFailed": "تعذر الاتصال بقاعدة البيانات.",
+      "invalidName": "اكتبي الاسم بشكل صحيح.",
+      "invalidPhone": "اكتبي رقم هاتف صحيح مثل 07xxxxxxxxx.",
+      "selectServiceAndTime": "اختاري الخدمة والموعد.",
+      "bookingUnavailable": "الحجز غير متاح حالياً.",
+      "selectStaff": "اختاري الموظفة/الموظف.",
+      "staffServiceMismatch": "هاي الموظفة ما تقدم هالخدمة.",
+      "slotNoLongerAvailable": "هذا الموعد لم يعد متاحاً.",
+      "staffAssignFailed": "تعذر تحديد الموظف لهذا الموعد.",
+      "sendFailed": "تعذر إرسال الحجز: {{message}}"
+    },
+    "status": {
+      "no_show": "لم تحضر"
+    }
+  },
+  "admin": {
+    "manageSalon": "إدارة الصالون",
+    "manage": "إدارة",
+    "dailyOpsSubtitle": "لوحة تشغيل يومية للمواعيد والخدمات",
+    "openBookingPage": "فتح صفحة الحجز",
+    "passcodeLabel": "رمز إدارة الصالون",
+    "login": "دخول",
+    "accountInactiveTitle": "الحساب غير مفعل",
+    "topbarSubtitle": "تحكم بالحجوزات والإعدادات من مكان واحد.",
+    "refreshing": "جاري التحديث...",
+    "exportCsv": "تصدير CSV",
+    "activateMonthlySubscription": "فعّل الاشتراك الشهري",
+    "sections": {
+      "dashboard": "لوحة التحكم",
+      "bookings": "الحجوزات",
+      "calendar": "التقويم",
+      "billing": "الفوترة",
+      "clients": "العملاء",
+      "employees": "الموظفين",
+      "services": "الخدمات",
+      "schedules": "جداول الدوام",
+      "commissions": "العمولات",
+      "expenses": "المصروفات",
+      "reports": "التقارير",
+      "settings": "الإعدادات",
+      "media": "الصور"
+    },
+    "settings": {
+      "assign": "ربط الخدمات بالموظفين",
+      "media": "الصور",
+      "salon": "إعدادات المركز"
+    },
+    "messages": {
+      "unlocked": "تم فتح لوحة الإدارة."
+    },
+    "errors": {
+      "invalidPasscode": "رمز الإدارة غير صحيح."
+    },
+    "common": {
+      "sortOrder": "الترتيب",
+      "visible": "مرئي",
+      "hidden": "مخفي",
+      "selectAll": "اختيار الكل",
+      "clearAll": "مسح الكل",
+      "saving": "جاري الحفظ..."
+    },
+    "services": {
+      "title": "إدارة الخدمات",
+      "serviceName": "اسم الخدمة",
+      "durationMinutes": "المدة",
+      "price": "السعر",
+      "addService": "إضافة خدمة",
+      "noServices": "لا توجد خدمات.",
+      "durationValue": "{{count}} دقيقة",
+      "providedBy": "الموظفون الذين يقدمون هذه الخدمة:",
+      "noAssignment": "بدون تعيين",
+      "saveAssignment": "حفظ التعيين",
+      "addStaffFirst": "أضيفي موظفين أولاً حتى تربطينهم بالخدمة.",
+      "closeAssign": "إغلاق التعيين",
+      "assignEmployees": "تعيين موظفين",
+      "inactive": "غير مفعلة",
+      "assigned": "مُعيّنة",
+      "durationPlaceholder": "المدة: 45",
+      "pricePlaceholder": "السعر: 20000",
+      "sortPlaceholder": "الترتيب: 10"
+    }
+  },
+  "calendar": {
+    "toolbar": {
+      "today": "اليوم",
+      "prev": "السابق",
+      "next": "التالي"
+    },
+    "views": {
+      "day": "اليوم",
+      "week": "الأسبوع",
+      "agenda": "الأجندة"
+    },
+    "labels": {
+      "date": "التاريخ",
+      "time": "الوقت",
+      "event": "الحجز",
+      "allDay": "طوال اليوم",
+      "noEvents": "لا توجد حجوزات ضمن هذه الفترة"
+    },
+    "filters": {
+      "employee": "الموظف/الموظفة",
+      "employees": "الموظفون",
+      "allEmployees": "كل الموظفين",
+      "status": "الحالة",
+      "all": "الكل",
+      "service": "الخدمة",
+      "allServices": "كل الخدمات"
+    },
+    "drawer": {
+      "create": "إضافة حجز",
+      "edit": "تعديل الحجز"
+    },
+    "fields": {
+      "customerName": "اسم العميلة",
+      "customerPhone": "رقم الهاتف",
+      "service": "الخدمة",
+      "employee": "الموظف/الموظفة",
+      "startTime": "وقت البداية",
+      "duration": "المدة (دقائق)",
+      "status": "الحالة",
+      "notes": "ملاحظات"
+    },
+    "actions": {
+      "addBooking": "＋ إضافة حجز",
+      "delete": "حذف"
+    },
+    "status": {
+      "no_show": "لم تحضر"
+    },
+    "messages": {
+      "created": "تم إنشاء الحجز.",
+      "updated": "تم تحديث الحجز.",
+      "cancelled": "تم إلغاء الحجز.",
+      "moved": "تم نقل الحجز."
+    },
+    "errors": {
+      "load": "تعذر تحميل بيانات التقويم",
+      "invalid": "بيانات الحجز غير صحيحة",
+      "save": "تعذر حفظ الحجز",
+      "update": "تعذر تحديث الحجز",
+      "delete": "تعذر إلغاء الحجز",
+      "move": "تعذر نقل الحجز",
+      "selectEmployee": "اختاري موظف/موظفة أولاً.",
+      "invalidRange": "فترة الوقت غير صحيحة.",
+      "closedDay": "الموظف/الصالون مغلق بهذا اليوم.",
+      "outsideWorkingHours": "الحجز خارج ساعات العمل.",
+      "insideBreak": "هذا الوقت ضمن فترة الاستراحة.",
+      "overlap": "هذا الموعد متداخل مع حجز آخر."
+    }
+  },
+  "onboarding": {
+    "title": "إعداد الصالون الكامل",
+    "subtitle": "أنشئ هيكل الصالون بالكامل بخطوات واضحة وسريعة.",
+    "backAdmin": "رجوع للسوبر أدمن",
+    "progressTitle": "تقدم الإعداد",
+    "stepCount": "الخطوة {{step}} من {{total}}",
+    "steps": {
+      "basic": "المعلومات الأساسية",
+      "hours": "ساعات العمل",
+      "employees": "الموظفين",
+      "services": "الخدمات",
+      "submit": "التأكيد والإرسال"
+    },
+    "fields": {
+      "salonName": "اسم الصالون",
+      "country": "الدولة",
+      "city": "المدينة",
+      "whatsapp": "رقم واتساب للإشعارات",
+      "adminPasscode": "رمز دخول الإدارة",
+      "logoUpload": "رفع الشعار",
+      "coverUpload": "رفع صورة الغلاف",
+      "openDay": "مفتوح",
+      "employeeName": "اسم الموظف/الموظفة",
+      "employeeRole": "الدور الوظيفي",
+      "employeePhoneOptional": "رقم الهاتف (اختياري)",
+      "avatarUpload": "رفع صورة الموظف",
+      "sameHoursAsSalon": "نفس ساعات الصالون",
+      "serviceName": "اسم الخدمة",
+      "durationMinutes": "المدة (دقيقة)",
+      "price": "السعر",
+      "category": "التصنيف",
+      "assignEmployees": "تعيين الموظفين للخدمة"
+    },
+    "placeholders": {
+      "salonName": "مثال: مركز الملكة للتجميل",
+      "city": "مثال: بغداد",
+      "whatsapp": "9647XXXXXXXX",
+      "adminPasscode": "مثال: 1234",
+      "noFile": "ماكو ملف مختار",
+      "employeeName": "مثال: سارة",
+      "employeeRole": "مثال: خبيرة شعر",
+      "employeePhone": "07XXXXXXXXX",
+      "serviceName": "مثال: قص شعر",
+      "duration": "المدة: 45",
+      "price": "السعر: 20000",
+      "category": "مثال: شعر"
+    },
+    "labels": {
+      "employeeNumber": "الموظف رقم {{n}}",
+      "serviceNumber": "الخدمة رقم {{n}}",
+      "unnamedEmployee": "موظف بدون اسم"
+    },
+    "actions": {
+      "addEmployee": "إضافة موظف",
+      "addService": "إضافة خدمة",
+      "remove": "حذف",
+      "back": "رجوع",
+      "next": "التالي",
+      "submit": "إنشاء إعداد الصالون",
+      "submitting": "جاري الإرسال..."
+    },
+    "reviewText": "راجع المعلومات وبعدين أكد حتى ينشأ الصالون بالكامل.",
+    "invite": {
+      "label": "دعوة خاصة",
+      "active": "تم تحديد الدولة تلقائياً من خلال دعوة خاصة.",
+      "validating": "جاري التحقق من الدعوة..."
+    },
+    "review": {
+      "basic": "المعلومات الأساسية",
+      "resources": "الموارد",
+      "employees": "عدد الموظفين",
+      "services": "عدد الخدمات",
+      "hours": "أيام الدوام"
+    },
+    "upload": {
+      "logo": "جاري رفع الشعار...",
+      "cover": "جاري رفع صورة الغلاف...",
+      "avatarFor": "جاري رفع صورة {{name}}...",
+      "finalizing": "جاري إكمال الإعداد..."
+    },
+    "messages": {
+      "success": "تم إعداد الصالون بنجاح."
+    },
+    "success": {
+      "badge": "تم الإعداد",
+      "title": "الصالون جاهز ✅",
+      "text": "تم إرسال الإعداد بنجاح وهو الآن بانتظار موافقة السوبر أدمن.",
+      "openBooking": "فتح رابط الحجز",
+      "openAdmin": "فتح لوحة الإدارة",
+      "bookingLink": "رابط الحجز",
+      "adminLink": "رابط الإدارة",
+      "passcode": "رمز دخول الإدارة",
+      "createAnother": "إنشاء صالون جديد",
+      "backSuperadmin": "الرجوع للسوبر أدمن"
+    },
+    "errors": {
+      "supabaseMissing": "إعدادات Supabase غير مكتملة.",
+      "loadCountries": "تعذر تحميل الدول: {{message}}",
+      "publicCountriesMigrationMissing": "ميزة الدول العامة غير مفعلة بعد. شغّل آخر migration.",
+      "inviteInvalid": "رابط الدعوة غير صالح أو منتهي.",
+      "inviteValidationFailed": "فشل التحقق من الدعوة: {{message}}",
+      "nameRequired": "اسم الصالون مطلوب.",
+      "countryRequired": "اختار الدولة.",
+      "invalidSalonHours": "صحح ساعات العمل ليوم {{day}}.",
+      "employeeRequired": "لازم تضيف موظف واحد على الأقل.",
+      "employeeNameRequired": "اسم الموظف مطلوب.",
+      "invalidEmployeeHours": "صحح ساعات الدوام الخاصة بالموظف {{name}}.",
+      "serviceRequired": "لازم تضيف خدمة واحدة على الأقل.",
+      "serviceNameRequired": "اسم الخدمة مطلوب.",
+      "serviceDurationRequired": "مدة الخدمة لازم تكون 5 دقائق أو أكثر.",
+      "servicePriceRequired": "سعر الخدمة غير صحيح.",
+      "serviceAssignmentsRequired": "لازم كل خدمة تكون متعيّنة لموظف واحد على الأقل.",
+      "invalidImageType": "نوع الصورة لازم JPG أو PNG أو WEBP.",
+      "submitFailed": "فشل إعداد الصالون: {{message}}"
+    }
   }
 }

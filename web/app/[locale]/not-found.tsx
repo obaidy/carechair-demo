@@ -1,21 +1,22 @@
-import {getTranslations} from 'next-intl/server';
+import {getMessages} from 'next-intl/server';
 import {Link} from '@/i18n/navigation';
+import {tx} from '@/lib/messages';
 
 type Props = {params: Promise<{locale: string}>};
 
 export default async function LocaleNotFound({params}: Props) {
-  await params;
-  const t = await getTranslations();
+  const {locale} = await params;
+  const messages = await getMessages({locale});
 
   return (
     <main className="site-main">
       <div className="container page-stack">
         <section className="hero-card">
           <p className="eyebrow">404</p>
-          <h1>{t('common.notFound', {defaultValue: 'Page not found'})}</h1>
-          <p>{t('common.notFoundHint', {defaultValue: 'The page you requested does not exist.'})}</p>
+          <h1>{tx(messages, 'common.notFound', 'Page not found')}</h1>
+          <p>{tx(messages, 'common.notFoundHint', 'The page you requested does not exist.')}</p>
           <Link href="/" className="btn btn-primary">
-            {t('nav.home', {defaultValue: 'Home'})}
+            {tx(messages, 'nav.home', 'Home')}
           </Link>
         </section>
       </div>

@@ -27,5 +27,24 @@ export function t(messages: Messages, key: string, fallback = ''): string {
     value = (value as Record<string, unknown>)[segment];
   }
 
-  return typeof value === 'string' ? value : fallback || key;
+  const text = typeof value === 'string' ? value : fallback || key;
+  return text;
+}
+
+export function interpolate(template: string, vars?: Record<string, string | number | boolean | null | undefined>): string {
+  if (!vars) return template;
+  return template.replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (_match, token) => {
+    const value = vars[token];
+    if (value == null) return '';
+    return String(value);
+  });
+}
+
+export function tx(
+  messages: Messages,
+  key: string,
+  fallback = '',
+  vars?: Record<string, string | number | boolean | null | undefined>
+): string {
+  return interpolate(t(messages, key, fallback), vars);
 }

@@ -1,8 +1,8 @@
 'use client';
 
-import {useTranslations} from 'next-intl';
 import BrandLogo from '@/components/BrandLogo';
 import {Link, usePathname} from '@/i18n/navigation';
+import {useTx} from '@/lib/messages-client';
 
 type DashboardNavItem = {
   href: string;
@@ -19,17 +19,17 @@ export default function DashboardNav({
   logoutHref: string;
 }) {
   const pathname = usePathname();
-  const t = useTranslations();
+  const t = useTx();
 
   return (
     <header className="dashboard-header cc-sticky-nav">
       <div className="container dashboard-header__inner">
         <div className="dashboard-brand-wrap">
-          <BrandLogo className="site-brand" href="/" />
+          <BrandLogo className="site-brand" to="/" />
           <strong className="dashboard-title">{title}</strong>
         </div>
 
-        <nav className="dashboard-tabs" aria-label={t('nav.menu', {defaultValue: 'Menu'})}>
+        <nav className="dashboard-tabs" aria-label={t('nav.menu', 'Menu')}>
           {items.map((item) => (
             <Link
               key={item.href}
@@ -42,7 +42,7 @@ export default function DashboardNav({
         </nav>
 
         <a className="ghost-link" href={logoutHref}>
-          {t('nav.logout', {defaultValue: 'Logout'})}
+          {t('nav.logout', 'Logout')}
         </a>
       </div>
     </header>

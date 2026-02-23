@@ -1,45 +1,63 @@
 'use client';
 
-import {useLocale, useTranslations} from 'next-intl';
-import {useSearchParams} from 'next/navigation';
+import {useLocale} from 'next-intl';
+import {usePathname, useRouter, useSearchParams} from 'next/navigation';
 import {SUPPORTED_LOCALES} from '@/lib/i18n';
-import {usePathname, useRouter} from '@/i18n/navigation';
+import {useTx} from '@/lib/messages-client';
 
 const LABELS: Record<string, string> = {
-  en: 'EN',
-  ar: 'AR',
-  cs: 'CS',
-  ru: 'RU'
+  ar: 'العربية',
+  en: 'English',
+  cs: 'Čeština',
+  ru: 'Русский'
 };
 
-export default function LanguageSwitcher() {
+type LanguageSwitcherProps = {
+  className?: string;
+  onLanguageChange?: (lang: string) => void;
+};
+
+function replaceLocale(pathname: string, nextLocale: string): string {
+  const cleanPath = pathname || '/';
+  const parts = cleanPath.split('/').filter(Boolean);
+  if (!parts.length) return `/${nextLocale}`;
+
+  const head = parts[0];
+  if (SUPPORTED_LOCALES.includes(head as (typeof SUPPORTED_LOCALES)[number])) {
+    parts[0] = nextLocale;
+    return `/${parts.join('/')}`;
+  }
+
+  return `/${nextLocale}/${parts.join('/')}`;
+}
+
+export default function LanguageSwitcher({className = '', onLanguageChange}: LanguageSwitcherProps) {
   const locale = useLocale();
-  const t = useTranslations('common');
+  const t = useTx();
   const pathname = usePathname();
   const search = useSearchParams();
   const router = useRouter();
 
-  function setLocale(nextLocale: string) {
+  function setLanguage(nextLocale: string) {
     if (nextLocale === locale) return;
-    const searchText = search.toString();
-    const target = searchText ? `${pathname}?${searchText}` : pathname;
-    router.replace(target as any, {locale: nextLocale as any});
-    router.refresh();
+
+    const searchText = search.toString().trim();
+    const nextPath = replaceLocale(pathname, nextLocale);
+    router.replace(searchText ? `${nextPath}?${searchText}` : nextPath);
+    document.cookie = `cc_locale=${nextLocale}; path=/; max-age=31536000; samesite=lax`;
+    onLanguageChange?.(nextLocale);
   }
 
   return (
-    <div className="lang-switcher" role="group" aria-label={t('language')}>
-      {SUPPORTED_LOCALES.map((item) => (
-        <button
-          key={item}
-          type="button"
-          className={`lang-switcher__btn${item === locale ? ' is-active' : ''}`}
-          onClick={() => setLocale(item)}
-          aria-pressed={item === locale}
-        >
-          {LABELS[item] || item.toUpperCase()}
-        </button>
-      ))}
-    </div>
+    <label className={`lang-switcher ${className}`.trim()}>
+      <span>🌐</span>
+      <select value={locale} onChange={(event) => setLanguage(event.target.value)} aria-label={t('common.language', 'Language')}>
+        {SUPPORTED_LOCALES.map((item) => (
+          <option value={item} key={item}>
+            {LABELS[item] || item}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

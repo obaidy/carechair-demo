@@ -1,150 +1,1040 @@
 {
   "common": {
-    "language": "Язык",
-    "loading": "Загрузка...",
-    "saving": "Сохранение...",
-    "noData": "Нет данных",
-    "view": "Открыть",
-    "forbidden": "Доступ запрещён",
-    "forbiddenHint": "У вас нет прав для этой страницы.",
-    "notFound": "Страница не найдена",
-    "notFoundHint": "Запрошенная страница не существует.",
-    "loginHint": "Используйте код салона или код супер-админа для входа в панель."
-  },
-  "nav": {
-    "home": "Главная",
-    "explore": "Обзор",
-    "login": "Вход",
-    "logout": "Выход",
-    "superadmin": "Суперадмин",
-    "menu": "Меню",
-    "features": "Возможности",
-    "pricing": "Цены",
-    "faq": "FAQ",
-    "centers": "Для салонов",
-    "dashboard": "Панель"
-  },
-  "meta": {
-    "defaultTitle": "Платформа онлайн-записи в салоны",
-    "defaultDescription": "Найдите салон и запишитесь мгновенно."
-  },
-  "home": {
-    "metaTitle": "CareChair | Онлайн-запись в салоны",
-    "metaDescription": "Открывайте салоны, сравнивайте услуги и бронируйте за минуты.",
-    "eyebrow": "Публичные SEO-страницы",
-    "title": "Записывайтесь в проверенные салоны за секунды",
-    "subtitle": "Ищите по городу, сравнивайте услуги и бронируйте удобное время.",
-    "ctaExplore": "Смотреть салоны",
-    "featured": "Рекомендуемые салоны",
-    "bookNow": "Записаться"
-  },
-  "explore": {
-    "metaTitle": "Салоны по городам и услугам",
-    "metaDescription": "Найдите опубликованные салоны и сравните доступность услуг.",
-    "title": "Обзор салонов",
-    "subtitle": "Публичные салоны, доступные для записи.",
-    "viewSalon": "Страница салона",
-    "cityPage": "Страница города"
-  },
-  "city": {
-    "metaTitle": "Салоны города | CareChair",
-    "metaDescription": "Просматривайте опубликованные салоны в этом городе.",
-    "subtitle": "Опубликованные салоны и услуги в этом городе.",
-    "viewSalon": "Страница салона",
-    "viewService": "Салоны по услуге"
-  },
-  "service": {
-    "metaDescription": "Найдите салоны с этой услугой и запишитесь онлайн.",
-    "subtitle": "Салоны, которые сейчас предлагают эту услугу.",
-    "bookSalon": "Записаться в салон"
-  },
-  "salon": {
-    "metaDescription": "Профиль салона, услуги и онлайн-запись.",
-    "directions": "Маршрут",
-    "appleMaps": "Apple Maps",
-    "googleMaps": "Google Maps",
-    "mapPreview": "Предпросмотр карты",
-    "mapUnavailable": "Предпросмотр карты недоступен",
-    "hours": "Часы работы",
-    "closed": "Закрыто",
-    "services": "Услуги",
-    "staff": "Персонал",
-    "addressUnavailable": "Адрес недоступен"
-  },
-  "booking": {
-    "formTitle": "Запись на услугу",
-    "service": "Услуга",
-    "staff": "Сотрудник",
-    "autoAssign": "Сотрудник назначается автоматически по доступности.",
-    "date": "Дата",
-    "timeSlots": "Доступные слоты (каждые {step} мин)",
-    "name": "Имя",
-    "phone": "Телефон",
-    "notes": "Комментарий (необязательно)",
-    "submit": "Подтвердить запись",
-    "success": {
-      "title": "Запись создана",
-      "message": "Ваш запрос на запись отправлен.",
-      "id": "ID заявки",
-      "service": "Услуга",
-      "staff": "Сотрудник",
-      "time": "Время",
-      "newBooking": "Создать новую запись"
-    },
-    "errors": {
-      "loadSlots": "Не удалось загрузить слоты.",
-      "slotUnavailable": "Выбранный слот уже недоступен.",
-      "closedDay": "Салон закрыт в этот день.",
-      "closedHour": "Время вне часов работы салона.",
-      "staffOff": "Сотрудник не работает в этот день.",
-      "staffHour": "Время вне графика сотрудника.",
-      "staffBreak": "Время пересекается с перерывом сотрудника.",
-      "slotTaken": "Этот слот только что был занят.",
-      "staffOffTime": "Сотрудник недоступен в это время.",
-      "misconfigured": "Не настроен Supabase.",
-      "invalidForm": "Проверьте корректность данных формы.",
-      "invalidServiceStaff": "Выберите корректную пару услуга/сотрудник.",
-      "noSlots": "На эту дату нет свободных слотов.",
-      "generic": "Сейчас не удалось завершить запись."
-    }
-  },
-  "dashboard": {
-    "overview": "Обзор",
-    "bookings": "Записи",
-    "calendar": "Календарь",
+    "explore": "Каталог",
+    "dashboard": "Панель управления",
+    "billing": "Оплата",
     "staff": "Сотрудники",
     "services": "Услуги",
-    "clients": "Клиенты",
-    "settings": "Настройки",
-    "salonTitle": "Админ салона",
-    "bookingsToday": "Записи сегодня",
-    "bookings30d": "Записи (30д)",
-    "confirmed30d": "Подтверждено (30д)",
-    "pending": "Ожидает",
-    "clients30d": "Клиенты (30д)",
-    "revenue30d": "Выручка (30д)",
-    "quickActions": "Быстрые действия",
-    "bookingsHint": "Недавние записи и смена статуса.",
-    "calendarHint": "Дневной график записей по датам.",
-    "addStaff": "Добавить сотрудника",
-    "addService": "Добавить услугу",
-    "name": "Название",
-    "sortOrder": "Порядок",
-    "duration": "Длительность",
-    "price": "Цена",
+    "subscription": "Подписка",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "refresh": "Обновить",
+    "loading": "Загрузка...",
+    "talkToSales": "Связаться с продажами",
+    "bookDemo": "Запросить демо",
+    "whatsappDemo": "Демо в WhatsApp",
+    "all": "Все",
+    "whatsapp": "WhatsApp",
+    "confirm": "Подтвердить",
+    "back": "Назад",
+    "processing": "Обработка...",
+    "delete": "Удалить",
+    "edit": "Изменить",
+    "hide": "Скрыть",
+    "show": "Показать",
     "add": "Добавить",
-    "markCancelled": "Отметить отмененной",
-    "markConfirmed": "Отметить подтвержденной",
-    "visibility": "Видимость в explore",
-    "account": "Аккаунт"
+    "actions": "Действия"
+  },
+  "errors": {
+    "supabaseConfigMissing": "Настройки Supabase не заполнены."
+  },
+  "nav": {
+    "centers": "Для салонов",
+    "features": "Возможности",
+    "pricing": "Тарифы",
+    "faq": "FAQ",
+    "superadmin": "Суперадмин",
+    "menu": "Меню"
+  },
+  "home": {
+    "headline1": "Превратите записи салона",
+    "headline2": "в профессиональную систему",
+    "headline3": "без хаоса WhatsApp",
+    "subheadline": "Умная ссылка на запись + продвинутая админ-панель + полное управление сотрудниками и услугами за 24 часа.",
+    "sectionBeforeAfter": "До и после CareChair",
+    "sectionShow": "Посмотреть систему",
+    "sectionFeatures": "Возможности платформы",
+    "sectionPricing": "Гибкие планы",
+    "sectionTestimonials": "Отзывы салонов",
+    "sectionFaq": "Частые вопросы",
+    "ctaMain": "Запросить систему",
+    "ctaExplore": "Каталог салонов",
+    "finalTitle": "Готовы к упорядоченным записям?",
+    "finalSubtitle": "Быстро запустим систему, чтобы вы уверенно начали работу с первого дня.",
+    "tag1": "Работает на нескольких устройствах",
+    "tag2": "Организованное расписание",
+    "tag3": "Отмена в любое время",
+    "heroImageAlt": "Премиальный салон в Багдаде",
+    "beforeTitle": "До CareChair",
+    "afterTitle": "После CareChair",
+    "before": {
+      "1": "Слишком много звонков",
+      "2": "Потерянные записи",
+      "3": "Перегруз сотрудников"
+    },
+    "after": {
+      "1": "Одна ссылка на запись",
+      "2": "Понятное расписание",
+      "3": "Быстрое подтверждение/отклонение"
+    },
+    "showcase": {
+      "adminTitle": "Панель управления",
+      "adminCaption": "Управляйте ежедневными записями и статусами быстро и понятно.",
+      "bookingTitle": "Страница записи",
+      "bookingCaption": "Элегантный и быстрый процесс записи с любого устройства.",
+      "exploreTitle": "Каталог",
+      "exploreCaption": "Профессиональные страницы салонов и услуг для роста конверсии."
+    },
+    "features": {
+      "link": {
+        "title": "Одна ссылка на запись",
+        "text": "Разместите в Instagram и WhatsApp и получайте записи напрямую."
+      },
+      "workflow": {
+        "title": "Организация сотрудников и услуг",
+        "text": "Четкая связка каждой услуги с нужным сотрудником."
+      },
+      "action": {
+        "title": "Мгновенные действия по заявкам",
+        "text": "Подтверждайте или отклоняйте заявки из одной панели."
+      },
+      "hours": {
+        "title": "Контроль графика работы",
+        "text": "Гибкий недельный график под режим работы салона."
+      },
+      "media": {
+        "title": "Профессиональная витрина салона",
+        "text": "Фото и услуги в аккуратной подаче для доверия клиентов."
+      },
+      "scale": {
+        "title": "Готово к росту",
+        "text": "От одного филиала до сети филиалов."
+      }
+    },
+    "pricingBullets": {
+      "1": "Ссылка на запись + дашборд + расписание сотрудников",
+      "2": "Биллинг по стране и валюте",
+      "3": "Пробный период 7 дней"
+    },
+    "enterpriseBullets": {
+      "1": "План запуска для нескольких стран",
+      "2": "Продвинутый онбординг и миграция",
+      "3": "Кастомные процессы для растущих сетей"
+    },
+    "testimonials": {
+      "1": {
+        "quote": "Записи стали прозрачными, а звонков стало заметно меньше.",
+        "name": "Владелица салона",
+        "location": "Багдад"
+      },
+      "2": {
+        "quote": "Лучшее — скорость запуска и организация команды с первого дня.",
+        "name": "Менеджер салона",
+        "location": "Басра"
+      },
+      "3": {
+        "quote": "Страница записи выглядит премиально и формирует сильное первое впечатление.",
+        "name": "Владелица центра",
+        "location": "Багдад"
+      }
+    },
+    "faq": {
+      "1": {
+        "q": "Это приложение или система?",
+        "a": "Это веб-система, работающая по прямой ссылке на любом устройстве."
+      },
+      "2": {
+        "q": "Можно использовать на нескольких устройствах одновременно?",
+        "a": "Да, управление работает на телефоне, планшете и ноутбуке одновременно."
+      },
+      "3": {
+        "q": "Как добавить ссылку записи в Instagram?",
+        "a": "Мы даем готовую ссылку, которую вы размещаете в bio Instagram или WhatsApp."
+      },
+      "4": {
+        "q": "Как подтверждается запись?",
+        "a": "Заявки сразу появляются в админке, где вы подтверждаете или отклоняете их за секунды."
+      }
+    },
+    "trust": {
+      "activeCenters": "+{{count}} активных центров",
+      "monthlyBookings": "+{{count}} записей в месяц",
+      "activation": "Активация за 24 часа",
+      "cities": "Доступно в Багдаде и Басре"
+    }
+  },
+  "explore": {
+    "subtitle": "Найдите салоны по району и услугам",
+    "platformBadge": "Платформа CareChair",
+    "heroTitle": "Откройте лучшие салоны Багдада",
+    "heroText": "Выберите услугу, сравните центры и бронируйте сразу.",
+    "socialProof": "Салоны, использующие CareChair для управления записями ({{count}})",
+    "socialProofEarly": "Салоны, начавшие использовать CareChair ({{count}})",
+    "featured": "Рекомендуем",
+    "defaultArea": "Багдад",
+    "startingFrom": "От",
+    "noServices": "Пока нет активных услуг.",
+    "bookNow": "Записаться",
+    "empty": "По выбранному фильтру салоны не найдены.",
+    "categories": {
+      "all": "Все",
+      "haircut": "Стрижка",
+      "color": "Окрашивание",
+      "nails": "Ногти",
+      "facial": "Кожа",
+      "makeup": "Макияж"
+    },
+    "filters": {
+      "area": "Район",
+      "allAreas": "Все районы",
+      "search": "Поиск салона или услуги",
+      "searchPlaceholder": "Например: окрашивание, уход за кожей, Мансур",
+      "sort": "Сортировка"
+    },
+    "sort": {
+      "nearest": "Ближайшие (скоро)",
+      "topRated": "Лучший рейтинг",
+      "mostBooked": "Самые бронируемые",
+      "newest": "Новые"
+    },
+    "badges": {
+      "fastConfirm": "Быстрое подтверждение",
+      "easyBooking": "Легкая запись",
+      "whatsappAvailable": "WhatsApp доступен",
+      "pendingActivation": "Ожидает активации"
+    },
+    "errors": {
+      "loadFailed": "Не удалось загрузить каталог: {{message}}"
+    }
+  },
+  "pricing": {
+    "title": "Гибкие планы для растущих салонов",
+    "subtitle": "Финальную стоимость подготовит отдел продаж с учётом страны и задач.",
+    "basic": "Basic",
+    "pro": "Pro",
+    "enterprise": "Enterprise",
+    "noPublicPrices": "Публичные цены не публикуются. Свяжитесь с отделом продаж.",
+    "bookDemo": "Запросить демо",
+    "talkToSales": "Связаться с продажами"
+  },
+  "billingGate": {
+    "lockedTitle": "Доступ к аккаунту ограничен",
+    "lockedText": "Аккаунт не активирован. Завершите пробный период/подписку в разделе оплаты.",
+    "openBilling": "Открыть оплату"
+  },
+  "billingAccess": {
+    "badges": {
+      "override": "Ручной override",
+      "inactive": "Неактивно",
+      "suspended": "Приостановлено",
+      "trialing": "Пробный период",
+      "pendingSetup": "Ожидает setup",
+      "active": "Активно",
+      "pastDue": "Просрочено"
+    },
+    "lockMessages": {
+      "inactive": "Аккаунт сейчас неактивен.",
+      "suspended": "Аккаунт приостановлен. Свяжитесь с поддержкой.",
+      "pendingSetup": "Аккаунт не активен. Оплатите setup и месячную подписку.",
+      "pastDue": "Подписка просрочена. Обновите оплату.",
+      "default": "Аккаунт неактивен. Завершите настройку и оплату.",
+      "pendingApproval": "Салон ожидает одобрения супер-админа.",
+      "pendingBilling": "Одобрено, но до старта требуется оплата.",
+      "rejected": "Салон был отклонён. Обратитесь в поддержку."
+    },
+    "trialEnded": "Завершено",
+    "hoursRemaining": "{{count}} ч",
+    "daysRemaining": "{{count}} д"
+  },
+  "footer": {
+    "tagline": "CareChair — профессиональная платформа онлайн-записи для салонов и бьюти-центров.",
+    "links": "Ссылки",
+    "legal": "Юридическое",
+    "contact": "Контакты",
+    "terms": "Условия",
+    "privacy": "Конфиденциальность",
+    "billing": "Оплата и возвраты",
+    "cancellation": "Отмена и приостановка",
+    "whatsappUnavailable": "WhatsApp сейчас недоступен",
+    "whatsappLabel": "WhatsApp",
+    "demoWhatsappMessage": "Здравствуйте, хочу запросить демо CareChair для моего салона.",
+    "legalLine": "CareChair управляется компанией Infraengineering s.r.o."
+  },
+  "status": {
+    "inactive": "Неактивно",
+    "trialing": "Пробный период",
+    "active": "Активно",
+    "past_due": "Просрочено",
+    "canceled": "Отменено",
+    "suspended": "Приостановлено",
+    "draft": "Черновик",
+    "pending_approval": "Ожидает одобрения",
+    "pending_billing": "Ожидает оплаты",
+    "rejected": "Отклонён"
   },
   "superadmin": {
-    "overview": "Обзор",
-    "totalSalons": "Всего салонов",
-    "active": "Активные",
-    "pending": "Ожидают",
-    "suspended": "Приостановлены",
-    "actions": "Действия",
-    "recentBookings": "Последние записи"
+    "title": "Панель суперадмина",
+    "subtitle": "Глобальное управление странами, оплатой и активацией",
+    "createSalon": "Создать салон",
+    "country": "Страна",
+    "allCountries": "Все страны",
+    "countriesConfig": "Настройки стран",
+    "enableCountry": "Включить страну",
+    "disableCountry": "Отключить страну",
+    "makeCountryPrivate": "Публичная страна (видна в onboarding)",
+    "makeCountryPublic": "Скрытая страна (только по приглашению)",
+    "manualBillingEnabled": "Включена ручная оплата",
+    "manualBillingDisabled": "Использовать Stripe",
+    "extendTrial": "Продлить trial",
+    "forceStatus": "Принудительный статус",
+    "internalOnly": "Только для внутреннего использования",
+    "internalSubtitle": "Глобальный контроль стран, подписок и override-статусов.",
+    "codeLabel": "Код суперадмина",
+    "login": "Войти",
+    "salonControl": "Управление салонами",
+    "statusFilter": "Фильтр статуса",
+    "tabs": {
+      "overview": "Обзор",
+      "salons": "Салоны",
+      "create": "Создать салон",
+      "countries": "Страны"
+    },
+    "kpis": {
+      "totalSalons": "Всего салонов",
+      "pendingApproval": "Ожидают одобрения",
+      "active": "Активные / Trial",
+      "suspended": "Заблокированные"
+    },
+    "overview": {
+      "title": "Операционный обзор",
+      "cards": {
+        "totalSalons": "Всего салонов",
+        "activeSalons": "Активные салоны",
+        "trialing": "Trialing",
+        "pendingApproval": "Ожидают одобрения",
+        "pastDue": "Просрочка оплаты",
+        "bookings30": "Всего записей (30 дн.)",
+        "customers30": "Всего клиентов (30 дн.)"
+      },
+      "countryBreakdown": "Разбивка по странам",
+      "topSalons7d": "Топ салонов по записям (7 дн.)",
+      "atRisk": "Салоны в риске",
+      "empty": "Пока нет данных.",
+      "noRisk": "Сейчас нет салонов в риске.",
+      "table": {
+        "country": "Страна",
+        "salons": "Салоны",
+        "active": "Активные",
+        "bookings30": "Записи (30 дн.)",
+        "customers30": "Клиенты (30 дн.)",
+        "salon": "Салон",
+        "bookings7": "Записи 7 дн.",
+        "lastBooking": "Последняя запись",
+        "status": "Статус",
+        "risk": "Риск"
+      },
+      "risks": {
+        "trialEnding": "Trial скоро закончится",
+        "zeroBookings": "0 записей за 7 дней"
+      }
+    },
+    "health": {
+      "title": "Здоровье салона",
+      "totalCustomers": "Всего клиентов",
+      "newCustomers30": "Новые клиенты (30 дн.)",
+      "repeatRate": "Доля повторных",
+      "bookings7": "Записи 7 дн.",
+      "bookings30": "Записи 30 дн.",
+      "lastBooking": "Последняя запись",
+      "trialCountdown": "До конца trial",
+      "engagementScore": "Индекс вовлеченности"
+    },
+    "noSalons": "По этому фильтру салоны не найдены.",
+    "setupPaid": "Setup оплачен",
+    "setupPending": "Setup не оплачен",
+    "endsAt": "Истекает",
+    "trialEnd": "Конец trial",
+    "suspensionReason": "Причина блокировки",
+    "bookingPage": "Страница записи",
+    "salonAdmin": "Админка салона",
+    "changePasscode": "Изменить код админа",
+    "newPasscode": "Новый код",
+    "saving": "Сохранение...",
+    "savePasscode": "Сохранить код",
+    "editSalonInfo": "Информация о салоне",
+    "editSalonInfoHint": "Перед одобрением отредактируйте название, URL slug и контакт.",
+    "hideFromExplore": "Скрыть из каталога",
+    "showInExplore": "Показать в каталоге",
+    "clearSetupPaid": "Снять setup paid",
+    "markSetupPaid": "Поставить setup paid",
+    "disableOverride": "Выключить override",
+    "enableOverride": "Включить override",
+    "unsuspend": "Снять блокировку",
+    "suspend": "Заблокировать",
+    "confirmSuspendTitle": "Блокировка салона",
+    "confirmSuspendText": "Заблокировать {{name}}?",
+    "currency": "Валюта",
+    "timezone": "Часовой пояс",
+    "basicPriceId": "Stripe Basic Price ID",
+    "proPriceId": "Stripe Pro Price ID",
+    "trialDays": "Дни trial",
+    "vatPercent": "НДС %",
+    "form": {
+      "salonName": "Название салона",
+      "slug": "Slug",
+      "area": "Район",
+      "whatsapp": "WhatsApp",
+      "adminPasscode": "Код админа салона",
+      "seedDefaults": "Создать стандартные часы/услуги/сотрудников",
+      "creating": "Создание...",
+      "create": "Создать салон"
+    },
+    "messages": {
+      "unlocked": "Доступ суперадмина открыт.",
+      "salonCreated": "Салон создан и переведён в статус ожидания одобрения.",
+      "saved": "Изменения сохранены.",
+      "passcodeUpdated": "Код админа салона обновлён.",
+      "countrySaved": "Настройки страны обновлены: {{code}}.",
+      "trialExtended": "Пробный период продлён.",
+      "statusUpdated": "Статус подписки обновлён.",
+      "overrideEnabled": "Override включён.",
+      "overrideDisabled": "Override отключён.",
+      "hiddenFromExplore": "Салон скрыт из каталога.",
+      "shownInExplore": "Салон показан в каталоге.",
+      "setupPaymentMarked": "Setup помечен как оплаченный.",
+      "setupPaymentCleared": "Setup-оплата снята.",
+      "suspended": "Салон заблокирован.",
+      "unsuspended": "Блокировка снята.",
+      "approvedTrialing": "Одобрено. Пробный период активирован на 7 дней.",
+      "approvedManualBilling": "Одобрено с ручной оплатой.",
+      "approvedPendingBilling": "Одобрено — для запуска требуется оплата.",
+      "rejected": "Салон отклонён.",
+      "salonInfoUpdated": "Информация о салоне обновлена.",
+      "deleted": "Салон удалён.",
+      "inviteCreated": "Приглашение успешно создано.",
+      "inviteRevoked": "Приглашение отозвано.",
+      "inviteCopied": "Ссылка приглашения скопирована."
+    },
+    "errors": {
+      "codeMissing": "Код суперадмина не задан. Укажите VITE_SUPERADMIN_CODE и перезапустите dev.",
+      "invalidCode": "Неверный код суперадмина.",
+      "loadFailed": "Не удалось загрузить панель суперадмина: {{message}}",
+      "invalidSalonName": "Введите корректное название салона.",
+      "invalidSlug": "Введите корректный slug.",
+      "invalidArea": "Введите корректный район.",
+      "invalidAdminPass": "Введите корректный код админа.",
+      "countryMissing": "Конфигурация страны недоступна.",
+      "createFailed": "Не удалось создать салон: {{message}}",
+      "updateFailed": "Не удалось обновить салон: {{message}}",
+      "passcodeTooShort": "Код админа должен быть не короче 3 символов.",
+      "passcodeUpdateFailed": "Не удалось обновить код: {{message}}",
+      "countrySaveFailed": "Не удалось сохранить страну: {{message}}",
+      "countriesMigrationMissing": "Таблица countries отсутствует. Примените последнюю миграцию.",
+      "salonNotFound": "Салон не найден.",
+      "slugTaken": "Этот slug уже используется другим салоном.",
+      "deleteFailed": "Не удалось удалить салон: {{message}}",
+      "metricsLoadFailed": "Не удалось загрузить метрики обзора: {{message}}",
+      "invitesLoadFailed": "Не удалось загрузить приглашения: {{message}}",
+      "inviteCreateFailed": "Не удалось создать приглашение: {{message}}",
+      "inviteRevokeFailed": "Не удалось отозвать приглашение: {{message}}",
+      "inviteCopyFailed": "Не удалось скопировать ссылку приглашения.",
+      "inviteCountryRequired": "Выберите страну для приглашения."
+    },
+    "approvals": "Одобрения",
+    "invites": "Приглашения",
+    "invitesPageTitle": "Ссылки-приглашения",
+    "inviteCountry": "Страна приглашения",
+    "inviteMaxUses": "Максимум использований",
+    "inviteExpiresAt": "Действует до (необязательно)",
+    "createInvite": "Создать приглашение",
+    "copyLink": "Копировать ссылку",
+    "copied": "Скопировано",
+    "revokeInvite": "Отозвать",
+    "inviteRevoked": "Отозвано",
+    "inviteToken": "Токен",
+    "inviteUsage": "Использование",
+    "noInvites": "Приглашений пока нет.",
+    "approvalsQueue": "Очередь одобрений",
+    "noPendingApprovals": "Нет салонов, ожидающих одобрения.",
+    "approve": "Одобрить",
+    "reject": "Отклонить",
+    "view": "Открыть",
+    "submittedAt": "Отправлено",
+    "counts": {
+      "staff": "Сотрудники",
+      "services": "Услуги"
+    },
+    "confirmApproveTitle": "Одобрить салон",
+    "confirmApproveText": "Одобрить {{name}}?",
+    "confirmRejectTitle": "Отклонить салон",
+    "confirmRejectText": "Отклонить {{name}}?",
+    "confirmRevokeInviteTitle": "Отозвать приглашение",
+    "confirmRevokeInviteText": "Отозвать этот токен приглашения?",
+    "confirmDeleteTitle": "Удалить салон",
+    "confirmDeleteText": "Вы уверены, что хотите навсегда удалить салон {{name}}?",
+    "resume": "Возобновить",
+    "applyOverride": "Применить override",
+    "clearOverride": "Сбросить override",
+    "auditLog": "Журнал действий",
+    "noAuditLogs": "Записей пока нет.",
+    "stripeConfigWarning": "Для этой страны не настроен Stripe.",
+    "stripeConfigWarningText": "Добавьте Stripe Price ID (Basic/Pro) в настройках стран для активации салонов вне Ирака.",
+    "detail": {
+      "statusSection": "Статус",
+      "statusHint": "Приостановка, возобновление и принудительное изменение статуса.",
+      "trialSection": "Пробный период",
+      "trialHint": "Запуск и продление пробного периода (+3 / +7 / +14 дней).",
+      "overrideSection": "Ручной override",
+      "overrideHint": "Временный доступ до выбранной даты и времени.",
+      "visibilitySection": "Видимость",
+      "visibilityHint": "Управление отображением в Explore."
+    }
+  },
+  "legal": {
+    "subtitle": "Короткое резюме на арабском, затем полный юридический текст на английском",
+    "quickSummary": "Кратко",
+    "billingSubtitle": "Политика оплаты и возвратов",
+    "termsTitle": "Условия сервиса",
+    "privacyTitle": "Политика конфиденциальности",
+    "cancellationTitle": "Отмена и приостановка",
+    "billingSummary": {
+      "1": "Сейчас у CareChair нет бесплатного пробного периода.",
+      "2": "Setup-платеж 300–500 USD и не возвращается.",
+      "3": "Месячная подписка 30–50 USD, оплата авансом.",
+      "4": "Платежи через Stripe, скидки возможны по договоренности.",
+      "5": "После выставления счета возврат подписки не предусмотрен.",
+      "6": "После отмены доступ остается до конца оплаченного периода.",
+      "7": "Просрочка оплаты вызывает авто-приостановку сервиса."
+    },
+    "termsSummary": {
+      "1": "CareChair — платформа записи, оператор Infraengineering s.r.o.",
+      "2": "Сервис B2B и не для личного использования.",
+      "3": "Setup-платеж разовый и невозвратный.",
+      "4": "Подписка списывается авансом и может быть отменена в любой момент.",
+      "5": "После отмены доступ до конца оплаченного периода.",
+      "6": "При неуплате аккаунт автоматически приостанавливается.",
+      "7": "Применяется право и суды Чешской Республики."
+    },
+    "privacySummary": {
+      "1": "Мы собираем данные, необходимые для работы записи и системы.",
+      "2": "Данные включают салон, сотрудников, клиентов и записи.",
+      "3": "Используем Supabase, Stripe, Meta WhatsApp и Netlify.",
+      "4": "Соблюдаем принципы GDPR: прозрачность и минимизация данных.",
+      "5": "Мы не продаем данные и делимся только для работы/закона.",
+      "6": "Можно запросить доступ, исправление или удаление по закону.",
+      "7": "По вопросам конфиденциальности — официальный email."
+    },
+    "cancellationSummary": {
+      "1": "Подписку можно отменить в любой момент без уведомления.",
+      "2": "Отмена прекращает следующее продление, не текущий доступ.",
+      "3": "Доступ остается до конца текущего оплаченного периода.",
+      "4": "После этого аккаунт становится неактивным.",
+      "5": "При неуплате система автоматически приостанавливает доступ.",
+      "6": "Мы можем приостановить доступ по причинам безопасности/злоупотреблений.",
+      "7": "Споры регулируются правом и судами Чехии."
+    },
+    "startSubscriptionMock": "Запустить подписку (макет)",
+    "subscriptionMockText": "Это UI-макет обязательного юридического согласия перед оплатой.",
+    "consentPrefix": "Я согласен с",
+    "and": "и",
+    "startSubscription": "Запустить подписку"
+  },
+  "notFound": {
+    "title": "Страница не найдена",
+    "subtitle": "Проверьте ссылку",
+    "text": "Эта ссылка недоступна.",
+    "backToExplore": "Вернуться в каталог"
+  },
+  "admin": {
+    "manageSalon": "Salon Management",
+    "manage": "Manage",
+    "dailyOpsSubtitle": "Daily operations dashboard for bookings and services",
+    "openBookingPage": "Open booking page",
+    "passcodeLabel": "Salon admin passcode",
+    "login": "Login",
+    "accountInactiveTitle": "Account inactive",
+    "topbarSubtitle": "Manage bookings and settings from one place.",
+    "refreshing": "Refreshing...",
+    "exportCsv": "Export CSV",
+    "activateMonthlySubscription": "Activate monthly subscription",
+    "sections": {
+      "dashboard": "Dashboard",
+      "bookings": "Bookings",
+      "calendar": "Calendar",
+      "billing": "Billing",
+      "clients": "Clients",
+      "employees": "Employees",
+      "services": "Services",
+      "schedules": "Schedules",
+      "commissions": "Commissions",
+      "expenses": "Expenses",
+      "reports": "Reports",
+      "settings": "Settings",
+      "media": "Медиа"
+    },
+    "settings": {
+      "assign": "Assign services to staff",
+      "media": "Media",
+      "salon": "Salon settings",
+      "noServicesToAssign": "No services to assign.",
+      "salonSubtitle": "Control salon visibility and general status.",
+      "bookingMode": "Booking mode",
+      "bookingModeChoose": "Customer chooses employee",
+      "bookingModeAuto": "Auto assign by availability",
+      "defaultLanguage": "Default language",
+      "showInExplore": "Show in explore page"
+    },
+    "messages": {
+      "unlocked": "Admin panel unlocked.",
+      "logoUploaded": "Salon logo uploaded.",
+      "coverUploaded": "Cover image uploaded.",
+      "galleryUploaded": "Gallery images uploaded.",
+      "galleryImageDeleted": "Image removed from gallery.",
+      "serviceImageUploaded": "Service image uploaded.",
+      "staffImageUploaded": "Employee image uploaded.",
+      "bookingAccepted": "Booking accepted.",
+      "bookingRejected": "Booking rejected.",
+      "savedWhatsappOff": "Saved ✅ (automatic WhatsApp notification is currently disabled)",
+      "workingHoursSaved": "Working hours saved.",
+      "employeeScheduleSaved": "Employee schedule saved.",
+      "timeOffAdded": "Time off added.",
+      "timeOffDeleted": "Time off deleted.",
+      "salonSettingsSaved": "Salon visibility settings saved.",
+      "salonMediaSaved": "Salon media saved.",
+      "serviceAdded": "Service added.",
+      "employeeAdded": "Employee added.",
+      "serviceUpdated": "Service updated.",
+      "employeeUpdated": "Employee updated.",
+      "serviceShown": "Service is now visible.",
+      "serviceHidden": "Service is now hidden.",
+      "employeeShown": "Employee is now visible.",
+      "employeeHidden": "Employee is now hidden.",
+      "serviceDeleted": "Service deleted.",
+      "employeeDeleted": "Employee deleted.",
+      "staffAssignmentsSaved": "Service assignments saved for employee.",
+      "serviceAssigneesSaved": "Assigned employees saved for this service.",
+      "csvDownloaded": "CSV downloaded.",
+      "bookingLinkCopied": "Booking link copied."
+    },
+    "errors": {
+      "invalidPasscode": "Invalid admin passcode.",
+      "supabaseIncomplete": "Supabase configuration is incomplete.",
+      "loadSalonFailed": "Failed to load salon: {{message}}",
+      "loadAdminDataFailed": "Failed to load admin data: {{message}}",
+      "accountLockedForEdits": "Account is not active for edits right now.",
+      "pickImageFirst": "Select an image first.",
+      "invalidImageType": "File type must be JPG, PNG, or WEBP.",
+      "mediaBucketMissing": "Media bucket was not found. Run storage migration or create bucket carechair-media.",
+      "imageCompressionFailed": "Failed to compress image before upload.",
+      "logoUploadFailed": "Failed to upload logo after compression: {{message}}",
+      "coverUploadFailed": "Failed to upload cover image after compression: {{message}}",
+      "galleryMaxReached": "You reached the maximum gallery limit (8 images).",
+      "noImageUploaded": "No image was uploaded.",
+      "galleryUploadFailed": "Failed to compress/upload gallery images: {{message}}",
+      "deleteImageFailed": "Failed to delete image: {{message}}",
+      "serviceImageUploadFailed": "Failed to compress/upload service image: {{message}}",
+      "staffImageUploadFailed": "Failed to compress/upload employee image: {{message}}",
+      "updateBookingStatusFailed": "Failed to update booking status: {{message}}",
+      "closeAfterOpen": "Closing time must be after opening time ({{day}}).",
+      "saveWorkingHoursFailed": "Failed to save working hours: {{message}}",
+      "invalidBreakPeriod": "Invalid break period ({{day}}).",
+      "saveEmployeeScheduleFailed": "Failed to save employee schedule: {{message}}",
+      "selectValidTimeOffPeriod": "Choose a valid time-off period.",
+      "addTimeOffFailed": "Failed to add time off: {{message}}",
+      "deleteTimeOffFailed": "Failed to delete time off: {{message}}",
+      "saveSettingsFailed": "Failed to save settings: {{message}}",
+      "saveMediaFailed": "Failed to save media: {{message}}",
+      "validServiceName": "Enter a valid service name.",
+      "validDurationNumber": "Duration must be a valid number.",
+      "validPriceNumber": "Price must be a valid number.",
+      "validSortNumber": "Sort order must be a number.",
+      "addServiceFailed": "Failed to add service: {{message}}",
+      "validEmployeeName": "Enter a valid employee name.",
+      "addEmployeeFailed": "Failed to add employee: {{message}}",
+      "invalidDuration": "Invalid duration.",
+      "invalidPrice": "Invalid price.",
+      "invalidSort": "Invalid sort order.",
+      "updateServiceFailed": "Failed to update service: {{message}}",
+      "updateEmployeeFailed": "Failed to update employee: {{message}}",
+      "toggleServiceFailed": "Failed to update service: {{message}}",
+      "toggleEmployeeFailed": "Failed to update employee: {{message}}",
+      "deleteFailed": "Delete failed: {{message}}",
+      "saveAssignmentsFailed": "Failed to save assignments: {{message}}",
+      "saveServiceAssignmentsFailed": "Failed to save service assignments: {{message}}",
+      "copyLinkFailed": "Failed to copy link: {{message}}",
+      "openCheckoutFailed": "Failed to open subscription checkout: {{message}}"
+    },
+    "common": {
+      "unknownStaff": "Unassigned",
+      "unknownService": "Unknown service",
+      "customer": "Customer",
+      "noData": "No data.",
+      "unknown": "Unknown",
+      "select": "Select",
+      "saving": "Сохранение...",
+      "adding": "Adding...",
+      "noNote": "No note",
+      "sortOrder": "Порядок",
+      "visible": "Видимо",
+      "hidden": "Скрыто",
+      "selectAll": "Выбрать все",
+      "clearAll": "Очистить все",
+      "confirmDelete": "Yes, delete"
+    },
+    "analytics": {
+      "last30Days": "Last 30 days",
+      "periodTitle": "Analytics period",
+      "selectPeriod": "Select period",
+      "revenueByPeriod": "Revenue by period",
+      "revenueChart": "Revenue chart",
+      "employeePerformance": "Employee performance",
+      "employeeName": "Employee name",
+      "bookings": "Bookings",
+      "revenue": "Revenue",
+      "utilization": "Utilization %",
+      "rating": "Rating",
+      "servicesRevenueDistribution": "Revenue split by services",
+      "noConfirmedRevenueData": "No confirmed revenue data."
+    },
+    "share": {
+      "bookingLinkMessage": "This is your salon booking link:",
+      "title": "Share booking link",
+      "copying": "Copying...",
+      "copyBookingLink": "Copy booking link",
+      "shareWhatsapp": "Share on WhatsApp",
+      "whatsappAutoOff": "Automatic WhatsApp notifications are currently disabled",
+      "directBookingLink": "Direct booking link"
+    },
+    "checklist": {
+      "services": "Add services",
+      "staff": "Add employees",
+      "assign": "Assign services to employees",
+      "hours": "Set working hours",
+      "media": "Add salon photos (optional)"
+    },
+    "bookings": {
+      "service": "Service",
+      "noFilteredBookings": "No bookings match current filters.",
+      "bookingsCount": "{{count}} bookings",
+      "employee": "Employee",
+      "time": "Time",
+      "accepting": "Accepting...",
+      "accept": "Accept",
+      "rejecting": "Rejecting...",
+      "reject": "Reject",
+      "loadMore": "Load more",
+      "none": "No bookings."
+    },
+    "kpis": {
+      "todayRevenue": "Today revenue",
+      "monthRevenue": "This month revenue",
+      "todayBookings": "Total bookings today",
+      "activeEmployees": "Active employees",
+      "todayRequests": "Today's requests",
+      "pending": "Pending confirmation",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled"
+    },
+    "quickStartTitle": "Quick setup checklist",
+    "pricingMini": {
+      "title": "CareChair pricing",
+      "setup": "Setup fee: $300–$500 (non-refundable)",
+      "monthly": "Monthly subscription: $30–$50",
+      "cancel": "Cancel anytime. Access remains active until end of paid period."
+    },
+    "filters": {
+      "status": "Status",
+      "all": "All",
+      "date": "Date",
+      "today": "Today",
+      "thisWeek": "This week",
+      "searchByNamePhone": "Search by name or phone",
+      "searchPlaceholder": "Example: 07xxxxxxxxx"
+    },
+    "clients": {
+      "title": "Clients",
+      "count": "{{count}} clients",
+      "name": "Name",
+      "phone": "Phone",
+      "bookings": "Bookings",
+      "revenue": "Revenue",
+      "lastVisit": "Last visit",
+      "empty": "No clients yet."
+    },
+    "reports": {
+      "revenueTitle": "Revenue reports"
+    },
+    "calendar": {
+      "title": "Daily calendar",
+      "emptyDay": "No data for this date."
+    },
+    "billing": {
+      "title": "Billing & activation",
+      "accountInactive": "Your account is not active",
+      "setupFee": "Setup fee",
+      "paid": "Paid",
+      "unpaid": "Unpaid",
+      "monthlySubscription": "Monthly subscription",
+      "subscriptionEnds": "Subscription ends",
+      "trial": "Trial period",
+      "running": "Running",
+      "ends": "Ends {{date}}",
+      "disabled": "Disabled",
+      "countryCurrency": "Country / currency",
+      "setupViaAdmin": "Setup fee is paid via admin payment link",
+      "openSetupLink": "Open setup payment link",
+      "contactAdminSetup": "Contact admin to get manual setup payment link.",
+      "plan": "Plan"
+    },
+    "schedules": {
+      "title": "Employee schedules",
+      "selectEmployee": "Select employee",
+      "dayOff": "Day off",
+      "save": "Save schedule",
+      "timeOffTitle": "Time off & exceptions",
+      "timeOffReasonOptional": "Time off reason (optional)",
+      "addTimeOff": "Add time off",
+      "noTimeOff": "No time off records."
+    },
+    "services": {
+      "title": "Управление услугами",
+      "serviceName": "Название услуги",
+      "durationMinutes": "Длительность",
+      "price": "Цена",
+      "addService": "Добавить услугу",
+      "noServices": "Услуг пока нет.",
+      "durationValue": "{{count}} мин",
+      "providedBy": "Предоставляют:",
+      "noAssignment": "Без назначения",
+      "saveAssignment": "Сохранить назначение",
+      "addStaffFirst": "Сначала добавьте сотрудников, затем назначьте услугу.",
+      "closeAssign": "Закрыть назначение",
+      "assignEmployees": "Назначить сотрудников",
+      "inactive": "Неактивно",
+      "assigned": "Назначено",
+      "deleteService": "Delete service",
+      "deleteServiceConfirm": "Service {{name}} and all assignments will be deleted. Are you sure?",
+      "durationPlaceholder": "Длительность: 45",
+      "pricePlaceholder": "Цена: 20000",
+      "sortPlaceholder": "Порядок: 10"
+    },
+    "media": {
+      "compressingImage": "Compressing image...",
+      "uploadingImage": "Uploading image...",
+      "uploadImage": "Upload image",
+      "subtitle": "Upload salon media. If empty, default images are used automatically.",
+      "logo": "Salon logo",
+      "logoAlt": "Salon logo",
+      "uploadingLogo": "Uploading logo...",
+      "uploadOrReplaceLogo": "Upload/replace logo",
+      "cover": "Cover image",
+      "coverAlt": "Salon cover",
+      "uploadingCover": "Uploading cover...",
+      "uploadOrReplaceCover": "Upload/replace cover",
+      "galleryMax": "Gallery (max 8)",
+      "uploadingImages": "Uploading images...",
+      "uploadGalleryImages": "Upload gallery images",
+      "noUploadedImages": "No uploaded images yet.",
+      "galleryImageAlt": "Gallery image",
+      "logoUrlOptional": "Salon logo URL (optional)",
+      "coverUrlOptional": "Cover image URL (optional)",
+      "galleryUrlsLineByLine": "Gallery URLs (one URL per line)",
+      "saveImages": "Save images"
+    },
+    "employees": {
+      "title": "Employees management",
+      "name": "Employee name",
+      "photoUrlOptional": "Photo URL (optional)",
+      "noEmployees": "No employees.",
+      "deleteEmployee": "Delete employee",
+      "deleteEmployeeConfirm": "{{name}} and all assignments will be deleted. Are you sure?"
+    },
+    "commissionsComingSoon": "This section is phase-ready. Database foundation is prepared for staff commissions per service/booking.",
+    "expensesComingSoon": "This section is phase-ready. Database foundation is prepared for daily expenses and net-profit analysis."
+  },
+  "booking": {
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled",
+      "no_show": "Не пришёл"
+    },
+    "backToExplore": "Back to explore",
+    "linkUnavailableText": "This link is not available"
+  },
+  "calendar": {
+    "toolbar": {
+      "today": "Сегодня",
+      "prev": "Назад",
+      "next": "Вперед"
+    },
+    "views": {
+      "day": "День",
+      "week": "Неделя",
+      "agenda": "Список"
+    },
+    "labels": {
+      "date": "Дата",
+      "time": "Время",
+      "event": "Запись",
+      "allDay": "Весь день",
+      "noEvents": "Нет записей в этом диапазоне"
+    },
+    "filters": {
+      "employee": "Сотрудник",
+      "employees": "Сотрудники",
+      "allEmployees": "Все сотрудники",
+      "status": "Статус",
+      "all": "Все",
+      "service": "Услуга",
+      "allServices": "Все услуги"
+    },
+    "drawer": {
+      "create": "Создать запись",
+      "edit": "Редактировать запись"
+    },
+    "fields": {
+      "customerName": "Имя клиента",
+      "customerPhone": "Телефон",
+      "service": "Услуга",
+      "employee": "Сотрудник",
+      "startTime": "Время начала",
+      "duration": "Длительность (мин.)",
+      "status": "Статус",
+      "notes": "Заметки"
+    },
+    "actions": {
+      "addBooking": "+ Добавить запись",
+      "delete": "Удалить"
+    },
+    "status": {
+      "no_show": "Не пришёл"
+    },
+    "messages": {
+      "created": "Запись создана.",
+      "updated": "Запись обновлена.",
+      "cancelled": "Запись отменена.",
+      "moved": "Запись перенесена."
+    },
+    "errors": {
+      "load": "Не удалось загрузить календарь",
+      "invalid": "Некорректная запись",
+      "save": "Не удалось сохранить запись",
+      "update": "Не удалось обновить запись",
+      "delete": "Не удалось отменить запись",
+      "move": "Не удалось перенести запись",
+      "selectEmployee": "Сначала выберите сотрудника.",
+      "invalidRange": "Некорректный диапазон времени.",
+      "closedDay": "Салон/сотрудник не работает в этот день.",
+      "outsideWorkingHours": "Запись вне рабочих часов.",
+      "insideBreak": "Время попадает в перерыв.",
+      "overlap": "Этот слот пересекается с другой записью."
+    }
+  },
+  "onboarding": {
+    "title": "Полная настройка салона",
+    "subtitle": "Создайте всю структуру салона в одном мастере.",
+    "backAdmin": "Назад в супер-админ",
+    "progressTitle": "Прогресс настройки",
+    "stepCount": "Шаг {{step}} из {{total}}",
+    "steps": {
+      "basic": "Основная информация",
+      "hours": "Рабочие часы",
+      "employees": "Сотрудники",
+      "services": "Услуги",
+      "submit": "Отправка"
+    },
+    "fields": {
+      "salonName": "Название салона",
+      "country": "Страна",
+      "city": "Город",
+      "whatsapp": "WhatsApp для уведомлений",
+      "adminPasscode": "Код доступа админа",
+      "logoUpload": "Загрузка логотипа",
+      "coverUpload": "Загрузка обложки",
+      "openDay": "Открыто",
+      "employeeName": "Имя сотрудника",
+      "employeeRole": "Роль",
+      "employeePhoneOptional": "Телефон (необязательно)",
+      "avatarUpload": "Загрузка аватара",
+      "sameHoursAsSalon": "Такие же часы, как у салона",
+      "serviceName": "Название услуги",
+      "durationMinutes": "Длительность (мин.)",
+      "price": "Цена",
+      "category": "Категория",
+      "assignEmployees": "Назначить сотрудников"
+    },
+    "placeholders": {
+      "salonName": "Например: Queen Beauty Center",
+      "city": "Например: Baghdad",
+      "whatsapp": "9647XXXXXXXX",
+      "adminPasscode": "Например: 1234",
+      "noFile": "Файл не выбран",
+      "employeeName": "Например: Sara",
+      "employeeRole": "Например: Старший стилист",
+      "employeePhone": "07XXXXXXXXX",
+      "serviceName": "Например: Стрижка",
+      "duration": "Длительность: 45",
+      "price": "Цена: 20000",
+      "category": "Например: Волосы"
+    },
+    "labels": {
+      "employeeNumber": "Сотрудник #{{n}}",
+      "serviceNumber": "Услуга #{{n}}",
+      "unnamedEmployee": "Сотрудник без имени"
+    },
+    "actions": {
+      "addEmployee": "Добавить сотрудника",
+      "addService": "Добавить услугу",
+      "remove": "Удалить",
+      "back": "Назад",
+      "next": "Далее",
+      "submit": "Создать структуру салона",
+      "submitting": "Отправка..."
+    },
+    "reviewText": "Проверьте данные и отправьте создание полной структуры салона.",
+    "invite": {
+      "label": "Приватное приглашение",
+      "active": "Страна установлена автоматически по приватному приглашению.",
+      "validating": "Проверка приглашения..."
+    },
+    "review": {
+      "basic": "Основная информация",
+      "resources": "Ресурсы",
+      "employees": "Сотрудники",
+      "services": "Услуги",
+      "hours": "Рабочие дни"
+    },
+    "upload": {
+      "logo": "Загрузка логотипа...",
+      "cover": "Загрузка обложки...",
+      "avatarFor": "Загрузка аватара для {{name}}...",
+      "finalizing": "Финализация настройки..."
+    },
+    "messages": {
+      "success": "Настройка салона успешно завершена."
+    },
+    "success": {
+      "badge": "Настройка завершена",
+      "title": "Салон готов ✅",
+      "text": "Настройка успешно отправлена и теперь ожидает одобрения супер-админа.",
+      "openBooking": "Открыть страницу бронирования",
+      "openAdmin": "Открыть админ-панель",
+      "bookingLink": "Ссылка на бронирование",
+      "adminLink": "Ссылка на админ-панель",
+      "passcode": "Код админа",
+      "createAnother": "Создать ещё один салон",
+      "backSuperadmin": "Назад в супер-админ"
+    },
+    "errors": {
+      "supabaseMissing": "Supabase не настроен.",
+      "loadCountries": "Не удалось загрузить страны: {{message}}",
+      "publicCountriesMigrationMissing": "Миграция публичных стран не применена. Запустите последние миграции БД.",
+      "inviteInvalid": "Это приглашение недействительно или истекло.",
+      "inviteValidationFailed": "Не удалось проверить приглашение: {{message}}",
+      "nameRequired": "Название салона обязательно.",
+      "countryRequired": "Выберите страну.",
+      "invalidSalonHours": "Исправьте рабочие часы для {{day}}.",
+      "employeeRequired": "Добавьте хотя бы одного сотрудника.",
+      "employeeNameRequired": "Имя сотрудника обязательно.",
+      "invalidEmployeeHours": "Исправьте часы работы сотрудника {{name}}.",
+      "serviceRequired": "Добавьте хотя бы одну услугу.",
+      "serviceNameRequired": "Название услуги обязательно.",
+      "serviceDurationRequired": "Длительность услуги должна быть не менее 5 минут.",
+      "servicePriceRequired": "Цена услуги указана неверно.",
+      "serviceAssignmentsRequired": "У каждой услуги должен быть хотя бы один назначенный сотрудник.",
+      "invalidImageType": "Изображение должно быть JPG, PNG или WEBP.",
+      "submitFailed": "Не удалось завершить настройку: {{message}}"
+    }
   }
 }

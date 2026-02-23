@@ -1,0 +1,105 @@
+:root {
+  --space-0: 4px;
+  --primary-900: #0b1e3c;
+  --primary-800: #0e2a57;
+  --primary-700: #123a7a;
+  --primary-600: #1b4fcb;
+  --primary-500: #2e6bff;
+  --primary-400: #5a8bff;
+
+  --accent-600: #00b7ff;
+  --accent-500: #16d5ff;
+  --accent-400: #62e8ff;
+
+  --bg: #f6f8fc;
+  --surface: #ffffff;
+  --surface-2: #f0f4ff;
+  --border: #e3eaf6;
+  --line: var(--border);
+  --card: var(--surface);
+  --text: #0b1220;
+  --muted: #516079;
+  --muted-2: #7b8aa6;
+
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --danger: #dc2626;
+  --info: #2563eb;
+
+  --hero-gradient: linear-gradient(135deg, #0b1e3c 0%, #123a7a 45%, #1b4fcb 100%);
+  --cta-gradient: linear-gradient(135deg, #1b4fcb 0%, #2e6bff 55%, #00b7ff 120%);
+  --glow: radial-gradient(600px circle at 70% 20%, rgba(0, 183, 255, 0.25), transparent 55%);
+
+  --shadow-xs: 0 2px 8px rgba(11, 30, 60, 0.06);
+  --shadow-sm: 0 8px 22px rgba(11, 30, 60, 0.08);
+  --shadow-md: 0 14px 34px rgba(11, 30, 60, 0.1);
+  --shadow-lg: 0 22px 48px rgba(11, 30, 60, 0.14);
+
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 20px;
+
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+  --space-7: 64px;
+
+  --type-h1: clamp(2.25rem, 5vw + 0.55rem, 4.5rem);
+  --type-h2: clamp(1.9rem, 3.2vw + 0.6rem, 3.25rem);
+  --type-h3: clamp(1.45rem, 2vw + 0.55rem, 2.25rem);
+  --type-body: 1rem;
+  --type-body-lg: 1.125rem;
+
+  /* Backward compatibility aliases used in existing files */
+  --cc-primary-700: var(--primary-700);
+  --cc-primary-600: var(--primary-600);
+  --cc-primary-500: var(--primary-500);
+  --cc-primary-400: var(--primary-400);
+  --cc-accent-400: var(--accent-400);
+  --cc-bg: var(--bg);
+  --cc-surface: var(--surface);
+  --cc-border: var(--border);
+  --cc-text: var(--text);
+  --cc-muted: var(--muted);
+  --cc-success: var(--success);
+  --cc-warning: var(--warning);
+  --cc-danger: var(--danger);
+  --cc-gradient-primary: var(--cta-gradient);
+  --cc-shadow-soft: var(--shadow-sm);
+  --cc-shadow-strong: var(--shadow-lg);
+  --cc-shadow: var(--shadow-sm);
+  --cc-radius-lg: var(--radius-xl);
+  --cc-radius-md: var(--radius-lg);
+  --cc-space-1: var(--space-1);
+  --cc-space-2: var(--space-2);
+  --cc-space-3: var(--space-3);
+  --cc-space-4: var(--space-4);
+}
+
+.cc-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding-inline: 16px;
+}
+
+.cc-section {
+  display: grid;
+  gap: var(--space-2);
+  margin-block: var(--space-2);
+}
+
+@media (min-width: 769px) {
+  .cc-container {
+    padding-inline: 24px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .cc-container {
+    padding-inline: 28px;
+  }
+}

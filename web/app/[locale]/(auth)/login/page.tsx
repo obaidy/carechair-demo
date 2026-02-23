@@ -1,8 +1,9 @@
 import {redirect} from 'next/navigation';
-import {getTranslations} from 'next-intl/server';
+import {getMessages} from 'next-intl/server';
 import {z} from 'zod';
 import {getSuperadminCode} from '@/lib/auth/config';
 import {setSalonAdminSession, setSuperadminSession} from '@/lib/auth/server';
+import {tx} from '@/lib/messages';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 
 type Props = {
@@ -31,7 +32,7 @@ const superadminLoginSchema = z.object({
 export default async function LoginPage({params, searchParams}: Props) {
   const {locale} = await params;
   const query = await searchParams;
-  const t = await getTranslations();
+  const messages = await getMessages({locale});
 
   async function salonLoginAction(formData: FormData) {
     'use server';
@@ -99,15 +100,15 @@ export default async function LoginPage({params, searchParams}: Props) {
     <div className="container page-stack">
       <section className="hero-card">
         <p className="eyebrow">CareChair</p>
-        <h1>{t('nav.login', {defaultValue: 'Login'})}</h1>
-        <p>{t('common.loginHint', {defaultValue: 'Use salon passcode or superadmin passcode to open dashboards.'})}</p>
+        <h1>{tx(messages, 'nav.login', 'Login')}</h1>
+        <p>{tx(messages, 'common.loginHint', 'Use salon passcode or superadmin passcode to open dashboards.')}</p>
       </section>
 
       {errorCode ? <p className="error-text">{errorCode.replace(/_/g, ' ')}</p> : null}
 
       <section className="auth-grid">
         <article className="booking-card">
-          <h2>{t('nav.dashboard', {defaultValue: 'Salon Dashboard'})}</h2>
+          <h2>{tx(messages, 'nav.dashboard', 'Salon Dashboard')}</h2>
           <form action={salonLoginAction} className="booking-card">
             <input type="hidden" name="next" value={safeNext} />
 
@@ -121,12 +122,12 @@ export default async function LoginPage({params, searchParams}: Props) {
               <input className="input" name="passcode" type="password" required minLength={3} />
             </label>
 
-            <button type="submit" className="btn btn-primary">{t('nav.login', {defaultValue: 'Login'})}</button>
+            <button type="submit" className="btn btn-primary">{tx(messages, 'nav.login', 'Login')}</button>
           </form>
         </article>
 
         <article className="booking-card">
-          <h2>{t('nav.superadmin', {defaultValue: 'Superadmin'})}</h2>
+          <h2>{tx(messages, 'nav.superadmin', 'Superadmin')}</h2>
           <form action={superadminLoginAction} className="booking-card">
             <input type="hidden" name="next" value={safeNext} />
 
@@ -135,7 +136,7 @@ export default async function LoginPage({params, searchParams}: Props) {
               <input className="input" name="passcode" type="password" required minLength={3} />
             </label>
 
-            <button type="submit" className="btn btn-secondary">{t('nav.login', {defaultValue: 'Login'})}</button>
+            <button type="submit" className="btn btn-secondary">{tx(messages, 'nav.login', 'Login')}</button>
           </form>
         </article>
       </section>

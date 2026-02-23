@@ -2,7 +2,7 @@ import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import {getMessages} from 'next-intl/server';
 import BookingForm from '@/components/BookingForm';
-import {t} from '@/lib/messages';
+import {tx} from '@/lib/messages';
 import {buildMetadata} from '@/lib/seo';
 import {Link} from '@/i18n/navigation';
 import {
@@ -36,7 +36,7 @@ export async function generateMetadata({params}: PageProps): Promise<Metadata> {
   if (salonPayload) {
     return buildMetadata({
       title: `${salonPayload.salon.name} | CareChair`,
-      description: t(messages, 'salon.metaDescription', 'View salon profile, services, and book online.'),
+      description: tx(messages, 'salon.metaDescription', 'View salon profile, services, and book online.'),
       pathname: `/${country}/${city}/${slug}`
     });
   }
@@ -46,14 +46,14 @@ export async function generateMetadata({params}: PageProps): Promise<Metadata> {
     const serviceName = decodeURIComponent(slug).replace(/-/g, ' ');
     return buildMetadata({
       title: `${serviceName} salons | CareChair`,
-      description: t(messages, 'service.metaDescription', 'Find salons offering this service and book online.'),
+      description: tx(messages, 'service.metaDescription', 'Find salons offering this service and book online.'),
       pathname: `/${country}/${city}/${slug}`
     });
   }
 
   return buildMetadata({
     title: 'CareChair',
-    description: t(messages, 'meta.defaultDescription', 'Find salons and book instantly.'),
+    description: tx(messages, 'meta.defaultDescription', 'Find salons and book instantly.'),
     pathname: `/${country}/${city}/${slug}`
   });
 }
@@ -71,16 +71,16 @@ export default async function SlugPage({params}: PageProps) {
     }
 
     return (
-      <div className="container page-stack">
-        <section className="section-stack">
+      <div className="cc-container cc-section">
+        <section className="cc-section">
           <h1>{decodeURIComponent(slug).replace(/-/g, ' ')}</h1>
-          <p className="muted">{t(messages, 'service.subtitle', 'Salons that currently offer this service.')}</p>
+          <p className="muted">{tx(messages, 'service.subtitle', 'Salons that currently offer this service.')}</p>
         </section>
 
-        <section className="card-grid">
+        <section className="explore-grid">
           {serviceRows.map(({salon, services}) => (
-            <article className="salon-card" key={salon.id}>
-              <div className="salon-card__body">
+            <article className="panel" key={salon.id}>
+              <div>
                 <h2>{salon.name}</h2>
                 <p className="muted">{salon.area || '-'}</p>
                 <p className="muted">{services.map((item) => item.name).join(' • ')}</p>
@@ -88,7 +88,7 @@ export default async function SlugPage({params}: PageProps) {
                   href={`/${countrySlugFromSalon(salon)}/${citySlugFromSalon(salon)}/${normalizeSlug(salon.slug)}`}
                   className="btn btn-primary"
                 >
-                  {t(messages, 'service.bookSalon', 'Book this salon')}
+                  {tx(messages, 'service.bookSalon', 'Book this salon')}
                 </Link>
               </div>
             </article>
@@ -137,73 +137,73 @@ export default async function SlugPage({params}: PageProps) {
   };
 
   return (
-    <div className="container page-stack">
+    <div className="cc-container cc-section">
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(jsonLd)}} />
 
-      <section className="hero-card">
-        <h1 className="hero-title-clamp">{salon.name}</h1>
-        <p>{address || salon.area || t(messages, 'salon.addressUnavailable', 'Address unavailable')}</p>
+      <section className="panel hero-lite">
+        <h2>{salon.name}</h2>
+        <p>{address || salon.area || tx(messages, 'salon.addressUnavailable', 'Address unavailable')}</p>
       </section>
 
-      <section className="salon-layout-grid">
-        <article className="salon-info-card">
-          <h2>{t(messages, 'salon.directions', 'Directions')}</h2>
-          <p className="muted">{address || t(messages, 'salon.addressUnavailable', 'Address unavailable')}</p>
+      <section className="grid two">
+        <article className="booking-card">
+          <h3>{tx(messages, 'salon.directions', 'Directions')}</h3>
+          <p className="muted">{address || tx(messages, 'salon.addressUnavailable', 'Address unavailable')}</p>
 
           <div className="row-actions">
             {appleDirections ? (
               <a href={appleDirections} target="_blank" rel="noreferrer" className="btn btn-secondary">
-                {t(messages, 'salon.appleMaps', 'Apple Maps')}
+                {tx(messages, 'salon.appleMaps', 'Apple Maps')}
               </a>
             ) : null}
             {googleDirections ? (
               <a href={googleDirections} target="_blank" rel="noreferrer" className="btn btn-secondary">
-                {t(messages, 'salon.googleMaps', 'Google Maps')}
+                {tx(messages, 'salon.googleMaps', 'Google Maps')}
               </a>
             ) : null}
           </div>
 
-          <div className="map-preview-wrap">
+          <div>
             {staticMapUrl ? (
               <img
                 src={staticMapUrl}
-                alt={address || t(messages, 'salon.mapPreview', 'Location preview')}
-                className="map-preview"
+                alt={address || tx(messages, 'salon.mapPreview', 'Location preview')}
+                style={{width: '100%', maxWidth: '100%', borderRadius: '12px', display: 'block'}}
               />
             ) : (
-              <div className="map-placeholder">{t(messages, 'salon.mapUnavailable', 'Map preview unavailable')}</div>
+              <div className="booking-map-placeholder">{tx(messages, 'salon.mapUnavailable', 'Map preview unavailable')}</div>
             )}
           </div>
         </article>
 
-        <article className="salon-info-card">
-          <h2>{t(messages, 'salon.hours', 'Working hours')}</h2>
+        <article className="booking-card">
+          <h3>{tx(messages, 'salon.hours', 'Working hours')}</h3>
           <ul className="hours-list">
             {hours.map((row) => (
               <li key={`${row.day_of_week}-${row.open_time}-${row.close_time}`}>
                 <span>{dayLabel(row.day_of_week)}</span>
                 <span>
                   {row.is_closed
-                    ? t(messages, 'salon.closed', 'Closed')
+                    ? tx(messages, 'salon.closed', 'Closed')
                     : `${String(row.open_time || '').slice(0, 5)} - ${String(row.close_time || '').slice(0, 5)}`}
                 </span>
               </li>
             ))}
           </ul>
 
-          <h3>{t(messages, 'salon.services', 'Services')}</h3>
-          <ul className="chip-list">
+          <h3>{tx(messages, 'salon.services', 'Services')}</h3>
+          <ul className="staff-chips">
             {services.map((service) => (
-              <li key={service.id} className="chip">
+              <li key={service.id} className="staff-chip">
                 {service.name}
               </li>
             ))}
           </ul>
 
-          <h3>{t(messages, 'salon.staff', 'Staff')}</h3>
-          <ul className="chip-list">
+          <h3>{tx(messages, 'salon.staff', 'Staff')}</h3>
+          <ul className="staff-chips">
             {staff.map((member) => (
-              <li key={member.id} className="chip">
+              <li key={member.id} className="staff-chip">
                 {member.name}
               </li>
             ))}

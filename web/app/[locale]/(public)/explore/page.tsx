@@ -1,8 +1,13 @@
 import {getMessages} from 'next-intl/server';
-import {t} from '@/lib/messages';
+import {tx} from '@/lib/messages';
 import {buildMetadata} from '@/lib/seo';
 import {Link} from '@/i18n/navigation';
 import {citySlugFromSalon, countrySlugFromSalon, getExploreData} from '@/lib/data/public';
+import SafeImage from '@/components/SafeImage';
+import {Badge, Button, Card} from '@/components/ui';
+import {formatSalonOperationalCurrency} from '@/lib/format';
+import {getInitials, getSalonMedia} from '@/lib/media';
+import {isValidE164WithoutPlus, normalizeIraqiPhone} from '@/lib/phone';
 
 type Props = {
   params: Promise<{locale: string}>;
@@ -14,8 +19,8 @@ export async function generateMetadata({params}: {params: Promise<{locale: strin
   const messages = await getMessages({locale});
 
   return buildMetadata({
-    title: t(messages, 'explore.metaTitle', 'Explore salons by city and service'),
-    description: t(messages, 'explore.metaDescription', 'Find listed salons and compare service availability.'),
+    title: tx(messages, 'explore.metaTitle', 'Explore salons by city and service'),
+    description: tx(messages, 'explore.metaDescription', 'Find listed salons and compare service availability.'),
     pathname: '/explore'
   });
 }
@@ -45,39 +50,105 @@ export default async function ExplorePage({params, searchParams}: Props) {
     return salonName.includes(query) || serviceNames.some((name) => name.includes(query));
   });
 
+  const socialProofText =
+    filtered.length <= 5
+      ? tx(messages, 'explore.socialProofEarly', 'Centers that started using CareChair ({{count}})', {count: filtered.length})
+      : tx(messages, 'explore.socialProof', 'Centers using CareChair to organize bookings ({{count}})', {count: filtered.length});
+
   return (
-    <div className="container page-stack">
-      <section className="section-stack">
-        <h1>{t(messages, 'explore.title', 'Explore salons')}</h1>
-        <p className="muted">{t(messages, 'explore.subtitle', 'Public listed salons available for booking.')}</p>
-      </section>
+    <div className="cc-container cc-section">
+      <Card className="explore-social-proof">
+        <b>{socialProofText}</b>
+      </Card>
 
-      <section className="card-grid">
-        {filtered.map(({salon, services, location}) => {
-          const country = countrySlugFromSalon(salon);
-          const city = citySlugFromSalon(salon);
-          const href = `/${country}/${city}/${salon.slug}`;
+      <Card className="explore-hero">
+        <div>
+          <Badge variant="featured">{tx(messages, 'explore.platformBadge', 'CareChair Platform')}</Badge>
+          <h2>{tx(messages, 'explore.heroTitle', 'Discover the best salons')}</h2>
+          <p>{tx(messages, 'explore.heroText', 'Choose your service, compare centers, and book instantly.')}</p>
+        </div>
+      </Card>
 
-          return (
-            <article className="salon-card" key={salon.id}>
-              <div className="salon-card__media" />
-              <div className="salon-card__body">
-                <h2>{salon.name}</h2>
-                <p className="muted">{location?.formatted_address || location?.address_line || salon.area || '-'}</p>
-                <p className="muted">{services.slice(0, 3).map((service) => service.name).join(' • ')}</p>
-                <div className="row-actions">
-                  <Link href={href} className="btn btn-primary">
-                    {t(messages, 'explore.viewSalon', 'View salon')}
-                  </Link>
-                  <Link href={`/${country}/${city}`} className="btn btn-secondary">
-                    {t(messages, 'explore.cityPage', 'City page')}
-                  </Link>
+      {filtered.length === 0 ? (
+        <Card>
+          <p className="muted">{tx(messages, 'explore.empty', 'No salons match the current filters.')}</p>
+        </Card>
+      ) : (
+        <section className="explore-grid">
+          {filtered.map(({salon, services}) => {
+            const country = countrySlugFromSalon(salon);
+            const city = citySlugFromSalon(salon);
+            const href = `/${country}/${city}/${salon.slug}`;
+            const cityHref = `/${country}/${city}`;
+            const media = getSalonMedia(salon);
+            const minPrice = services.reduce((min, row) => (Number(row.price) < min ? Number(row.price) : min), Number.POSITIVE_INFINITY);
+            const phone = normalizeIraqiPhone(salon.whatsapp || '');
+            const hasWhats = isValidE164WithoutPlus(phone);
+            const isActive = Boolean(salon.is_active);
+
+            return (
+              <article className="explore-card" key={salon.id}>
+                <div className="explore-cover-wrap">
+                  <SafeImage src={media.cover} alt={salon.name} className="explore-cover" fallbackIcon="✨" fallbackKey="cover" />
+                  <Badge variant="featured" className="floating-featured">
+                    {tx(messages, 'explore.featured', 'Featured')}
+                  </Badge>
                 </div>
-              </div>
-            </article>
-          );
-        })}
-      </section>
+
+                <Card className="explore-card-body">
+                  <div className="explore-head">
+                    <div className="explore-head-main">
+                      <SafeImage src={salon.logo_url || ''} alt={salon.name} className="explore-logo" fallbackText={getInitials(salon.name)} fallbackKey="logo" />
+                      <h3>{salon.name}</h3>
+                    </div>
+                    <span className="area-badge">{salon.area || tx(messages, 'explore.defaultArea', 'City')}</span>
+                  </div>
+
+                  <div className="salon-trust-badges">
+                    <Badge variant="neutral">{tx(messages, 'explore.badges.fastConfirm', 'Fast confirmation')}</Badge>
+                    <Badge variant="neutral">{tx(messages, 'explore.badges.easyBooking', 'Easy booking')}</Badge>
+                    {hasWhats ? <Badge variant="featured">{tx(messages, 'explore.badges.whatsappAvailable', 'WhatsApp available')}</Badge> : null}
+                    {!isActive ? <Badge variant="pending">{tx(messages, 'explore.badges.pendingActivation', 'Pending activation')}</Badge> : null}
+                  </div>
+
+                  {Number.isFinite(minPrice) ? (
+                    <p className="starting-price">
+                      {tx(messages, 'explore.startingFrom', 'Starting from')} {formatSalonOperationalCurrency(minPrice, salon, locale)}
+                    </p>
+                  ) : null}
+
+                  <div className="mini-services">
+                    {services.length === 0 ? (
+                      <p className="muted">{tx(messages, 'explore.noServices', 'No active services yet.')}</p>
+                    ) : (
+                      services.slice(0, 3).map((srv) => (
+                        <span className="service-tag" key={srv.id}>
+                          {srv.name} • {formatSalonOperationalCurrency(srv.price, salon, locale)}
+                        </span>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="row-actions">
+                    <Button as={Link as any} href={href}>
+                      {tx(messages, 'explore.bookNow', 'Book now')}
+                    </Button>
+                    {hasWhats ? (
+                      <Button as="a" variant="secondary" href={`https://wa.me/${phone}`} target="_blank" rel="noreferrer">
+                        {tx(messages, 'common.whatsapp', 'WhatsApp')}
+                      </Button>
+                    ) : (
+                      <Button as={Link as any} variant="secondary" href={cityHref}>
+                        {tx(messages, 'explore.cityPage', 'City page')}
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              </article>
+            );
+          })}
+        </section>
+      )}
     </div>
   );
 }

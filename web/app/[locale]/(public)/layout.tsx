@@ -7,13 +7,13 @@ type Props = {
 };
 
 export default async function PublicLayout({children, params}: Props) {
-  const {locale} = await params;
+  await params;
 
   return (
     <>
       <MainNav />
       <main className="site-main">{children}</main>
-      <PublicFooter locale={locale} />
+      <PublicFooter />
     </>
   );
 }
