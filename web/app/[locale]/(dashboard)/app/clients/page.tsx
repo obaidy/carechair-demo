@@ -19,12 +19,17 @@ export default async function ClientsPage({params}: Props) {
         <h1>{t('dashboard.clients', {defaultValue: 'Clients'})}</h1>
       </section>
 
-      <section className="grid">
+      <section className="bookings-stack">
         {clients.map((client) => (
           <article className="booking-card" key={`${client.phone}-${client.name}`}>
+            <div className="booking-top">
+              <div>
+                <h6>{client.name}</h6>
+                <p>{client.phone}</p>
+              </div>
+              <span className="status-badge status-confirmed">{client.bookings}</span>
+            </div>
             <div className="booking-info">
-              <h3>{client.name}</h3>
-              <p className="muted">{client.phone}</p>
               <p className="muted">{t('dashboard.bookings', {defaultValue: 'Bookings'})}: {client.bookings}</p>
               <p className="muted">{new Date(client.lastVisit).toLocaleString()}</p>
             </div>

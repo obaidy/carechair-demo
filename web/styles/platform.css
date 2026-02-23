@@ -1637,6 +1637,19 @@ select:disabled {
   font-size: 21px;
 }
 
+.locale-shell {
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+.booking-location-card {
+  display: grid;
+  gap: 12px;
+}
+
 .explore-hero {
   background:
     radial-gradient(circle at 80% -10%, rgba(79, 134, 255, 0.24), transparent 42%),

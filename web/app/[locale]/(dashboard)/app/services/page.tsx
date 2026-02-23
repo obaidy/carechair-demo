@@ -22,7 +22,7 @@ export default async function ServicesPage({params}: Props) {
 
       <section className="panel">
         <h2>{t('dashboard.addService', {defaultValue: 'Add service'})}</h2>
-        <form action={createServiceAction} className="grid two">
+        <form action={createServiceAction} className="grid two service-form-grid">
           <input type="hidden" name="path" value={`/${locale}/app/services`} />
           <label className="field"><span>{t('dashboard.name', {defaultValue: 'Name'})}</span><input className="input" name="name" required minLength={2} /></label>
           <label className="field"><span>{t('dashboard.duration', {defaultValue: 'Duration (min)'})}</span><input className="input" name="durationMinutes" type="number" min={5} defaultValue={45} /></label>
@@ -32,15 +32,15 @@ export default async function ServicesPage({params}: Props) {
         </form>
       </section>
 
-      <section className="grid">
+      <section className="settings-list">
         {services.map((service) => (
-          <article className="booking-card" key={service.id}>
-            <div className="booking-info">
-              <h3>{service.name}</h3>
+          <article className="settings-row service-row-main" key={service.id}>
+            <div>
+              <strong>{service.name}</strong>
               <p className="muted">{service.duration_minutes} min • {service.price ?? 0}</p>
-              <p className="muted">{service.is_active ? 'Active' : 'Inactive'}</p>
+              <span className="switch-pill">{service.is_active ? 'Active' : 'Inactive'}</span>
             </div>
-            <form action={toggleServiceAction}>
+            <form action={toggleServiceAction} className="row-actions service-row-actions">
               <input type="hidden" name="path" value={`/${locale}/app/services`} />
               <input type="hidden" name="serviceId" value={service.id} />
               <input type="hidden" name="isActive" value={service.is_active ? 'true' : 'false'} />

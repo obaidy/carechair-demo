@@ -507,6 +507,11 @@
   margin-top: 12px;
 }
 
+.landing-testimonials-section {
+  display: grid;
+  gap: 10px;
+}
+
 .landing-testimonial {
   padding: 14px;
 }

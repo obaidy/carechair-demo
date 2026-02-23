@@ -97,23 +97,64 @@ export default async function SlugPage({params}: PageProps) {
     return (
       <PageShell title={decodeURIComponent(slug).replace(/-/g, ' ')} subtitle={tx(messages, 'service.subtitle', 'Salons that currently offer this service.')}>
         <section className="explore-grid">
-          {serviceRows.map(({salon, services}) => (
-            <article className="booking-card" key={salon.id}>
-              <div className="booking-info">
-                <h2>{salon.name}</h2>
-                <p className="muted">{salon.area || '-'}</p>
-                <p className="muted">{services.map((item) => item.name).join(' • ')}</p>
-              </div>
-              <div className="row-actions">
-                <Link
-                  href={`/${countrySlugFromSalon(salon)}/${citySlugFromSalon(salon)}/${normalizeSlug(salon.slug)}`}
-                  className="btn btn-primary"
-                >
-                  {tx(messages, 'service.bookSalon', 'Book this salon')}
-                </Link>
-              </div>
-            </article>
-          ))}
+          {serviceRows.map(({salon, services}) => {
+            const media = getSalonMedia(salon);
+            const minPrice = services.reduce((min, row) => (Number(row.price) < min ? Number(row.price) : min), Number.POSITIVE_INFINITY);
+            const phone = normalizeIraqiPhone(salon.whatsapp || '');
+            const hasWhats = isValidE164WithoutPlus(phone);
+            const isActive = Boolean(salon.is_active);
+
+            return (
+              <article className="explore-card" key={salon.id}>
+                <div className="explore-cover-wrap">
+                  <SafeImage src={media.cover} alt={salon.name} className="explore-cover" fallbackIcon="✨" fallbackKey="cover" />
+                  <span className="ui-badge ui-badge-featured floating-featured">{tx(messages, 'explore.featured', 'Featured')}</span>
+                </div>
+
+                <Card className="explore-card-body">
+                  <div className="explore-head">
+                    <div className="explore-head-main">
+                      <SafeImage src={salon.logo_url || ''} alt={salon.name} className="explore-logo" fallbackText={getInitials(salon.name)} fallbackKey="logo" />
+                      <h3>{salon.name}</h3>
+                    </div>
+                    <span className="area-badge">{salon.area || tx(messages, 'explore.defaultArea', 'City')}</span>
+                  </div>
+
+                  <div className="salon-trust-badges">
+                    <span className="ui-badge ui-badge-neutral">{tx(messages, 'explore.badges.fastConfirm', 'Fast confirmation')}</span>
+                    <span className="ui-badge ui-badge-neutral">{tx(messages, 'explore.badges.easyBooking', 'Easy booking')}</span>
+                    {hasWhats ? <span className="ui-badge ui-badge-featured">{tx(messages, 'explore.badges.whatsappAvailable', 'WhatsApp available')}</span> : null}
+                    {!isActive ? <span className="ui-badge ui-badge-pending">{tx(messages, 'explore.badges.pendingActivation', 'Pending activation')}</span> : null}
+                  </div>
+
+                  {Number.isFinite(minPrice) ? (
+                    <p className="starting-price">
+                      {tx(messages, 'explore.startingFrom', 'Starting from')} {formatSalonOperationalCurrency(minPrice, salon, locale)}
+                    </p>
+                  ) : null}
+
+                  <div className="mini-services">
+                    {services.slice(0, 3).map((item) => (
+                      <span className="service-tag" key={item.id}>
+                        {item.name} • {formatSalonOperationalCurrency(item.price, salon, locale)}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="row-actions">
+                    <Button as={Link as any} href={`/${countrySlugFromSalon(salon)}/${citySlugFromSalon(salon)}/${normalizeSlug(salon.slug)}`}>
+                      {tx(messages, 'service.bookSalon', 'Book this salon')}
+                    </Button>
+                    {hasWhats ? (
+                      <Button as="a" variant="secondary" href={`https://wa.me/${phone}`} target="_blank" rel="noreferrer">
+                        {tx(messages, 'common.whatsapp', 'WhatsApp')}
+                      </Button>
+                    ) : null}
+                  </div>
+                </Card>
+              </article>
+            );
+          })}
         </section>
       </PageShell>
     );

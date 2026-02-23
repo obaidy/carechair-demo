@@ -41,23 +41,35 @@ export default async function CalendarPage({params}: Props) {
         <p className="muted">{t('dashboard.calendarHint', {defaultValue: 'Daily booking timeline grouped by date.'})}</p>
       </section>
 
-      {rows.map(([dateKey, items]) => (
-        <section key={dateKey} className="panel">
-          <h2>{dateKey}</h2>
-          <div className="grid">
-            {items.map((booking) => (
-              <article key={booking.id} className="booking-card">
-                <div className="booking-info">
-                  <h3>{booking.customer_name}</h3>
-                  <p className="muted">{new Date(booking.appointment_start).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</p>
-                  <p className="muted">{serviceById[booking.service_id || '']?.name || '-'}</p>
-                  <p className="muted">{staffById[booking.staff_id || '']?.name || '-'}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      ))}
+      <section className="calendar-list">
+        {rows.map(([dateKey, items]) => (
+          <section key={dateKey} className="date-group">
+            <div className="date-header">
+              <h5>{dateKey}</h5>
+              <span>{items.length}</span>
+            </div>
+            <div className="bookings-stack">
+              {items.map((booking) => (
+                <article key={booking.id} className="booking-card">
+                  <div className="booking-top">
+                    <div>
+                      <h6>{booking.customer_name}</h6>
+                      <p>{new Date(booking.appointment_start).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</p>
+                    </div>
+                    <span className={`status-badge status-${String(booking.status || 'pending')}`}>
+                      {String(booking.status || 'pending')}
+                    </span>
+                  </div>
+                  <div className="booking-info">
+                    <p>{serviceById[booking.service_id || '']?.name || '-'}</p>
+                    <p>{staffById[booking.staff_id || '']?.name || '-'}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))}
+      </section>
     </div>
   );
 }

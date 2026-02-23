@@ -15,27 +15,47 @@ export default async function SettingsPage({params}: Props) {
   const isPublic = Boolean(salon.is_public ?? salon.is_listed ?? false);
 
   return (
-    <div className="cc-section">
+    <div className="cc-section settings-grid">
       <section className="panel hero-lite">
         <h1>{t('dashboard.settings', {defaultValue: 'Settings'})}</h1>
       </section>
 
-      <section className="panel">
+      <section className="panel settings-list">
         <h2>{t('dashboard.visibility', {defaultValue: 'Visibility on explore'})}</h2>
-        <p className="muted">{isPublic ? 'Public' : 'Private'}</p>
+        <article className="settings-row">
+          <div>
+            <strong>{t('dashboard.visibility', {defaultValue: 'Visibility on explore'})}</strong>
+            <p className="muted">{isPublic ? 'Public' : 'Private'}</p>
+          </div>
 
-        <form action={updateSalonVisibilityAction} className="row-actions">
-          <input type="hidden" name="path" value={`/${locale}/app/settings`} />
-          <input type="hidden" name="isPublic" value={isPublic ? 'false' : 'true'} />
-          <button className="btn btn-primary" type="submit">{isPublic ? 'Hide from explore' : 'Show on explore'}</button>
-        </form>
+          <form action={updateSalonVisibilityAction} className="row-actions">
+            <input type="hidden" name="path" value={`/${locale}/app/settings`} />
+            <input type="hidden" name="isPublic" value={isPublic ? 'false' : 'true'} />
+            <button className="btn btn-primary" type="submit">{isPublic ? 'Hide from explore' : 'Show on explore'}</button>
+          </form>
+        </article>
       </section>
 
-      <section className="panel">
+      <section className="panel settings-list">
         <h2>{t('dashboard.account', {defaultValue: 'Account'})}</h2>
-        <p className="muted">{salon.slug}</p>
-        <p className="muted">{salon.country_code || '-'}</p>
-        <p className="muted">{salon.currency_code || '-'}</p>
+        <article className="settings-row">
+          <div>
+            <strong>Slug</strong>
+            <p className="muted">{salon.slug}</p>
+          </div>
+        </article>
+        <article className="settings-row">
+          <div>
+            <strong>Country</strong>
+            <p className="muted">{salon.country_code || '-'}</p>
+          </div>
+        </article>
+        <article className="settings-row">
+          <div>
+            <strong>Currency</strong>
+            <p className="muted">{salon.currency_code || '-'}</p>
+          </div>
+        </article>
       </section>
     </div>
   );

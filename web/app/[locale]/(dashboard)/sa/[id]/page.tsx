@@ -23,22 +23,22 @@ export default async function SuperadminSalonDetailPage({params}: Props) {
   const isPublic = Boolean(salon.is_public ?? salon.is_listed ?? false);
 
   return (
-    <div className="cc-section">
+    <div className="cc-section superadmin-overview-panel">
       <section className="panel hero-lite">
         <h2>{salon.name}</h2>
         <p>{salon.area || '-'}</p>
       </section>
 
-      <section className="kpi-grid">
-        <article className="kpi-card"><span>Bookings 30d</span><strong>{overview.bookings30d}</strong></article>
-        <article className="kpi-card"><span>Clients 30d</span><strong>{overview.clients30d}</strong></article>
-        <article className="kpi-card"><span>Revenue 30d</span><strong>{overview.revenue30d.toFixed(0)}</strong></article>
-        <article className="kpi-card"><span>Status</span><strong>{String(salon.status || salon.subscription_status || 'draft')}</strong></article>
+      <section className="superadmin-kpi-grid">
+        <article className="superadmin-kpi-card"><span>Bookings 30d</span><strong>{overview.bookings30d}</strong></article>
+        <article className="superadmin-kpi-card"><span>Clients 30d</span><strong>{overview.clients30d}</strong></article>
+        <article className="superadmin-kpi-card"><span>Revenue 30d</span><strong>{overview.revenue30d.toFixed(0)}</strong></article>
+        <article className="superadmin-kpi-card"><span>Status</span><strong>{String(salon.status || salon.subscription_status || 'draft')}</strong></article>
       </section>
 
       <section className="panel">
         <h2>{t('superadmin.actions', {defaultValue: 'Actions'})}</h2>
-        <div className="row-actions">
+        <div className="row-actions superadmin-salon-actions">
           <form action={superadminSalonAction}>
             <input type="hidden" name="salonId" value={salon.id} />
             <input type="hidden" name="action" value="approve_trial" />
@@ -74,14 +74,20 @@ export default async function SuperadminSalonDetailPage({params}: Props) {
 
       <section className="panel">
         <h2>{t('superadmin.recentBookings', {defaultValue: 'Recent bookings'})}</h2>
-        <div className="grid">
+        <div className="bookings-stack">
           {bookings.slice(0, 30).map((booking) => (
             <article key={booking.id} className="booking-card">
+              <div className="booking-top">
+                <div>
+                  <h6>{booking.customer_name}</h6>
+                  <p>{booking.customer_phone}</p>
+                </div>
+                <span className={`status-badge status-${String(booking.status || 'pending')}`}>
+                  {String(booking.status || 'pending')}
+                </span>
+              </div>
               <div className="booking-info">
-                <h3>{booking.customer_name}</h3>
-                <p className="muted">{booking.customer_phone}</p>
-                <p className="muted">{new Date(booking.appointment_start).toLocaleString()}</p>
-                <p className="muted">{booking.status}</p>
+                <p>{new Date(booking.appointment_start).toLocaleString()}</p>
               </div>
             </article>
           ))}

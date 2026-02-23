@@ -35,8 +35,21 @@ export default async function ExplorePage({params, searchParams}: Props) {
   const countryFilter = String(queryParams.country || '').trim().toLowerCase();
   const cityFilter = String(queryParams.city || '').trim().toLowerCase();
   const query = String(queryParams.q || '').trim().toLowerCase();
+  const areaFilter = String(queryParams.area || '').trim();
+  const categoryFilter = String(queryParams.category || 'all').trim().toLowerCase();
+  const sortBy = String(queryParams.sort || 'newest').trim().toLowerCase();
 
   const {data: rows, error} = await getExploreDataSafe();
+  const categories = [
+    {key: 'all', label: tx(messages, 'explore.categories.all', 'All'), keywords: []},
+    {key: 'haircut', label: tx(messages, 'explore.categories.haircut', 'Haircut'), keywords: ['قص', 'شعر', 'hair', 'cut']},
+    {key: 'color', label: tx(messages, 'explore.categories.color', 'Color'), keywords: ['صبغ', 'لون', 'color']},
+    {key: 'nails', label: tx(messages, 'explore.categories.nails', 'Nails'), keywords: ['اظافر', 'أظافر', 'مانيكير', 'باديكير', 'nail']},
+    {key: 'facial', label: tx(messages, 'explore.categories.facial', 'Facial'), keywords: ['بشرة', 'تنظيف', 'facial', 'skin']},
+    {key: 'makeup', label: tx(messages, 'explore.categories.makeup', 'Makeup'), keywords: ['مكياج', 'ميكاب', 'makeup']}
+  ];
+  const activeCategory = categories.find((item) => item.key === categoryFilter) || categories[0];
+  const areaOptions = Array.from(new Set(rows.map((row) => row.salon.area).filter(Boolean))).map((item) => String(item));
 
   const filtered = rows.filter(({salon, services}) => {
     const country = countrySlugFromSalon(salon);
@@ -46,16 +59,33 @@ export default async function ExplorePage({params, searchParams}: Props) {
     if (cityFilter && city !== cityFilter) return false;
 
     if (!query) return true;
+    if (areaFilter && String(salon.area || '') !== areaFilter) return false;
 
     const salonName = String(salon.name || '').toLowerCase();
     const serviceNames = services.map((item) => String(item.name || '').toLowerCase());
-    return salonName.includes(query) || serviceNames.some((name) => name.includes(query));
+    const queryMatch = !query || salonName.includes(query) || serviceNames.some((name) => name.includes(query));
+    if (!queryMatch) return false;
+
+    if (activeCategory.key === 'all') return true;
+    return serviceNames.some((name) => activeCategory.keywords.some((keyword) => name.includes(keyword)));
+  });
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === 'nearest') {
+      return String(a.salon.name || '').localeCompare(String(b.salon.name || ''), locale);
+    }
+    if (sortBy === 'most-booked') {
+      return (b.services?.length || 0) - (a.services?.length || 0);
+    }
+    if (sortBy === 'top-rated') {
+      return String(a.salon.slug || '').localeCompare(String(b.salon.slug || ''), locale);
+    }
+    return new Date(String(b.salon.created_at || 0)).getTime() - new Date(String(a.salon.created_at || 0)).getTime();
   });
 
   const socialProofText =
-    filtered.length <= 5
-      ? tx(messages, 'explore.socialProofEarly', 'Centers that started using CareChair ({{count}})', {count: filtered.length})
-      : tx(messages, 'explore.socialProof', 'Centers using CareChair to organize bookings ({{count}})', {count: filtered.length});
+    sorted.length <= 5
+      ? tx(messages, 'explore.socialProofEarly', 'Centers that started using CareChair ({{count}})', {count: sorted.length})
+      : tx(messages, 'explore.socialProof', 'Centers using CareChair to organize bookings ({{count}})', {count: sorted.length});
   const platformWhatsapp = normalizeIraqiPhone(
     process.env.NEXT_PUBLIC_PLATFORM_WHATSAPP_NUMBER || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || ''
   );
@@ -76,6 +106,60 @@ export default async function ExplorePage({params, searchParams}: Props) {
         </div>
       </Card>
 
+      <Card>
+        <div className="category-chips-wrap">
+          {categories.map((item) => (
+            <Link
+              key={item.key}
+              href={`/explore?${new URLSearchParams({
+                q: String(queryParams.q || ''),
+                area: areaFilter,
+                country: countryFilter,
+                city: cityFilter,
+                category: item.key,
+                sort: sortBy
+              }).toString()}`}
+              className={`category-chip ${activeCategory.key === item.key ? 'active' : ''}`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+
+        <form className="grid three" method="get">
+          <input type="hidden" name="country" value={countryFilter} />
+          <input type="hidden" name="city" value={cityFilter} />
+          <input type="hidden" name="category" value={activeCategory.key} />
+          <label className="field">
+            <span>{tx(messages, 'explore.filters.area', 'Area')}</span>
+            <select name="area" defaultValue={areaFilter} className="input">
+              <option value="">{tx(messages, 'explore.filters.allAreas', 'All areas')}</option>
+              {areaOptions.map((item) => (
+                <option value={item} key={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>{tx(messages, 'explore.filters.search', 'Search')}</span>
+            <input name="q" defaultValue={String(queryParams.q || '')} className="input" placeholder={tx(messages, 'explore.filters.searchPlaceholder', 'Search by salon or service')} />
+          </label>
+          <label className="field">
+            <span>{tx(messages, 'explore.filters.sort', 'Sort')}</span>
+            <select name="sort" defaultValue={sortBy} className="input">
+              <option value="nearest">{tx(messages, 'explore.sort.nearest', 'Nearest')}</option>
+              <option value="top-rated">{tx(messages, 'explore.sort.topRated', 'Top rated')}</option>
+              <option value="most-booked">{tx(messages, 'explore.sort.mostBooked', 'Most booked')}</option>
+              <option value="newest">{tx(messages, 'explore.sort.newest', 'Newest')}</option>
+            </select>
+          </label>
+          <button type="submit" className="ui-btn ui-btn-primary">
+            {tx(messages, 'common.apply', 'Apply')}
+          </button>
+        </form>
+      </Card>
+
       {error ? (
         <Card>
           <p className="muted">{tx(messages, 'explore.errors.loadFailed', 'Could not load salons right now.')}</p>
@@ -91,13 +175,13 @@ export default async function ExplorePage({params, searchParams}: Props) {
             </Button>
           </div>
         </Card>
-      ) : filtered.length === 0 ? (
+      ) : sorted.length === 0 ? (
         <Card>
           <p className="muted">{tx(messages, 'explore.empty', 'No salons match the current filters.')}</p>
         </Card>
       ) : (
         <section className="explore-grid">
-          {filtered.map(({salon, services}) => {
+          {sorted.map(({salon, services}) => {
             const country = countrySlugFromSalon(salon);
             const city = citySlugFromSalon(salon);
             const href = `/${country}/${city}/${normalizeSlug(salon.slug)}`;

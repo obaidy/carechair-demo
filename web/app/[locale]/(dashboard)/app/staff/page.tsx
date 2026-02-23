@@ -22,7 +22,7 @@ export default async function StaffPage({params}: Props) {
 
       <section className="panel">
         <h2>{t('dashboard.addStaff', {defaultValue: 'Add staff member'})}</h2>
-        <form action={createStaffAction} className="grid two">
+        <form action={createStaffAction} className="grid two service-form-grid">
           <input type="hidden" name="path" value={`/${locale}/app/staff`} />
           <label className="field">
             <span>{t('dashboard.name', {defaultValue: 'Name'})}</span>
@@ -36,14 +36,14 @@ export default async function StaffPage({params}: Props) {
         </form>
       </section>
 
-      <section className="grid">
+      <section className="settings-list">
         {staff.map((member) => (
-          <article className="booking-card" key={member.id}>
-            <div className="booking-info">
-              <h3>{member.name}</h3>
+          <article className="settings-row staff-row-main" key={member.id}>
+            <div>
+              <strong>{member.name}</strong>
               <p className="muted">{member.is_active ? 'Active' : 'Inactive'}</p>
             </div>
-            <form action={toggleStaffAction}>
+            <form action={toggleStaffAction} className="row-actions service-row-actions">
               <input type="hidden" name="path" value={`/${locale}/app/staff`} />
               <input type="hidden" name="staffId" value={member.id} />
               <input type="hidden" name="isActive" value={member.is_active ? 'true' : 'false'} />
