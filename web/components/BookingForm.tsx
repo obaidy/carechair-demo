@@ -47,6 +47,54 @@ const bookingSchema = z.object({
   })
 });
 
+const BOOKING_FALLBACKS: Record<string, string> = {
+  formTitle: 'Book your appointment',
+  stepService: 'Choose service',
+  stepAutoAssign: 'Auto-assign employee',
+  stepStaff: 'Choose staff',
+  stepTime: 'Choose time',
+  name: 'Name',
+  phone: 'Phone',
+  service: 'Service',
+  staff: 'Staff',
+  notes: 'Notes (optional)',
+  staffAssignment: 'Staff assignment',
+  noActiveServices: 'No active services available.',
+  noAssignedStaffForService: 'No employee is currently assigned to this service.',
+  autoAssignNote: 'Employee will be auto-selected based on first available slot.',
+  pickDay: 'Choose day',
+  pickTime: 'Choose time',
+  timeSlots: 'Available slots (every {{step}} min)',
+  minutes: '{{count}} minutes',
+  summaryTitle: 'Booking summary',
+  price: 'Price',
+  time: 'Time',
+  confirmBooking: 'Confirm booking',
+  notSelected: 'Not selected',
+  autoAssignByAvailability: 'Auto-assign by availability',
+  'success.title': 'Booking request received',
+  'success.message': 'Your booking was submitted successfully.',
+  'success.id': 'Request ID',
+  'success.service': 'Service',
+  'success.staff': 'Staff',
+  'success.time': 'Time',
+  'success.newBooking': 'Book another appointment',
+  'errors.loadSlots': 'Failed to load available slots.',
+  'errors.slotUnavailable': 'This slot is no longer available.',
+  'errors.closedDay': 'Salon is closed on this day.',
+  'errors.closedHour': 'Slot is outside salon working hours.',
+  'errors.staffOff': 'Selected staff is off on this day.',
+  'errors.staffHour': 'Slot is outside selected staff working hours.',
+  'errors.staffBreak': 'Slot overlaps selected staff break time.',
+  'errors.slotTaken': 'This slot has just been booked.',
+  'errors.staffOffTime': 'Selected staff is off at this time.',
+  'errors.misconfigured': 'Booking form is not configured correctly.',
+  'errors.invalidForm': 'Please check your name and phone number.',
+  'errors.invalidServiceStaff': 'Please select a valid service/staff combination.',
+  'errors.noSlots': 'No available slots for this day.',
+  'errors.generic': 'Something went wrong. Please try again.'
+};
+
 function formatTime(iso: string, locale = 'en-US', timezone = 'UTC') {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '--:--';
@@ -88,7 +136,7 @@ export default function BookingForm({
   const locale = useLocale();
   const tx = useTx();
   const t = (key: string, vars?: Record<string, string | number | boolean | null | undefined>) =>
-    tx(`booking.${key}`, key, vars);
+    tx(`booking.${key}`, BOOKING_FALLBACKS[key] || key, vars);
   const tCommon = (key: string, vars?: Record<string, string | number | boolean | null | undefined>) =>
     tx(`common.${key}`, key, vars);
   const [mounted, setMounted] = useState(false);
