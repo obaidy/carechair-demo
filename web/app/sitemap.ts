@@ -1,6 +1,15 @@
 import type {MetadataRoute} from 'next';
 import {getSiteMapData} from '@/lib/data/public';
-import {toAbsoluteUrl} from '@/lib/seo';
+import {localeAlternateUrls, toAbsoluteUrl} from '@/lib/seo';
+
+function withAlternates(path: string) {
+  return {
+    url: toAbsoluteUrl(path),
+    alternates: {
+      languages: localeAlternateUrls(path)
+    }
+  } as const;
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -8,13 +17,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticEntries: MetadataRoute.Sitemap = [
     {
-      url: toAbsoluteUrl('/'),
+      ...withAlternates('/'),
       lastModified: now,
       changeFrequency: 'weekly',
       priority: 1
     },
     {
-      url: toAbsoluteUrl('/explore'),
+      ...withAlternates('/explore'),
       lastModified: now,
       changeFrequency: 'daily',
       priority: 0.9
@@ -22,21 +31,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   const cityEntries: MetadataRoute.Sitemap = dynamic.cityPaths.map((path) => ({
-    url: toAbsoluteUrl(path),
+    ...withAlternates(path),
     lastModified: now,
     changeFrequency: 'daily',
     priority: 0.8
   }));
 
   const serviceEntries: MetadataRoute.Sitemap = dynamic.servicePaths.map((path) => ({
-    url: toAbsoluteUrl(path),
+    ...withAlternates(path),
     lastModified: now,
     changeFrequency: 'daily',
     priority: 0.7
   }));
 
   const salonEntries: MetadataRoute.Sitemap = dynamic.salonPaths.map((path) => ({
-    url: toAbsoluteUrl(path),
+    ...withAlternates(path),
     lastModified: now,
     changeFrequency: 'daily',
     priority: 0.9

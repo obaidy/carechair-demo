@@ -24,8 +24,8 @@ export default async function RootLayout({children}: {children: React.ReactNode}
   const messages = await getMessages();
 
   return (
-    <html lang={locale} dir={localeToDir(locale)}>
-      <body>
+    <html lang={locale} dir={localeToDir(locale)} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ScrollTopOnPath />
           <MainNav />

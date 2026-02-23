@@ -43,13 +43,14 @@ const bookingSchema = z.object({
   })
 });
 
-function formatTime(iso: string, locale = 'en-US') {
+function formatTime(iso: string, locale = 'en-US', timezone = 'UTC') {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '--:--';
 
   return new Intl.DateTimeFormat(locale, {
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: timezone
   }).format(date);
 }
 
@@ -82,10 +83,11 @@ export default function BookingForm({
 }: BookingFormProps) {
   const t = useTranslations('booking');
   const tCommon = useTranslations('common');
+  const [mounted, setMounted] = useState(false);
 
-  const [serviceId, setServiceId] = useState<string>(services[0]?.id || '');
-  const [staffId, setStaffId] = useState<string>(staff[0]?.id || '');
-  const [dateValue, setDateValue] = useState<string>(toDateInput(new Date()));
+  const [serviceId, setServiceId] = useState<string>('');
+  const [staffId, setStaffId] = useState<string>('');
+  const [dateValue, setDateValue] = useState<string>('');
   const [slotIso, setSlotIso] = useState<string>('');
   const [dayBookings, setDayBookings] = useState<Array<{staff_id: string; appointment_start: string; appointment_end: string}>>([]);
   const [dayTimeOff, setDayTimeOff] = useState<Array<{staff_id: string; start_at: string; end_at: string}>>([]);
@@ -99,6 +101,17 @@ export default function BookingForm({
   const [success, setSuccess] = useState<null | {id: string; appointment: string; staff: string; service: string}>(null);
 
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (!serviceId) setServiceId(services[0]?.id || '');
+    if (!staffId) setStaffId(staff[0]?.id || '');
+    if (!dateValue) setDateValue(toDateInput(new Date()));
+  }, [mounted, serviceId, staffId, dateValue, services, staff]);
 
   const servicesById = useMemo(() => Object.fromEntries(services.map((item) => [item.id, item])), [services]);
   const staffById = useMemo(() => Object.fromEntries(staff.map((item) => [item.id, item])), [staff]);
@@ -510,6 +523,15 @@ export default function BookingForm({
     }
   }
 
+  if (!mounted) {
+    return (
+      <section className="booking-card" aria-busy="true" aria-live="polite">
+        <h3>{t('formTitle')}</h3>
+        <div className="slots-empty">{tCommon('loading')}</div>
+      </section>
+    );
+  }
+
   if (success) {
     return (
       <section className="booking-card">
@@ -601,7 +623,7 @@ export default function BookingForm({
                 className={`slot-btn${slotIso === slot.startIso ? ' is-active' : ''}`}
                 onClick={() => setSlotIso(slot.startIso)}
               >
-                {formatTime(slot.startIso)}
+                {formatTime(slot.startIso, undefined, salon.timezone || 'UTC')}
               </button>
             ))}
           </div>

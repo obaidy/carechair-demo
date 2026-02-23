@@ -34,20 +34,26 @@ export function formatAddress(location: {
     .join(', ');
 }
 
-export function buildGoogleDirectionsUrl(lat: unknown, lng: unknown): string {
+export function buildGoogleDirectionsUrl(lat: unknown, lng: unknown, address = ''): string {
   const safeLat = normalizeLatitude(lat);
   const safeLng = normalizeLongitude(lng);
-  if (safeLat == null || safeLng == null) return '';
-  return `https://www.google.com/maps/search/?api=1&query=${safeLat},${safeLng}`;
+  if (safeLat != null && safeLng != null) {
+    return `https://www.google.com/maps/search/?api=1&query=${safeLat},${safeLng}`;
+  }
+  if (!address) return '';
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
 export function buildAppleDirectionsUrl(lat: unknown, lng: unknown, address: string): string {
   const safeLat = normalizeLatitude(lat);
   const safeLng = normalizeLongitude(lng);
-  if (safeLat == null || safeLng == null) return '';
-
-  const q = encodeURIComponent(String(address || '').trim() || `${safeLat},${safeLng}`);
-  return `https://maps.apple.com/?q=${q}&ll=${safeLat},${safeLng}`;
+  const query = String(address || '').trim();
+  if (safeLat != null && safeLng != null) {
+    const q = encodeURIComponent(query || `${safeLat},${safeLng}`);
+    return `https://maps.apple.com/?q=${q}&ll=${safeLat},${safeLng}`;
+  }
+  if (!query) return '';
+  return `https://maps.apple.com/?q=${encodeURIComponent(query)}`;
 }
 
 export function buildMapboxStaticPreviewUrl(lat: unknown, lng: unknown, width = 600, height = 300): string {

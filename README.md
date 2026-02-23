@@ -18,6 +18,7 @@ The existing SPA routing/build behavior is intentionally preserved.
 - Tech: Next.js App Router (`/web`)
 - Purpose: public landing, explore, city/service listing, salon booking SEO pages
 - Recommended deployment: Vercel (can also run on Netlify)
+- Runtime: Node.js `>=18.18` (recommended Node 20)
 
 ## Development Scripts (root)
 
@@ -41,6 +42,15 @@ The existing SPA routing/build behavior is intentionally preserved.
 - `NEXT_PUBLIC_SITE_URL` (optional but recommended): canonical/hreflang base URL
 
 See `web/.env.example`.
+
+### /web Quick Start
+
+```bash
+# Node 18.18+ (recommended: Node 20)
+cd web
+npm install
+npm run dev
+```
 
 ## Deployment
 

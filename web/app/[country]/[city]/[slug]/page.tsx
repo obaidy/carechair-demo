@@ -102,8 +102,16 @@ export default async function SlugPage({params}: PageProps) {
 
   const address = formatAddress(location);
   const staticMapUrl = buildMapboxStaticPreviewUrl(location?.lat, location?.lng, 600, 300);
-  const googleDirections = buildGoogleDirectionsUrl(location?.lat, location?.lng);
+  const googleDirections = buildGoogleDirectionsUrl(location?.lat, location?.lng, address);
   const appleDirections = buildAppleDirectionsUrl(location?.lat, location?.lng, address);
+  const openingHours = (hours || [])
+    .filter((row) => !row.is_closed && row.open_time && row.close_time)
+    .map((row) => {
+      const day = dayLabel(row.day_of_week);
+      const open = String(row.open_time || '').slice(0, 5);
+      const close = String(row.close_time || '').slice(0, 5);
+      return `${day} ${open}-${close}`;
+    });
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -124,7 +132,8 @@ export default async function SlugPage({params}: PageProps) {
           }
         : undefined,
     url: `/${country}/${city}/${slug}`,
-    telephone: salon.whatsapp || undefined
+    telephone: salon.whatsapp || undefined,
+    openingHours: openingHours.length > 0 ? openingHours : undefined
   };
 
   return (
