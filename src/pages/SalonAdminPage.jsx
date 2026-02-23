@@ -1,6 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import PageShell from "../components/PageShell";
+import BillingGate from "../components/BillingGate";
+import CalendarPage from "./admin/CalendarPage";
 import MobileDrawer from "../components/MobileDrawer";
 import SafeImage from "../components/SafeImage";
 import Toast from "../components/Toast";
@@ -9,21 +12,20 @@ import {
   csvEscape,
   DAYS,
   DEFAULT_HOURS,
-  formatCurrencyIQD,
+  formatSalonOperationalCurrency,
   formatDate,
   formatDateKey,
   formatTime,
   isValidE164WithoutPlus,
   normalizeIraqiPhone,
   sortByOrderThenName,
-  STATUS_LABELS,
 } from "../lib/utils";
 import { toHHMM } from "../lib/slots";
 import { useToast } from "../lib/useToast";
 import { supabase } from "../lib/supabase";
 import { compressImage } from "../lib/imageCompression";
 import { formatWhatsappAppointment, sendWhatsappTemplate } from "../lib/whatsapp";
-import { createSubscriptionCheckout } from "../lib/stripeBilling";
+import { createCountryCheckout } from "../lib/stripeBilling";
 import { deriveSalonAccess, formatBillingDate, getBillingStatusLabel, getTrialRemainingLabel } from "../lib/billing";
 import {
   galleryToTextareaValue,
@@ -37,40 +39,43 @@ const MEDIA_BUCKET = "carechair-media";
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const ADMIN_SIDEBAR_ITEMS = [
-  { key: "dashboard", label: "لوحة التحكم" },
-  { key: "bookings", label: "الحجوزات" },
-  { key: "calendar", label: "التقويم" },
-  { key: "billing", label: "الفوترة" },
-  { key: "clients", label: "العملاء" },
-  { key: "employees", label: "الموظفين" },
-  { key: "services", label: "الخدمات" },
-  { key: "schedules", label: "جداول الدوام" },
-  { key: "commissions", label: "العمولات" },
-  { key: "expenses", label: "المصروفات" },
-  { key: "reports", label: "التقارير" },
-  { key: "settings", label: "الإعدادات" },
+  { key: "dashboard", labelKey: "admin.sections.dashboard" },
+  { key: "bookings", labelKey: "admin.sections.bookings" },
+  { key: "calendar", labelKey: "admin.sections.calendar" },
+  { key: "billing", labelKey: "admin.sections.billing" },
+  { key: "clients", labelKey: "admin.sections.clients" },
+  { key: "employees", labelKey: "admin.sections.employees" },
+  { key: "services", labelKey: "admin.sections.services" },
+  { key: "schedules", labelKey: "admin.sections.schedules" },
+  { key: "commissions", labelKey: "admin.sections.commissions" },
+  { key: "expenses", labelKey: "admin.sections.expenses" },
+  { key: "reports", labelKey: "admin.sections.reports" },
+  { key: "settings", labelKey: "admin.sections.settings" },
 ];
 
 const SETTINGS_SECTIONS = [
-  { key: "assign", label: "ربط الخدمات بالموظفين" },
-  { key: "media", label: "الصور" },
-  { key: "salon", label: "إعدادات المركز" },
+  { key: "assign", labelKey: "admin.settings.assign" },
+  { key: "media", labelKey: "admin.settings.media" },
+  { key: "salon", labelKey: "admin.settings.salon" },
 ];
 
 const CHART_COLORS = ["#2563eb", "#1d4ed8", "#0ea5e9", "#14b8a6", "#22c55e", "#f59e0b", "#ef4444"];
+const SUNDAY_REF = new Date("2024-01-07T00:00:00Z");
 
-function formatMonthLabel(monthKey) {
+function formatMonthLabel(monthKey, locale = "en") {
   const [year, month] = String(monthKey || "")
     .split("-")
     .map((x) => Number(x));
   if (!year || !month) return monthKey;
   const date = new Date(year, month - 1, 1);
-  return new Intl.DateTimeFormat("ar-IQ", { month: "long", year: "numeric" }).format(date);
+  const safeLocale = String(locale || "en").startsWith("ar") ? "ar-IQ" : String(locale || "en");
+  return new Intl.DateTimeFormat(safeLocale, { month: "long", year: "numeric" }).format(date);
 }
 
 const BOOKINGS_PAGE_SIZE = 20;
 
 export default function SalonAdminPage() {
+  const { t, i18n } = useTranslation();
   const { slug, module } = useParams();
   const navigate = useNavigate();
   const { toast, showToast } = useToast();
@@ -109,7 +114,7 @@ export default function SalonAdminPage() {
   const [savingTimeOff, setSavingTimeOff] = useState(false);
   const [deletingTimeOffId, setDeletingTimeOffId] = useState("");
 
-  const [serviceForm, setServiceForm] = useState({ name: "", duration_minutes: "45", price: "20000", sort_order: "0" });
+  const [serviceForm, setServiceForm] = useState({ name: "", duration_minutes: "", price: "", sort_order: "" });
   const [staffForm, setStaffForm] = useState({ name: "", sort_order: "0", photo_url: "" });
   const [addingService, setAddingService] = useState(false);
   const [addingStaff, setAddingStaff] = useState(false);
@@ -150,7 +155,43 @@ export default function SalonAdminPage() {
   const [staffImageCompressing, setStaffImageCompressing] = useState({});
   const [copyingLink, setCopyingLink] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutPlanType, setCheckoutPlanType] = useState("basic");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const tr = useCallback(
+    (key, defaultValue, options = {}) =>
+      t(key, {
+        defaultValue,
+        ...options,
+      }),
+    [t]
+  );
+
+  const numberLocale = useMemo(() => {
+    const lang = String(i18n.language || "en-US");
+    return lang.startsWith("ar") ? "ar-IQ-u-nu-latn" : lang;
+  }, [i18n.language]);
+
+  const formatMoney = useCallback(
+    (value) => formatSalonOperationalCurrency(value, salon, numberLocale),
+    [numberLocale, salon]
+  );
+
+  const localizedDays = useMemo(() => {
+    const locale = String(i18n.language || "en");
+    return DAYS.map((day) => {
+      const d = new Date(SUNDAY_REF);
+      d.setUTCDate(SUNDAY_REF.getUTCDate() + day.index);
+      let label = day.label;
+      try {
+        const safeLocale = locale.startsWith("ar") ? "ar-IQ" : locale;
+        label = new Intl.DateTimeFormat(safeLocale, { weekday: "long" }).format(d);
+      } catch {
+        // Keep Arabic fallback from constants.
+      }
+      return { ...day, label };
+    });
+  }, [i18n.language]);
 
   useEffect(() => {
     const validKeys = new Set(ADMIN_SIDEBAR_ITEMS.map((x) => x.key));
@@ -170,7 +211,7 @@ export default function SalonAdminPage() {
     async function loadSalon() {
       if (!supabase) {
         setLoading(false);
-        showToast("error", "إعدادات Supabase غير مكتملة.");
+        showToast("error", tr("admin.errors.supabaseIncomplete", "Supabase configuration is incomplete."));
         return;
       }
 
@@ -192,7 +233,12 @@ export default function SalonAdminPage() {
           gallery_text: galleryToTextareaValue(salonRes.data.gallery_image_urls),
         });
       } catch (err) {
-        showToast("error", `تعذر تحميل الصالون: ${err?.message || err}`);
+        showToast(
+          "error",
+          tr("admin.errors.loadSalonFailed", "Failed to load salon: {{message}}", {
+            message: err?.message || err,
+          })
+        );
       } finally {
         setLoading(false);
       }
@@ -237,7 +283,7 @@ export default function SalonAdminPage() {
       setEmployeeTimeOff(employeeTimeOffRes.data || []);
 
       const dayMap = {};
-      for (const day of DAYS) {
+      for (const day of localizedDays) {
         dayMap[day.index] = { is_closed: false, open_time: "10:00", close_time: "20:00" };
       }
       for (const row of hoursRes.data || []) {
@@ -274,7 +320,12 @@ export default function SalonAdminPage() {
         return firstStaff?.id || "";
       });
     } catch (err) {
-      showToast("error", `تعذر تحميل بيانات الإدارة: ${err?.message || err}`);
+      showToast(
+        "error",
+        tr("admin.errors.loadAdminDataFailed", "Failed to load admin data: {{message}}", {
+          message: err?.message || err,
+        })
+      );
     } finally {
       setBookingsLoading(false);
     }
@@ -326,7 +377,7 @@ export default function SalonAdminPage() {
     }
 
     const base = {};
-    for (const day of DAYS) {
+    for (const day of localizedDays) {
       base[day.index] = {
         is_off: false,
         start_time: "10:00",
@@ -414,6 +465,15 @@ export default function SalonAdminPage() {
     return { today, pending, confirmed, cancelled };
   }, [bookings, todayKey]);
 
+  const statusLabels = useMemo(
+    () => ({
+      pending: tr("booking.status.pending", "Pending"),
+      confirmed: tr("booking.status.confirmed", "Confirmed"),
+      cancelled: tr("booking.status.cancelled", "Cancelled"),
+    }),
+    [tr]
+  );
+
   const calendarGroups = useMemo(() => {
     const targetDate = calendarDate || formatDateKey(new Date());
     const rows = bookings
@@ -426,12 +486,18 @@ export default function SalonAdminPage() {
     }
     for (const row of rows) {
       if (!map[row.staff_id]) {
-        map[row.staff_id] = { staff: { id: row.staff_id, name: "غير محدد" }, items: [] };
+        map[row.staff_id] = {
+          staff: { id: row.staff_id, name: tr("admin.common.unknownStaff", "Unassigned") },
+          items: [],
+        };
       }
       map[row.staff_id].items.push(row);
     }
-    return Object.values(map).sort((a, b) => String(a.staff?.name || "").localeCompare(String(b.staff?.name || ""), "ar"));
-  }, [bookings, calendarDate, staff]);
+    const sortLocale = String(i18n.language || "en").startsWith("ar") ? "ar" : "en";
+    return Object.values(map).sort((a, b) =>
+      String(a.staff?.name || "").localeCompare(String(b.staff?.name || ""), sortLocale)
+    );
+  }, [bookings, calendarDate, i18n.language, staff, tr]);
 
   const analyticsMonthOptions = useMemo(() => {
     if (!salon?.created_at) return [];
@@ -445,12 +511,12 @@ export default function SalonAdminPage() {
     const cursor = new Date(start);
     while (cursor <= endMonth) {
       const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
-      rows.push({ value: key, label: formatMonthLabel(key) });
+      rows.push({ value: key, label: formatMonthLabel(key, i18n.language) });
       cursor.setMonth(cursor.getMonth() + 1);
     }
 
     return rows.reverse();
-  }, [salon?.created_at]);
+  }, [i18n.language, salon?.created_at]);
 
   useEffect(() => {
     if (analyticsPeriod === "last30") return;
@@ -466,7 +532,7 @@ export default function SalonAdminPage() {
       end.setDate(end.getDate() + 1);
       const start = new Date(end);
       start.setDate(start.getDate() - 30);
-      return { start, end, label: "آخر 30 يوم" };
+      return { start, end, label: tr("admin.analytics.last30Days", "Last 30 days") };
     }
 
     const [year, month] = String(analyticsPeriod).split("-").map((x) => Number(x));
@@ -476,13 +542,13 @@ export default function SalonAdminPage() {
       end.setDate(end.getDate() + 1);
       const start = new Date(end);
       start.setDate(start.getDate() - 30);
-      return { start, end, label: "آخر 30 يوم" };
+      return { start, end, label: tr("admin.analytics.last30Days", "Last 30 days") };
     }
 
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 1);
-    return { start, end, label: formatMonthLabel(analyticsPeriod) };
-  }, [analyticsPeriod]);
+    return { start, end, label: formatMonthLabel(analyticsPeriod, i18n.language) };
+  }, [analyticsPeriod, i18n.language, tr]);
 
   const analytics = useMemo(() => {
     const now = new Date();
@@ -548,7 +614,8 @@ export default function SalonAdminPage() {
         dayRevenueMap[bookingKey] += amount;
       }
 
-      const serviceName = servicesById[booking.service_id]?.name || "خدمة غير معروفة";
+      const serviceName =
+        servicesById[booking.service_id]?.name || tr("admin.common.unknownService", "Unknown service");
       serviceRevenueMap[serviceName] = (serviceRevenueMap[serviceName] || 0) + amount;
 
       const employee = employeeMap[booking.staff_id];
@@ -635,7 +702,7 @@ export default function SalonAdminPage() {
       const key = String(b.customer_phone || b.customer_name || b.id);
       if (!clientsMap[key]) {
         clientsMap[key] = {
-          name: b.customer_name || "عميلة",
+          name: b.customer_name || tr("admin.common.customer", "Customer"),
           phone: b.customer_phone || "-",
           bookings: 0,
           revenue: 0,
@@ -684,8 +751,10 @@ export default function SalonAdminPage() {
   }, [salon?.slug]);
   const shareBookingWhatsappHref = useMemo(() => {
     if (!bookingPageUrl) return "";
-    return `https://wa.me/?text=${encodeURIComponent(`هذا رابط الحجز الخاص بالمركز:\n${bookingPageUrl}`)}`;
-  }, [bookingPageUrl]);
+    return `https://wa.me/?text=${encodeURIComponent(
+      `${tr("admin.share.bookingLinkMessage", "This is your salon booking link:")}\n${bookingPageUrl}`
+    )}`;
+  }, [bookingPageUrl, tr]);
 
   const onboardingChecklist = useMemo(() => {
     const hasServices = services.some((row) => row.is_active);
@@ -699,13 +768,13 @@ export default function SalonAdminPage() {
       Boolean(String(salon?.cover_image_url || "").trim()) ||
       galleryUrls.length > 0;
     return [
-      { key: "services", label: "إضافة الخدمات", done: hasServices },
-      { key: "staff", label: "إضافة الموظفين", done: hasStaff },
-      { key: "assign", label: "ربط الخدمات بالموظفين", done: hasAssignments },
-      { key: "hours", label: "تحديد ساعات العمل", done: hasHours },
-      { key: "media", label: "إضافة صور المركز (اختياري)", done: hasMedia },
+      { key: "services", label: tr("admin.checklist.services", "Add services"), done: hasServices },
+      { key: "staff", label: tr("admin.checklist.staff", "Add employees"), done: hasStaff },
+      { key: "assign", label: tr("admin.checklist.assign", "Assign services to employees"), done: hasAssignments },
+      { key: "hours", label: tr("admin.checklist.hours", "Set working hours"), done: hasHours },
+      { key: "media", label: tr("admin.checklist.media", "Add salon photos (optional)"), done: hasMedia },
     ];
-  }, [services, staff, staffServices, hoursDraft, salon?.logo_url, salon?.cover_image_url, galleryUrls.length]);
+  }, [services, staff, staffServices, hoursDraft, salon?.logo_url, salon?.cover_image_url, galleryUrls.length, tr]);
 
   const selectedStaffTimeOff = useMemo(
     () =>
@@ -718,11 +787,11 @@ export default function SalonAdminPage() {
   const salonAccess = useMemo(() => deriveSalonAccess(salon), [salon]);
   const writeLocked = unlocked && !salonAccess.canManage;
   const setupPaymentLink = String(import.meta.env.VITE_SETUP_PAYMENT_LINK || "").trim();
-  const trialRemaining = getTrialRemainingLabel(salon?.trial_end);
+  const trialRemaining = getTrialRemainingLabel(salon?.trial_end_at || salon?.trial_end);
 
   function ensureWriteAccess() {
     if (!writeLocked) return true;
-    showToast("error", salonAccess.lockMessage || "الحساب غير مفعل للتعديل حالياً.");
+    showToast("error", salonAccess.lockMessage || tr("admin.errors.accountLockedForEdits", "Account is not active for edits right now."));
     return false;
   }
 
@@ -740,11 +809,11 @@ export default function SalonAdminPage() {
 
   function validateImageFile(file) {
     if (!file) {
-      showToast("error", "اختاري صورة أولاً.");
+      showToast("error", tr("admin.errors.pickImageFirst", "Select an image first."));
       return false;
     }
     if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-      showToast("error", "الملف لازم يكون JPG أو PNG أو WEBP.");
+      showToast("error", tr("admin.errors.invalidImageType", "File type must be JPG, PNG, or WEBP."));
       return false;
     }
     return true;
@@ -767,7 +836,12 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
   if (up.error) {
     const msg = String(up.error.message || "");
     if (msg.toLowerCase().includes("bucket not found")) {
-      throw new Error("حاوية الصور غير موجودة. شغّل migration التخزين أو أنشئ bucket باسم carechair-media.");
+      throw new Error(
+        tr(
+          "admin.errors.mediaBucketMissing",
+          "Media bucket was not found. Run storage migration or create bucket carechair-media."
+        )
+      );
     }
     throw up.error;
   }
@@ -781,7 +855,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
     try {
       return await compressImage(file);
     } catch (err) {
-      throw new Error(err?.message || "تعذر ضغط الصورة قبل الرفع.");
+      throw new Error(err?.message || tr("admin.errors.imageCompressionFailed", "Failed to compress image before upload."));
     }
   }
 
@@ -822,9 +896,14 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
       setSalon(up.data);
       setMediaDraft((prev) => ({ ...prev, logo_url: publicUrl }));
-      showToast("success", "تم رفع شعار المركز.");
+      showToast("success", tr("admin.messages.logoUploaded", "Salon logo uploaded."));
     } catch (err) {
-      showToast("error", `تعذر رفع الشعار بعد الضغط: ${err?.message || err}`);
+      showToast(
+        "error",
+        tr("admin.errors.logoUploadFailed", "Failed to upload logo after compression: {{message}}", {
+          message: err?.message || err,
+        })
+      );
     } finally {
       setLogoCompressing(false);
       setLogoUploading(false);
@@ -854,9 +933,14 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
       setSalon(up.data);
       setMediaDraft((prev) => ({ ...prev, cover_image_url: publicUrl }));
-      showToast("success", "تم رفع صورة الغلاف.");
+      showToast("success", tr("admin.messages.coverUploaded", "Cover image uploaded."));
     } catch (err) {
-      showToast("error", `تعذر رفع صورة الغلاف بعد الضغط: ${err?.message || err}`);
+      showToast(
+        "error",
+        tr("admin.errors.coverUploadFailed", "Failed to upload cover image after compression: {{message}}", {
+          message: err?.message || err,
+        })
+      );
     } finally {
       setCoverCompressing(false);
       setCoverUploading(false);
@@ -871,7 +955,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
     const current = [...galleryUrls];
     if (current.length >= 8) {
-      showToast("error", "وصلتي الحد الأقصى للمعرض (8 صور).");
+      showToast("error", tr("admin.errors.galleryMaxReached", "You reached the maximum gallery limit (8 images)."));
       return;
     }
 
@@ -894,15 +978,20 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       }
 
       if (uploadedUrls.length === 0) {
-        showToast("error", "ما تم رفع أي صورة.");
+        showToast("error", tr("admin.errors.noImageUploaded", "No image was uploaded."));
         return;
       }
 
       const next = [...current, ...uploadedUrls].slice(0, 8);
       await saveGalleryUrls(next);
-      showToast("success", "تم رفع صور المعرض.");
+      showToast("success", tr("admin.messages.galleryUploaded", "Gallery images uploaded."));
     } catch (err) {
-      showToast("error", `تعذر ضغط/رفع صور المعرض: ${err?.message || err}`);
+      showToast(
+        "error",
+        tr("admin.errors.galleryUploadFailed", "Failed to compress/upload gallery images: {{message}}", {
+          message: err?.message || err,
+        })
+      );
     } finally {
       setGalleryCompressing(false);
       setGalleryUploading(false);
@@ -923,9 +1012,9 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
         await supabase.storage.from(MEDIA_BUCKET).remove([path]);
       }
 
-      showToast("success", "تم حذف الصورة من المعرض.");
+      showToast("success", tr("admin.messages.galleryImageDeleted", "Image removed from gallery."));
     } catch (err) {
-      showToast("error", `تعذر حذف الصورة: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.deleteImageFailed", "Failed to delete image: {{message}}", { message: err?.message || err }));
     } finally {
       setGalleryDeletingUrl("");
     }
@@ -954,9 +1043,14 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       if (up.error) throw up.error;
 
       setServices((prev) => prev.map((row) => (row.id === serviceId ? { ...row, image_url: publicUrl } : row)));
-      showToast("success", "تم رفع صورة الخدمة.");
+      showToast("success", tr("admin.messages.serviceImageUploaded", "Service image uploaded."));
     } catch (err) {
-      showToast("error", `تعذر ضغط/رفع صورة الخدمة: ${err?.message || err}`);
+      showToast(
+        "error",
+        tr("admin.errors.serviceImageUploadFailed", "Failed to compress/upload service image: {{message}}", {
+          message: err?.message || err,
+        })
+      );
     } finally {
       setServiceImageCompressing((prev) => ({ ...prev, [serviceId]: false }));
       setServiceImageLoading((prev) => ({ ...prev, [serviceId]: false }));
@@ -986,9 +1080,14 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       if (up.error) throw up.error;
 
       setStaff((prev) => prev.map((row) => (row.id === staffId ? { ...row, photo_url: publicUrl } : row)));
-      showToast("success", "تم رفع صورة الموظف/الموظفة.");
+      showToast("success", tr("admin.messages.staffImageUploaded", "Employee image uploaded."));
     } catch (err) {
-      showToast("error", `تعذر ضغط/رفع صورة الموظف/الموظفة: ${err?.message || err}`);
+      showToast(
+        "error",
+        tr("admin.errors.staffImageUploadFailed", "Failed to compress/upload employee image: {{message}}", {
+          message: err?.message || err,
+        })
+      );
     } finally {
       setStaffImageCompressing((prev) => ({ ...prev, [staffId]: false }));
       setStaffImageLoading((prev) => ({ ...prev, [staffId]: false }));
@@ -1016,7 +1115,12 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       if (res.error) throw res.error;
 
       setBookings((p) => p.map((x) => (x.id === id ? { ...x, ...res.data } : x)));
-      showToast("success", nextStatus === "confirmed" ? "تم قبول الحجز." : "تم رفض الحجز.");
+      showToast(
+        "success",
+        nextStatus === "confirmed"
+          ? tr("admin.messages.bookingAccepted", "Booking accepted.")
+          : tr("admin.messages.bookingRejected", "Booking rejected.")
+      );
 
       const notifyTemplate = nextStatus === "confirmed" ? "booking_confirmed" : "booking_cancelled";
       const serviceName =
@@ -1024,7 +1128,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
         servicesById[prev.service_id]?.name ||
         res.data.service ||
         prev.service ||
-        "الخدمة";
+        tr("admin.bookings.service", "Service");
       const appointmentLocal = formatWhatsappAppointment(
         res.data.appointment_start || prev.appointment_start,
         salon.timezone || "Asia/Baghdad"
@@ -1040,12 +1144,12 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
           });
         } catch (notifyErr) {
           console.error("Failed to send customer WhatsApp status notification:", notifyErr);
-          showToast("success", "تم الحفظ ✅ (إشعار واتساب التلقائي غير مفعل حالياً)");
+          showToast("success", tr("admin.messages.savedWhatsappOff", "Saved ✅ (automatic WhatsApp notification is currently disabled)"));
         }
       }
     } catch (err) {
       setBookings((p) => p.map((x) => (x.id === id ? prev : x)));
-      showToast("error", `تعذر تحديث حالة الحجز: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.updateBookingStatusFailed", "Failed to update booking status: {{message}}", { message: err?.message || err }));
     } finally {
       setStatusUpdating((p) => {
         const next = { ...p };
@@ -1063,14 +1167,14 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       const row = hoursDraft[day.index];
       if (!row) continue;
       if (!row.is_closed && row.close_time <= row.open_time) {
-        showToast("error", `وقت الإغلاق لازم يكون بعد الفتح (${day.label}).`);
+        showToast("error", tr("admin.errors.closeAfterOpen", "Closing time must be after opening time ({{day}}).", { day: day.label }));
         return;
       }
     }
 
     setSaveHoursLoading(true);
     try {
-      const payload = DAYS.map((day) => {
+      const payload = localizedDays.map((day) => {
         const row = hoursDraft[day.index];
         return {
           salon_id: salon.id,
@@ -1084,10 +1188,10 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       const up = await supabase.from("salon_hours").upsert(payload, { onConflict: "salon_id,day_of_week" });
       if (up.error) throw up.error;
 
-      showToast("success", "تم حفظ ساعات العمل.");
+      showToast("success", tr("admin.messages.workingHoursSaved", "Working hours saved."));
       await loadAdminData(salon.id);
     } catch (err) {
-      showToast("error", `تعذر حفظ ساعات العمل: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.saveWorkingHoursFailed", "Failed to save working hours: {{message}}", { message: err?.message || err }));
     } finally {
       setSaveHoursLoading(false);
     }
@@ -1097,22 +1201,22 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
     if (!supabase || !salon?.id || !scheduleStaffId) return;
     if (!ensureWriteAccess()) return;
 
-    for (const day of DAYS) {
+    for (const day of localizedDays) {
       const row = scheduleDraft[day.index];
       if (!row) continue;
       if (!row.is_off && row.end_time <= row.start_time) {
-        showToast("error", `وقت الإغلاق لازم يكون بعد الفتح (${day.label}).`);
+        showToast("error", tr("admin.errors.closeAfterOpen", "Closing time must be after opening time ({{day}}).", { day: day.label }));
         return;
       }
       if (row.break_start && row.break_end && row.break_end <= row.break_start) {
-        showToast("error", `فترة الاستراحة غير صحيحة (${day.label}).`);
+        showToast("error", tr("admin.errors.invalidBreakPeriod", "Invalid break period ({{day}}).", { day: day.label }));
         return;
       }
     }
 
     setSaveScheduleLoading(true);
     try {
-      const payload = DAYS.map((day) => {
+      const payload = localizedDays.map((day) => {
         const row = scheduleDraft[day.index] || {};
         return {
           salon_id: salon.id,
@@ -1129,10 +1233,10 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       const up = await supabase.from("employee_hours").upsert(payload, { onConflict: "staff_id,day_of_week" });
       if (up.error) throw up.error;
 
-      showToast("success", "تم حفظ جدول دوام الموظف.");
+      showToast("success", tr("admin.messages.employeeScheduleSaved", "Employee schedule saved."));
       await loadAdminData(salon.id);
     } catch (err) {
-      showToast("error", `تعذر حفظ جدول الدوام: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.saveEmployeeScheduleFailed", "Failed to save employee schedule: {{message}}", { message: err?.message || err }));
     } finally {
       setSaveScheduleLoading(false);
     }
@@ -1145,7 +1249,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
     const startAt = timeOffForm.start_at ? new Date(timeOffForm.start_at) : null;
     const endAt = timeOffForm.end_at ? new Date(timeOffForm.end_at) : null;
     if (!startAt || !endAt || Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime()) || endAt <= startAt) {
-      showToast("error", "اختاري فترة إجازة صحيحة.");
+      showToast("error", tr("admin.errors.selectValidTimeOffPeriod", "Choose a valid time-off period."));
       return;
     }
 
@@ -1163,10 +1267,10 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       if (ins.error) throw ins.error;
 
       setTimeOffForm({ start_at: "", end_at: "", reason: "" });
-      showToast("success", "تمت إضافة الإجازة.");
+      showToast("success", tr("admin.messages.timeOffAdded", "Time off added."));
       await loadAdminData(salon.id);
     } catch (err) {
-      showToast("error", `تعذر إضافة الإجازة: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.addTimeOffFailed", "Failed to add time off: {{message}}", { message: err?.message || err }));
     } finally {
       setSavingTimeOff(false);
     }
@@ -1185,10 +1289,10 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
         .eq("salon_id", salon.id);
       if (del.error) throw del.error;
 
-      showToast("success", "تم حذف الإجازة.");
+      showToast("success", tr("admin.messages.timeOffDeleted", "Time off deleted."));
       await loadAdminData(salon.id);
     } catch (err) {
-      showToast("error", `تعذر حذف الإجازة: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.deleteTimeOffFailed", "Failed to delete time off: {{message}}", { message: err?.message || err }));
     } finally {
       setDeletingTimeOffId("");
     }
@@ -1207,10 +1311,10 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       if (up.error) throw up.error;
 
       setSalon(up.data);
-      showToast("success", "تم حفظ إعدادات ظهور الصالون.");
+      showToast("success", tr("admin.messages.salonSettingsSaved", "Salon visibility settings saved."));
     } catch (err) {
       setSalon(previous);
-      showToast("error", `تعذر حفظ الإعدادات: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.saveSettingsFailed", "Failed to save settings: {{message}}", { message: err?.message || err }));
     } finally {
       setSavingSalonFlags(false);
     }
@@ -1232,9 +1336,9 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       if (up.error) throw up.error;
 
       setSalon(up.data);
-      showToast("success", "تم حفظ صور المركز.");
+      showToast("success", tr("admin.messages.salonMediaSaved", "Salon media saved."));
     } catch (err) {
-      showToast("error", `تعذر حفظ الصور: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.saveMediaFailed", "Failed to save media: {{message}}", { message: err?.message || err }));
     } finally {
       setSavingMedia(false);
     }
@@ -1245,14 +1349,20 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
     if (!ensureWriteAccess()) return;
 
     const name = serviceForm.name.trim();
-    const duration = Number(serviceForm.duration_minutes);
-    const price = Number(serviceForm.price);
-    const sort = Number(serviceForm.sort_order);
+    const durationRaw = String(serviceForm.duration_minutes || "").trim();
+    const priceRaw = String(serviceForm.price || "").trim();
+    const sortRaw = String(serviceForm.sort_order || "").trim();
+    const duration = Number(durationRaw);
+    const price = Number(priceRaw);
+    const sort = Number(sortRaw);
 
-    if (name.length < 2) return showToast("error", "اكتبي اسم خدمة صحيح.");
-    if (!Number.isFinite(duration) || duration <= 0) return showToast("error", "المدة لازم تكون رقم صحيح.");
-    if (!Number.isFinite(price) || price < 0) return showToast("error", "السعر لازم يكون رقم صحيح.");
-    if (!Number.isFinite(sort)) return showToast("error", "الترتيب لازم يكون رقم.");
+    if (name.length < 2) return showToast("error", tr("admin.errors.validServiceName", "Enter a valid service name."));
+    if (!durationRaw) return showToast("error", tr("admin.errors.validDurationNumber", "Duration must be a valid number."));
+    if (!priceRaw) return showToast("error", tr("admin.errors.validPriceNumber", "Price must be a valid number."));
+    if (!sortRaw) return showToast("error", tr("admin.errors.validSortNumber", "Sort order must be a number."));
+    if (!Number.isFinite(duration) || duration <= 0) return showToast("error", tr("admin.errors.validDurationNumber", "Duration must be a valid number."));
+    if (!Number.isFinite(price) || price < 0) return showToast("error", tr("admin.errors.validPriceNumber", "Price must be a valid number."));
+    if (!Number.isFinite(sort)) return showToast("error", tr("admin.errors.validSortNumber", "Sort order must be a number."));
 
     setAddingService(true);
     try {
@@ -1272,11 +1382,11 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
         .single();
 
       if (ins.error) throw ins.error;
-      setServiceForm({ name: "", duration_minutes: "45", price: "20000", sort_order: "0" });
-      showToast("success", "تمت إضافة الخدمة.");
+      setServiceForm({ name: "", duration_minutes: "", price: "", sort_order: "" });
+      showToast("success", tr("admin.messages.serviceAdded", "Service added."));
       await loadAdminData(salon.id);
     } catch (err) {
-      showToast("error", `تعذر إضافة الخدمة: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.addServiceFailed", "Failed to add service: {{message}}", { message: err?.message || err }));
     } finally {
       setAddingService(false);
     }
@@ -1288,8 +1398,8 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
     const name = staffForm.name.trim();
     const sort = Number(staffForm.sort_order);
-    if (name.length < 2) return showToast("error", "اكتبي اسم موظفة صحيح.");
-    if (!Number.isFinite(sort)) return showToast("error", "الترتيب لازم يكون رقم.");
+    if (name.length < 2) return showToast("error", tr("admin.errors.validEmployeeName", "Enter a valid employee name."));
+    if (!Number.isFinite(sort)) return showToast("error", tr("admin.errors.validSortNumber", "Sort order must be a number."));
 
     setAddingStaff(true);
     try {
@@ -1309,10 +1419,10 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       if (ins.error) throw ins.error;
 
       setStaffForm({ name: "", sort_order: "0", photo_url: "" });
-      showToast("success", "تمت إضافة الموظفة.");
+      showToast("success", tr("admin.messages.employeeAdded", "Employee added."));
       await loadAdminData(salon.id);
     } catch (err) {
-      showToast("error", `تعذر إضافة الموظفة: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.addEmployeeFailed", "Failed to add employee: {{message}}", { message: err?.message || err }));
     } finally {
       setAddingStaff(false);
     }
@@ -1351,10 +1461,10 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       is_active: Boolean(editingService.is_active),
     };
 
-    if (patch.name.length < 2) return showToast("error", "اكتبي اسم خدمة صحيح.");
-    if (!Number.isFinite(patch.duration_minutes) || patch.duration_minutes <= 0) return showToast("error", "المدة غير صحيحة.");
-    if (!Number.isFinite(patch.price) || patch.price < 0) return showToast("error", "السعر غير صحيح.");
-    if (!Number.isFinite(patch.sort_order)) return showToast("error", "الترتيب غير صحيح.");
+    if (patch.name.length < 2) return showToast("error", tr("admin.errors.validServiceName", "Enter a valid service name."));
+    if (!Number.isFinite(patch.duration_minutes) || patch.duration_minutes <= 0) return showToast("error", tr("admin.errors.invalidDuration", "Invalid duration."));
+    if (!Number.isFinite(patch.price) || patch.price < 0) return showToast("error", tr("admin.errors.invalidPrice", "Invalid price."));
+    if (!Number.isFinite(patch.sort_order)) return showToast("error", tr("admin.errors.invalidSort", "Invalid sort order."));
 
     setRowLoading(`service-save-${id}`);
     try {
@@ -1362,10 +1472,10 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       if (up.error) throw up.error;
 
       setEditingServiceId("");
-      showToast("success", "تم تعديل الخدمة.");
+      showToast("success", tr("admin.messages.serviceUpdated", "Service updated."));
       await loadAdminData(salon.id);
     } catch (err) {
-      showToast("error", `تعذر تعديل الخدمة: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.updateServiceFailed", "Failed to update service: {{message}}", { message: err?.message || err }));
     } finally {
       setRowLoading("");
     }
@@ -1382,8 +1492,8 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       photo_url: editingStaff.photo_url.trim() || null,
     };
 
-    if (patch.name.length < 2) return showToast("error", "اكتبي اسم موظفة صحيح.");
-    if (!Number.isFinite(patch.sort_order)) return showToast("error", "الترتيب غير صحيح.");
+    if (patch.name.length < 2) return showToast("error", tr("admin.errors.validEmployeeName", "Enter a valid employee name."));
+    if (!Number.isFinite(patch.sort_order)) return showToast("error", tr("admin.errors.invalidSort", "Invalid sort order."));
 
     setRowLoading(`staff-save-${id}`);
     try {
@@ -1391,10 +1501,10 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       if (up.error) throw up.error;
 
       setEditingStaffId("");
-      showToast("success", "تم تعديل الموظفة.");
+      showToast("success", tr("admin.messages.employeeUpdated", "Employee updated."));
       await loadAdminData(salon.id);
     } catch (err) {
-      showToast("error", `تعذر تعديل الموظفة: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.updateEmployeeFailed", "Failed to update employee: {{message}}", { message: err?.message || err }));
     } finally {
       setRowLoading("");
     }
@@ -1413,10 +1523,15 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
         .eq("salon_id", salon.id);
       if (up.error) throw up.error;
 
-      showToast("success", !row.is_active ? "تم إظهار الخدمة." : "تم إخفاء الخدمة.");
+      showToast(
+        "success",
+        !row.is_active
+          ? tr("admin.messages.serviceShown", "Service is now visible.")
+          : tr("admin.messages.serviceHidden", "Service is now hidden.")
+      );
       await loadAdminData(salon.id);
     } catch (err) {
-      showToast("error", `تعذر تحديث الخدمة: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.toggleServiceFailed", "Failed to update service: {{message}}", { message: err?.message || err }));
     } finally {
       setRowLoading("");
     }
@@ -1435,10 +1550,15 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
         .eq("salon_id", salon.id);
       if (up.error) throw up.error;
 
-      showToast("success", !row.is_active ? "تم إظهار الموظفة." : "تم إخفاء الموظفة.");
+      showToast(
+        "success",
+        !row.is_active
+          ? tr("admin.messages.employeeShown", "Employee is now visible.")
+          : tr("admin.messages.employeeHidden", "Employee is now hidden.")
+      );
       await loadAdminData(salon.id);
     } catch (err) {
-      showToast("error", `تعذر تحديث الموظفة: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.toggleEmployeeFailed", "Failed to update employee: {{message}}", { message: err?.message || err }));
     } finally {
       setRowLoading("");
     }
@@ -1453,17 +1573,17 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       if (deleteDialog.type === "service") {
         const del = await supabase.from("services").delete().eq("id", deleteDialog.row.id).eq("salon_id", salon.id);
         if (del.error) throw del.error;
-        showToast("success", "تم حذف الخدمة.");
+        showToast("success", tr("admin.messages.serviceDeleted", "Service deleted."));
       } else {
         const del = await supabase.from("staff").delete().eq("id", deleteDialog.row.id).eq("salon_id", salon.id);
         if (del.error) throw del.error;
-        showToast("success", "تم حذف الموظفة.");
+        showToast("success", tr("admin.messages.employeeDeleted", "Employee deleted."));
       }
 
       setDeleteDialog(null);
       await loadAdminData(salon.id);
     } catch (err) {
-      showToast("error", `تعذر الحذف: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.deleteFailed", "Delete failed: {{message}}", { message: err?.message || err }));
     } finally {
       setDeleteLoading(false);
     }
@@ -1517,10 +1637,10 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
         if (ins.error) throw ins.error;
       }
 
-      showToast("success", "تم حفظ تعيين الخدمات للموظفة.");
+      showToast("success", tr("admin.messages.staffAssignmentsSaved", "Service assignments saved for employee."));
       await loadAdminData(salon.id);
     } catch (err) {
-      showToast("error", `تعذر حفظ التعيينات: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.saveAssignmentsFailed", "Failed to save assignments: {{message}}", { message: err?.message || err }));
     } finally {
       setSaveAssignLoading(false);
     }
@@ -1589,12 +1709,12 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
         if (ins.error) throw ins.error;
       }
 
-      showToast("success", "تم حفظ الموظفين لهذه الخدمة.");
+      showToast("success", tr("admin.messages.serviceAssigneesSaved", "Assigned employees saved for this service."));
       await loadAdminData(salon.id);
       setServiceAssignOpenId("");
       setServiceAssignDraft([]);
     } catch (err) {
-      showToast("error", `تعذر حفظ تعيينات الخدمة: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.saveServiceAssignmentsFailed", "Failed to save service assignments: {{message}}", { message: err?.message || err }));
     } finally {
       setServiceAssignSavingId("");
     }
@@ -1633,7 +1753,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
     a.download = `bookings-${slug}-${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast("success", "تم تنزيل ملف CSV.");
+    showToast("success", tr("admin.messages.csvDownloaded", "CSV downloaded."));
   }
 
   async function copyBookingLink() {
@@ -1650,9 +1770,9 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
         document.execCommand("copy");
         document.body.removeChild(el);
       }
-      showToast("success", "تم نسخ رابط الحجز.");
+      showToast("success", tr("admin.messages.bookingLinkCopied", "Booking link copied."));
     } catch (err) {
-      showToast("error", `تعذر نسخ الرابط: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.copyLinkFailed", "Failed to copy link: {{message}}", { message: err?.message || err }));
     } finally {
       setCopyingLink(false);
     }
@@ -1668,9 +1788,9 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
       const successUrl = `${origin}/s/${encodedSlug}/admin/billing?checkout=success`;
       const cancelUrl = `${origin}/s/${encodedSlug}/admin/billing?checkout=cancel`;
 
-      const checkoutUrl = await createSubscriptionCheckout({
+      const checkoutUrl = await createCountryCheckout({
         salonId: salon.id,
-        salonSlug: salon.slug,
+        planType: checkoutPlanType,
         successUrl,
         cancelUrl,
       });
@@ -1679,7 +1799,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
         window.location.href = checkoutUrl;
       }
     } catch (err) {
-      showToast("error", `تعذر فتح بوابة الاشتراك: ${err?.message || err}`);
+      showToast("error", tr("admin.errors.openCheckoutFailed", "Failed to open subscription checkout: {{message}}", { message: err?.message || err }));
     } finally {
       setCheckoutLoading(false);
     }
@@ -1687,7 +1807,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   if (loading) {
     return (
-      <PageShell title="إدارة الصالون" subtitle="جاري التحميل">
+      <PageShell title={t("admin.manageSalon")} subtitle={t("common.loading")}>
         <Card>
           <Skeleton className="skeleton-line" />
           <Skeleton className="skeleton-line short" />
@@ -1699,27 +1819,27 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
   if (!salon) {
     return (
-      <PageShell title="إدارة الصالون" subtitle="الرابط غير متوفر">
+      <PageShell title={t("admin.manageSalon")} subtitle={t("booking.linkUnavailableText")}>
         <Card>
-          <p className="muted">هذا الرابط غير متوفر</p>
+          <p className="muted">{t("booking.linkUnavailableText")}</p>
           <Button as={Link} to="/explore" variant="secondary">
-            العودة للاستكشاف
+            {t("booking.backToExplore")}
           </Button>
         </Card>
       </PageShell>
     );
   }
 
-  const activeSectionLabel = ADMIN_SIDEBAR_ITEMS.find((x) => x.key === activeSection)?.label || "لوحة التحكم";
+  const activeSectionLabel = t(ADMIN_SIDEBAR_ITEMS.find((x) => x.key === activeSection)?.labelKey || "admin.sections.dashboard");
 
   return (
     <PageShell
-      title={`إدارة ${salon.name}`}
-      subtitle="لوحة تشغيل يومية للمواعيد والخدمات"
+      title={`${t("admin.manage")} ${salon.name}`}
+      subtitle={t("admin.dailyOpsSubtitle")}
       mobileMenuDisabled
       right={
         <Button as={Link} variant="secondary" to={`/s/${salon.slug}`}>
-          فتح صفحة الحجز
+          {t("admin.openBookingPage")}
         </Button>
       }
     >
@@ -1731,23 +1851,24 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
               e.preventDefault();
               if (adminPass === salon.admin_passcode) {
                 setUnlocked(true);
-                showToast("success", "تم فتح لوحة الإدارة.");
+                showToast("success", t("admin.messages.unlocked"));
               } else {
-                showToast("error", "رمز الإدارة غير صحيح.");
+                showToast("error", t("admin.errors.invalidPasscode"));
               }
             }}
           >
-            <TextInput label="رمز إدارة الصالون" value={adminPass} onChange={(e) => setAdminPass(e.target.value)} />
-            <Button type="submit">دخول</Button>
+            <TextInput label={t("admin.passcodeLabel")} value={adminPass} onChange={(e) => setAdminPass(e.target.value)} />
+            <Button type="submit">{t("admin.login")}</Button>
           </form>
         </Card>
       ) : (
+        <BillingGate salon={salon} module={activeSection}>
         <>
           {writeLocked ? (
             <Card className="billing-lock-banner">
               <div className="row-actions space-between" style={{ alignItems: "center" }}>
                 <div>
-                  <h4>الحساب غير مفعل</h4>
+                  <h4>{t("admin.accountInactiveTitle")}</h4>
                   <p className="muted">{salonAccess.lockMessage}</p>
                 </div>
                 <Button
@@ -1756,7 +1877,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                     goToSection("billing");
                   }}
                 >
-                  فتح الفوترة
+                  {t("billingGate.openBilling")}
                 </Button>
               </div>
             </Card>
@@ -1765,7 +1886,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
           <div className="admin-mobile-nav">
             <div className="admin-mobile-nav-head">
               <div className="admin-mobile-nav-copy">
-                <small>إدارة الصالون</small>
+                <small>{t("admin.manageSalon")}</small>
                 <b>{activeSectionLabel}</b>
               </div>
               <button
@@ -1790,11 +1911,11 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                   className="admin-mobile-link-btn"
                   onClick={() => goToSection(tab.key, true)}
                 >
-                  {tab.label}
+                  {t(tab.labelKey)}
                 </Button>
               ))}
               <Button as={Link} variant="secondary" to={`/s/${salon.slug}`} onClick={() => setMobileNavOpen(false)}>
-                فتح صفحة الحجز
+                {t("admin.openBookingPage")}
               </Button>
             </div>
           </MobileDrawer>
@@ -1807,14 +1928,14 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                   {salonAccess.badgeLabel}
                 </Badge>
               </div>
-              <p className="muted">تحكم بالحجوزات والإعدادات من مكان واحد.</p>
+              <p className="muted">{t("admin.topbarSubtitle")}</p>
             </div>
             <div className="row-actions">
               <Button variant="secondary" onClick={() => loadAdminData(salon.id)}>
-                {bookingsLoading ? "جاري التحديث..." : "تحديث"}
+                {bookingsLoading ? t("admin.refreshing") : t("common.refresh")}
               </Button>
               <Button variant="secondary" onClick={exportCsv}>
-                تصدير CSV
+                {t("admin.exportCsv")}
               </Button>
             </div>
           </Card>
@@ -1830,7 +1951,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                     onClick={() => goToSection(tab.key)}
                     className="admin-sidebar-item"
                   >
-                    {tab.label}
+                    {t(tab.labelKey)}
                   </Button>
                 ))}
               </div>
@@ -1841,18 +1962,18 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                 <div className="admin-dashboard-shell">
                   <Card className="enterprise-period-card">
                     <div className="enterprise-card-head">
-                      <h4>الفترة التحليلية</h4>
+                      <h4>{tr("admin.analytics.periodTitle", "Analytics period")}</h4>
                       <Badge variant="neutral">{analytics.periodLabel}</Badge>
                     </div>
                     <div className="analytics-period-control">
-                      <label htmlFor="analytics-period">اختيار الفترة</label>
+                      <label htmlFor="analytics-period">{tr("admin.analytics.selectPeriod", "Select period")}</label>
                       <select
                         id="analytics-period"
                         className="input"
                         value={analyticsPeriod}
                         onChange={(e) => setAnalyticsPeriod(e.target.value)}
                       >
-                        <option value="last30">آخر 30 يوم</option>
+                        <option value="last30">{tr("admin.analytics.last30Days", "Last 30 days")}</option>
                         {analyticsMonthOptions.map((row) => (
                           <option key={row.value} value={row.value}>
                             {row.label}
@@ -1864,30 +1985,35 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
                   <section className="enterprise-summary-grid">
                     <Card className="enterprise-summary-card">
-                      <span>إيراد اليوم</span>
-                      <strong>{formatCurrencyIQD(analytics.todayRevenue)}</strong>
+                      <span>{tr("admin.kpis.todayRevenue", "Today revenue")}</span>
+                      <strong>{formatMoney(analytics.todayRevenue)}</strong>
                     </Card>
                     <Card className="enterprise-summary-card">
-                      <span>إيراد هذا الشهر</span>
-                      <strong>{formatCurrencyIQD(analytics.monthRevenue)}</strong>
+                      <span>{tr("admin.kpis.monthRevenue", "This month revenue")}</span>
+                      <strong>{formatMoney(analytics.monthRevenue)}</strong>
                     </Card>
                     <Card className="enterprise-summary-card">
-                      <span>إجمالي حجوزات اليوم</span>
+                      <span>{tr("admin.kpis.todayBookings", "Total bookings today")}</span>
                       <strong>{analytics.totalBookingsToday}</strong>
                     </Card>
                     <Card className="enterprise-summary-card">
-                      <span>الموظفون النشطون</span>
+                      <span>{tr("admin.kpis.activeEmployees", "Active employees")}</span>
                       <strong>{analytics.activeEmployees}</strong>
                     </Card>
                   </section>
 
                   <Card className="enterprise-chart-card">
                     <div className="enterprise-card-head">
-                      <h4>الإيراد حسب الفترة</h4>
+                      <h4>{tr("admin.analytics.revenueByPeriod", "Revenue by period")}</h4>
                       <Badge variant="neutral">{analytics.periodLabel}</Badge>
                     </div>
                     <div className="revenue-chart-wrap">
-                      <svg viewBox={`0 0 ${analytics.chartWidth} ${analytics.chartHeight}`} className="revenue-chart-svg" role="img" aria-label="مخطط الإيراد">
+                      <svg
+                        viewBox={`0 0 ${analytics.chartWidth} ${analytics.chartHeight}`}
+                        className="revenue-chart-svg"
+                        role="img"
+                        aria-label={tr("admin.analytics.revenueChart", "Revenue chart")}
+                      >
                         {[0, 1, 2, 3, 4].map((idx) => {
                           const y =
                             analytics.padY +
@@ -1916,30 +2042,30 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                   <div className="enterprise-two-col">
                     <Card className="enterprise-table-card">
                       <div className="enterprise-card-head">
-                        <h4>أداء الموظفين</h4>
+                        <h4>{tr("admin.analytics.employeePerformance", "Employee performance")}</h4>
                       </div>
                       <div className="table-scroll">
                         <table className="enterprise-table">
                           <thead>
                             <tr>
-                              <th>اسم الموظف</th>
-                              <th>الحجوزات</th>
-                              <th>الإيراد</th>
-                              <th>نسبة الإشغال %</th>
-                              <th>التقييم</th>
+                              <th>{tr("admin.analytics.employeeName", "Employee name")}</th>
+                              <th>{tr("admin.analytics.bookings", "Bookings")}</th>
+                              <th>{tr("admin.analytics.revenue", "Revenue")}</th>
+                              <th>{tr("admin.analytics.utilization", "Utilization %")}</th>
+                              <th>{tr("admin.analytics.rating", "Rating")}</th>
                             </tr>
                           </thead>
                           <tbody>
                             {analytics.employeesPerformance.length === 0 ? (
                               <tr>
-                                <td colSpan={5}>لا توجد بيانات.</td>
+                                <td colSpan={5}>{tr("admin.common.noData", "No data.")}</td>
                               </tr>
                             ) : (
                               analytics.employeesPerformance.map((row) => (
                                 <tr key={row.id}>
                                   <td>{row.name}</td>
                                   <td>{row.bookings}</td>
-                                  <td>{formatCurrencyIQD(row.revenue)}</td>
+                                  <td>{formatMoney(row.revenue)}</td>
                                   <td>{row.utilization.toFixed(0)}%</td>
                                   <td>{row.rating}</td>
                                 </tr>
@@ -1952,13 +2078,13 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
                     <Card className="enterprise-pie-card">
                       <div className="enterprise-card-head">
-                        <h4>توزيع الإيراد حسب الخدمات</h4>
+                        <h4>{tr("admin.analytics.servicesRevenueDistribution", "Revenue split by services")}</h4>
                       </div>
                       <div className="services-pie-wrap">
                         <div className="services-pie" style={{ background: analytics.pieGradient }} />
                         <div className="services-pie-legend">
                           {analytics.pieSegments.length === 0 ? (
-                            <p className="muted">لا توجد بيانات إيرادات مؤكدة.</p>
+                            <p className="muted">{tr("admin.analytics.noConfirmedRevenueData", "No confirmed revenue data.")}</p>
                           ) : (
                             analytics.pieSegments.map((item) => (
                               <div key={item.name} className="legend-row">
@@ -1980,7 +2106,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                   <Card className="admin-onboarding-card">
                     <div className="admin-onboarding-grid">
                       <section className="admin-checklist-block">
-                        <h4>دليل تشغيل سريع</h4>
+                        <h4>{tr("admin.quickStartTitle", "Quick setup checklist")}</h4>
                         <div className="admin-checklist">
                           {onboardingChecklist.map((item) => (
                             <div key={item.key} className={`admin-checklist-item ${item.done ? "done" : ""}`}>
@@ -1992,32 +2118,36 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                       </section>
 
                       <section className="admin-share-block">
-                        <h4>مشاركة رابط الحجز</h4>
+                        <h4>{tr("admin.share.title", "Share booking link")}</h4>
                         <input className="input" value={bookingPageUrl} readOnly />
                         <div className="row-actions">
                           <Button variant="secondary" onClick={copyBookingLink} disabled={copyingLink || !bookingPageUrl}>
-                            {copyingLink ? "جاري النسخ..." : "نسخ رابط الحجز"}
+                            {copyingLink
+                              ? tr("admin.share.copying", "Copying...")
+                              : tr("admin.share.copyBookingLink", "Copy booking link")}
                           </Button>
                           {shareBookingWhatsappHref ? (
                             <Button as="a" variant="primary" href={shareBookingWhatsappHref} target="_blank" rel="noreferrer">
-                              مشاركة واتساب
+                              {tr("admin.share.shareWhatsapp", "Share on WhatsApp")}
                             </Button>
                           ) : (
                             <Button variant="ghost" disabled>
-                              مشاركة واتساب
+                              {tr("admin.share.shareWhatsapp", "Share on WhatsApp")}
                             </Button>
                           )}
                         </div>
 
                         <div className="admin-wa-status">
-                          <Badge variant="neutral">إشعارات واتساب التلقائية: غير مفعلة حالياً</Badge>
+                          <Badge variant="neutral">
+                            {tr("admin.share.whatsappAutoOff", "Automatic WhatsApp notifications are currently disabled")}
+                          </Badge>
                         </div>
 
                         <div className="admin-pricing-mini">
-                          <b>تسعير CareChair</b>
-                          <p>تجهيز أول مرة: $300–$500 (غير مسترجع)</p>
-                          <p>اشتراك شهري: $30–$50</p>
-                          <p>إلغاء بأي وقت، والاشتراك يبقى فعال لحد نهاية الشهر المدفوع.</p>
+                          <b>{tr("admin.pricingMini.title", "CareChair pricing")}</b>
+                          <p>{tr("admin.pricingMini.setup", "Setup fee: $300–$500 (non-refundable)")}</p>
+                          <p>{tr("admin.pricingMini.monthly", "Monthly subscription: $30–$50")}</p>
+                          <p>{tr("admin.pricingMini.cancel", "Cancel anytime. Access remains active until end of paid period.")}</p>
                         </div>
                       </section>
                     </div>
@@ -2025,19 +2155,19 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
                   <section className="kpi-grid">
                     <Card className="kpi-card">
-                      <span>طلبات اليوم</span>
+                      <span>{tr("admin.kpis.todayRequests", "Today's requests")}</span>
                       <strong>{kpis.today}</strong>
                     </Card>
                     <Card className="kpi-card">
-                      <span>بانتظار التأكيد</span>
+                      <span>{tr("admin.kpis.pending", "Pending confirmation")}</span>
                       <strong>{kpis.pending}</strong>
                     </Card>
                     <Card className="kpi-card">
-                      <span>مؤكد</span>
+                      <span>{tr("admin.kpis.confirmed", "Confirmed")}</span>
                       <strong>{kpis.confirmed}</strong>
                     </Card>
                     <Card className="kpi-card">
-                      <span>ملغي</span>
+                      <span>{tr("admin.kpis.cancelled", "Cancelled")}</span>
                       <strong>{kpis.cancelled}</strong>
                     </Card>
                   </section>
@@ -2045,71 +2175,71 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                   <Card>
                     <div className="bookings-filters-grid">
                       <div className="bookings-filter-group">
-                        <b>الحالة</b>
+                        <b>{tr("admin.filters.status", "Status")}</b>
                         <div className="tabs-inline">
                           <Button
                             type="button"
                             variant={bookingStatusFilter === "all" ? "primary" : "ghost"}
                             onClick={() => setBookingStatusFilter("all")}
                           >
-                            الكل
+                            {tr("admin.filters.all", "All")}
                           </Button>
                           <Button
                             type="button"
                             variant={bookingStatusFilter === "pending" ? "primary" : "ghost"}
                             onClick={() => setBookingStatusFilter("pending")}
                           >
-                            بانتظار
+                            {tr("booking.status.pending", "Pending")}
                           </Button>
                           <Button
                             type="button"
                             variant={bookingStatusFilter === "confirmed" ? "primary" : "ghost"}
                             onClick={() => setBookingStatusFilter("confirmed")}
                           >
-                            مؤكد
+                            {tr("booking.status.confirmed", "Confirmed")}
                           </Button>
                           <Button
                             type="button"
                             variant={bookingStatusFilter === "cancelled" ? "primary" : "ghost"}
                             onClick={() => setBookingStatusFilter("cancelled")}
                           >
-                            ملغي
+                            {tr("booking.status.cancelled", "Cancelled")}
                           </Button>
                         </div>
                       </div>
 
                       <div className="bookings-filter-group">
-                        <b>التاريخ</b>
+                        <b>{tr("admin.filters.date", "Date")}</b>
                         <div className="tabs-inline">
                           <Button
                             type="button"
                             variant={bookingDateFilter === "today" ? "primary" : "ghost"}
                             onClick={() => setBookingDateFilter("today")}
                           >
-                            اليوم
+                            {tr("admin.filters.today", "Today")}
                           </Button>
                           <Button
                             type="button"
                             variant={bookingDateFilter === "week" ? "primary" : "ghost"}
                             onClick={() => setBookingDateFilter("week")}
                           >
-                            هذا الأسبوع
+                            {tr("admin.filters.thisWeek", "This week")}
                           </Button>
                           <Button
                             type="button"
                             variant={bookingDateFilter === "all" ? "primary" : "ghost"}
                             onClick={() => setBookingDateFilter("all")}
                           >
-                            الكل
+                            {tr("admin.filters.all", "All")}
                           </Button>
                         </div>
                       </div>
 
                       <TextInput
-                        label="بحث بالاسم أو الهاتف"
+                        label={tr("admin.filters.searchByNamePhone", "Search by name or phone")}
                         value={bookingSearch}
                         onChange={(e) => setBookingSearch(e.target.value)}
-                        placeholder="مثال: 07xxxxxxxxx"
+                        placeholder={tr("admin.filters.searchPlaceholder", "Example: 07xxxxxxxxx")}
                       />
                     </div>
 
@@ -2124,13 +2254,13 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                           ))}
                         </div>
                       ) : groupedBookings.length === 0 ? (
-                        <div className="empty-box">لا توجد حجوزات ضمن الفلاتر الحالية.</div>
+                        <div className="empty-box">{tr("admin.bookings.noFilteredBookings", "No bookings match current filters.")}</div>
                       ) : (
                         groupedBookings.map((group) => (
                           <div className="date-group panel-soft" key={group.key}>
                             <div className="date-header">
                               <h5>{group.label}</h5>
-                              <span>{group.items.length} حجز</span>
+                              <span>{tr("admin.bookings.bookingsCount", "{{count}} bookings", { count: group.items.length })}</span>
                             </div>
                             <div className="bookings-stack">
                               {group.items.map((row) => {
@@ -2144,18 +2274,18 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                         <p>{row.customer_phone}</p>
                                       </div>
                                       <Badge variant={row.status || "pending"}>
-                                        {STATUS_LABELS[row.status] || "غير معروف"}
+                                        {statusLabels[row.status] || tr("admin.common.unknown", "Unknown")}
                                       </Badge>
                                     </div>
                                     <div className="booking-info">
                                       <p>
-                                        <b>الخدمة:</b> {servicesById[row.service_id]?.name || "-"}
+                                        <b>{tr("admin.bookings.service", "Service")}:</b> {servicesById[row.service_id]?.name || "-"}
                                       </p>
                                       <p>
-                                        <b>الموظفة:</b> {staffById[row.staff_id]?.name || "-"}
+                                        <b>{tr("admin.bookings.employee", "Employee")}:</b> {staffById[row.staff_id]?.name || "-"}
                                       </p>
                                       <p>
-                                        <b>الوقت:</b> {formatTime(row.appointment_start)}
+                                        <b>{tr("admin.bookings.time", "Time")}:</b> {formatTime(row.appointment_start)}
                                       </p>
                                     </div>
                                     <div className="booking-actions sticky">
@@ -2165,7 +2295,9 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                         disabled={loadingRow || writeLocked}
                                         onClick={() => updateBookingStatus(row.id, "confirmed")}
                                       >
-                                        {target === "confirmed" ? "جاري القبول..." : "قبول"}
+                                        {target === "confirmed"
+                                          ? tr("admin.bookings.accepting", "Accepting...")
+                                          : tr("admin.bookings.accept", "Accept")}
                                       </Button>
                                       <Button
                                         type="button"
@@ -2173,7 +2305,9 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                         disabled={loadingRow || writeLocked}
                                         onClick={() => updateBookingStatus(row.id, "cancelled")}
                                       >
-                                        {target === "cancelled" ? "جاري الرفض..." : "رفض"}
+                                        {target === "cancelled"
+                                          ? tr("admin.bookings.rejecting", "Rejecting...")
+                                          : tr("admin.bookings.reject", "Reject")}
                                       </Button>
                                     </div>
                                   </article>
@@ -2192,7 +2326,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                           variant="secondary"
                           onClick={() => setVisibleBookingCount((prev) => prev + BOOKINGS_PAGE_SIZE)}
                         >
-                          تحميل المزيد
+                          {tr("admin.bookings.loadMore", "Load more")}
                         </Button>
                       </div>
                     ) : null}
@@ -2203,27 +2337,29 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
               {activeSection === "clients" ? (
                 <Card>
                   <div className="enterprise-card-head">
-                    <h3>العملاء</h3>
+                    <h3>{tr("admin.clients.title", "Clients")}</h3>
                     <div className="row-actions">
                       <Badge variant="neutral">{analytics.periodLabel}</Badge>
-                      <Badge variant="neutral">{analytics.clients.length} عميلة</Badge>
+                      <Badge variant="neutral">
+                        {tr("admin.clients.count", "{{count}} clients", { count: analytics.clients.length })}
+                      </Badge>
                     </div>
                   </div>
                   <div className="table-scroll">
                     <table className="enterprise-table">
                       <thead>
                         <tr>
-                          <th>الاسم</th>
-                          <th>الهاتف</th>
-                          <th>عدد الحجوزات</th>
-                          <th>الإيراد</th>
-                          <th>آخر زيارة</th>
+                          <th>{tr("admin.clients.name", "Name")}</th>
+                          <th>{tr("admin.clients.phone", "Phone")}</th>
+                          <th>{tr("admin.clients.bookings", "Bookings")}</th>
+                          <th>{tr("admin.clients.revenue", "Revenue")}</th>
+                          <th>{tr("admin.clients.lastVisit", "Last visit")}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {analytics.clients.length === 0 ? (
                           <tr>
-                            <td colSpan={5}>لا يوجد عملاء بعد.</td>
+                            <td colSpan={5}>{tr("admin.clients.empty", "No clients yet.")}</td>
                           </tr>
                         ) : (
                           analytics.clients.map((client) => (
@@ -2231,7 +2367,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                               <td>{client.name}</td>
                               <td>{client.phone}</td>
                               <td>{client.bookings}</td>
-                              <td>{formatCurrencyIQD(client.revenue)}</td>
+                              <td>{formatMoney(client.revenue)}</td>
                               <td>{formatDate(client.lastVisit)}</td>
                             </tr>
                           ))
@@ -2246,18 +2382,18 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                 <div className="admin-dashboard-shell">
                   <Card className="enterprise-period-card">
                     <div className="enterprise-card-head">
-                      <h4>الفترة التحليلية</h4>
+                      <h4>{tr("admin.analytics.periodTitle", "Analytics period")}</h4>
                       <Badge variant="neutral">{analytics.periodLabel}</Badge>
                     </div>
                     <div className="analytics-period-control">
-                      <label htmlFor="analytics-period-reports">اختيار الفترة</label>
+                      <label htmlFor="analytics-period-reports">{tr("admin.analytics.selectPeriod", "Select period")}</label>
                       <select
                         id="analytics-period-reports"
                         className="input"
                         value={analyticsPeriod}
                         onChange={(e) => setAnalyticsPeriod(e.target.value)}
                       >
-                        <option value="last30">آخر 30 يوم</option>
+                        <option value="last30">{tr("admin.analytics.last30Days", "Last 30 days")}</option>
                         {analyticsMonthOptions.map((row) => (
                           <option key={`reports-${row.value}`} value={row.value}>
                             {row.label}
@@ -2269,13 +2405,18 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
                   <Card className="enterprise-chart-card">
                     <div className="enterprise-card-head">
-                      <h3>تقارير الإيراد</h3>
+                      <h3>{tr("admin.reports.revenueTitle", "Revenue reports")}</h3>
                       <Button variant="secondary" onClick={exportCsv}>
-                        تصدير CSV
+                        {t("admin.exportCsv")}
                       </Button>
                     </div>
                     <div className="revenue-chart-wrap">
-                      <svg viewBox={`0 0 ${analytics.chartWidth} ${analytics.chartHeight}`} className="revenue-chart-svg" role="img" aria-label="مخطط الإيراد">
+                      <svg
+                        viewBox={`0 0 ${analytics.chartWidth} ${analytics.chartHeight}`}
+                        className="revenue-chart-svg"
+                        role="img"
+                        aria-label={tr("admin.analytics.revenueChart", "Revenue chart")}
+                      >
                         {[0, 1, 2, 3, 4].map((idx) => {
                           const y =
                             analytics.padY +
@@ -2299,20 +2440,20 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
                     <Card className="enterprise-pie-card">
                       <div className="enterprise-card-head">
-                        <h4>توزيع الإيراد حسب الخدمات</h4>
-                        <Badge variant="neutral">{formatCurrencyIQD(analytics.totalServiceRevenue)}</Badge>
+                        <h4>{tr("admin.analytics.servicesRevenueDistribution", "Revenue split by services")}</h4>
+                        <Badge variant="neutral">{formatMoney(analytics.totalServiceRevenue)}</Badge>
                       </div>
                     <div className="services-pie-wrap">
                       <div className="services-pie" style={{ background: analytics.pieGradient }} />
                       <div className="services-pie-legend">
                         {analytics.pieSegments.length === 0 ? (
-                          <p className="muted">لا توجد بيانات إيرادات مؤكدة.</p>
+                          <p className="muted">{tr("admin.analytics.noConfirmedRevenueData", "No confirmed revenue data.")}</p>
                         ) : (
                           analytics.pieSegments.map((item) => (
                             <div key={`rep-${item.name}`} className="legend-row">
                               <span className="legend-dot" style={{ background: item.color }} />
                               <span>{item.name}</span>
-                              <b>{formatCurrencyIQD(item.revenue)}</b>
+                              <b>{formatMoney(item.revenue)}</b>
                             </div>
                           ))
                         )}
@@ -2323,118 +2464,88 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
               ) : null}
 
               {activeSection === "calendar" ? (
-                <Card>
-                  <div className="enterprise-card-head">
-                    <h3>تقويم اليوم</h3>
-                    <input
-                      type="date"
-                      className="input"
-                      value={calendarDate}
-                      onChange={(e) => setCalendarDate(e.target.value)}
-                      style={{ maxWidth: 220 }}
-                    />
-                  </div>
-                  <div className="calendar-list">
-                    {calendarGroups.length === 0 ? (
-                      <div className="empty-box">لا توجد بيانات لهذا اليوم.</div>
-                    ) : (
-                      calendarGroups.map((group) => (
-                        <div className="date-group panel-soft" key={group.staff?.id || group.staff?.name}>
-                          <div className="date-header">
-                            <h5>{group.staff?.name || "غير محدد"}</h5>
-                            <span>{group.items.length} حجز</span>
-                          </div>
-                          <div className="bookings-stack">
-                            {group.items.length === 0 ? (
-                              <div className="empty-box">لا توجد حجوزات.</div>
-                            ) : (
-                              group.items.map((row) => (
-                                <article key={row.id} className="booking-card panel-soft compact-booking-card">
-                                  <div className="booking-top">
-                                    <div>
-                                      <h6>{row.customer_name}</h6>
-                                      <p>{row.customer_phone}</p>
-                                    </div>
-                                    <Badge variant={row.status || "pending"}>
-                                      {STATUS_LABELS[row.status] || "غير معروف"}
-                                    </Badge>
-                                  </div>
-                                  <div className="booking-info">
-                                    <p>
-                                      <b>الخدمة:</b> {servicesById[row.service_id]?.name || "-"}
-                                    </p>
-                                    <p>
-                                      <b>الوقت:</b> {formatTime(row.appointment_start)}
-                                    </p>
-                                  </div>
-                                </article>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </Card>
+                <CalendarPage
+                  salon={salon}
+                  writeLocked={writeLocked}
+                  t={t}
+                  showToast={showToast}
+                  onChanged={async () => {
+                    if (salon?.id) {
+                      await loadAdminData(salon.id);
+                    }
+                  }}
+                />
               ) : null}
 
               {activeSection === "billing" ? (
                 <Card>
                   <div className="enterprise-card-head">
-                    <h3>الفوترة والتفعيل</h3>
+                    <h3>{tr("admin.billing.title", "Billing & activation")}</h3>
                     <Badge variant={salonAccess.badgeVariant}>{salonAccess.badgeLabel}</Badge>
                   </div>
 
                   {writeLocked ? (
                     <div className="billing-warning-box">
-                      <b>حسابك غير مفعل</b>
+                      <b>{tr("admin.billing.accountInactive", "Your account is not active")}</b>
                       <p>{salonAccess.lockMessage}</p>
                     </div>
                   ) : null}
 
                   <div className="billing-stats-grid">
                     <div className="billing-stat-card">
-                      <span>رسوم الإعداد</span>
-                      <b>{salon.setup_paid ? "مدفوعة" : "غير مدفوعة"}</b>
+                      <span>{tr("admin.billing.setupFee", "Setup fee")}</span>
+                      <b>{salon.setup_paid ? tr("admin.billing.paid", "Paid") : tr("admin.billing.unpaid", "Unpaid")}</b>
                     </div>
                     <div className="billing-stat-card">
-                      <span>الاشتراك الشهري</span>
-                      <b>{getBillingStatusLabel(salon.billing_status)}</b>
+                      <span>{tr("admin.billing.monthlySubscription", "Monthly subscription")}</span>
+                      <b>{getBillingStatusLabel(salon.subscription_status || salon.billing_status)}</b>
                     </div>
                     <div className="billing-stat-card">
-                      <span>انتهاء الاشتراك</span>
+                      <span>{tr("admin.billing.subscriptionEnds", "Subscription ends")}</span>
                       <b>{formatBillingDate(salon.current_period_end)}</b>
                     </div>
                     <div className="billing-stat-card">
-                      <span>الفترة التجريبية</span>
+                      <span>{tr("admin.billing.trial", "Trial period")}</span>
                       <b>
-                        {salon.trial_enabled
-                          ? `${trialRemaining || "جارية"} (تنتهي ${formatBillingDate(salon.trial_end)})`
-                          : "غير مفعلة"}
+                        {salon.trial_end_at || salon.trial_end
+                          ? `${trialRemaining || tr("admin.billing.running", "Running")} (${tr(
+                              "admin.billing.ends",
+                              "Ends {{date}}",
+                              { date: formatBillingDate(salon.trial_end_at || salon.trial_end) }
+                            )})`
+                          : tr("admin.billing.disabled", "Disabled")}
                       </b>
+                    </div>
+                    <div className="billing-stat-card">
+                      <span>{tr("admin.billing.countryCurrency", "Country / currency")}</span>
+                      <b>{String(salon.country_code || "IQ")} / {String(salon.currency_code || "USD")}</b>
                     </div>
                   </div>
 
                   {!salon.setup_paid ? (
                     <div className="billing-warning-box">
-                      <b>رسوم الإعداد تُدفع عبر رابط من الإدارة</b>
+                      <b>{tr("admin.billing.setupViaAdmin", "Setup fee is paid via admin payment link")}</b>
                       {setupPaymentLink ? (
                         <a href={setupPaymentLink} target="_blank" rel="noreferrer">
-                          افتح رابط دفع الإعداد
+                          {tr("admin.billing.openSetupLink", "Open setup payment link")}
                         </a>
                       ) : (
-                        <p className="muted">تواصل مع الإدارة للحصول على رابط دفع الإعداد اليدوي.</p>
+                        <p className="muted">{tr("admin.billing.contactAdminSetup", "Contact admin to get manual setup payment link.")}</p>
                       )}
                     </div>
                   ) : null}
 
                   <div className="row-actions" style={{ marginTop: 10 }}>
+                    <SelectInput label={tr("admin.billing.plan", "Plan")} value={checkoutPlanType} onChange={(e) => setCheckoutPlanType(e.target.value)}>
+                      <option value="basic">Basic</option>
+                      <option value="pro">Pro</option>
+                    </SelectInput>
                     <Button
                       type="button"
                       onClick={startMonthlySubscriptionCheckout}
                       disabled={checkoutLoading}
                     >
-                      {checkoutLoading ? "جاري التحويل..." : "فعّل الاشتراك الشهري"}
+                      {checkoutLoading ? t("common.loading") : t("admin.activateMonthlySubscription")}
                     </Button>
                   </div>
                 </Card>
@@ -2453,7 +2564,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                           scrollTopInstant();
                         }}
                       >
-                        {tab.label}
+                        {t(tab.labelKey)}
                       </Button>
                     ))}
                   </div>
@@ -2462,14 +2573,14 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
           {activeSection === "schedules" ? (
             <Card>
-              <h3>جداول دوام الموظفين</h3>
+              <h3>{tr("admin.schedules.title", "Employee schedules")}</h3>
               <fieldset disabled={writeLocked} className="locked-fieldset">
               <SelectInput
-                label="اختاري الموظف/الموظفة"
+                label={tr("admin.schedules.selectEmployee", "Select employee")}
                 value={scheduleStaffId}
                 onChange={(e) => setScheduleStaffId(e.target.value)}
               >
-                <option value="">اختيار</option>
+                <option value="">{tr("admin.common.select", "Select")}</option>
                 {staff.map((row) => (
                   <option key={row.id} value={row.id}>
                     {row.name}
@@ -2478,7 +2589,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
               </SelectInput>
 
               <div className="hours-list" style={{ marginTop: 12 }}>
-                {DAYS.map((day) => {
+                {localizedDays.map((day) => {
                   const row = scheduleDraft[day.index] || {
                     is_off: false,
                     open_time: "10:00",
@@ -2501,7 +2612,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                           }
                           disabled={!scheduleStaffId}
                         />
-                        <span>إجازة</span>
+                        <span>{tr("admin.schedules.dayOff", "Day off")}</span>
                       </label>
                       <div className="time-grid">
                         <input
@@ -2561,11 +2672,11 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
               </div>
 
               <Button type="button" onClick={saveEmployeeSchedule} disabled={saveScheduleLoading || !scheduleStaffId}>
-                {saveScheduleLoading ? "جاري الحفظ..." : "حفظ جدول الدوام"}
+                {saveScheduleLoading ? tr("admin.common.saving", "Saving...") : tr("admin.schedules.save", "Save schedule")}
               </Button>
 
               <Card className="panel-soft" style={{ marginTop: 14 }}>
-                <h4>إجازات واستثناءات</h4>
+                <h4>{tr("admin.schedules.timeOffTitle", "Time off & exceptions")}</h4>
                 <div className="grid two" style={{ marginTop: 8 }}>
                   <input
                     type="datetime-local"
@@ -2583,25 +2694,25 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                   />
                   <input
                     className="input"
-                    placeholder="سبب الإجازة (اختياري)"
+                    placeholder={tr("admin.schedules.timeOffReasonOptional", "Time off reason (optional)")}
                     value={timeOffForm.reason}
                     onChange={(e) => setTimeOffForm((p) => ({ ...p, reason: e.target.value }))}
                     disabled={!scheduleStaffId}
                   />
                   <Button type="button" onClick={addEmployeeTimeOff} disabled={!scheduleStaffId || savingTimeOff}>
-                    {savingTimeOff ? "جاري الإضافة..." : "إضافة إجازة"}
+                    {savingTimeOff ? tr("admin.common.adding", "Adding...") : tr("admin.schedules.addTimeOff", "Add time off")}
                   </Button>
                 </div>
 
                 <div className="settings-list" style={{ marginTop: 10 }}>
                   {selectedStaffTimeOff.length === 0 ? (
-                    <div className="empty-box">لا توجد إجازات مسجلة.</div>
+                    <div className="empty-box">{tr("admin.schedules.noTimeOff", "No time off records.")}</div>
                   ) : (
                     selectedStaffTimeOff.map((row) => (
                       <div key={row.id} className="settings-row">
                         <div>
                           <b>{formatDate(row.start_at)} - {formatDate(row.end_at)}</b>
-                          <p className="muted">{row.reason || "بدون ملاحظة"}</p>
+                          <p className="muted">{row.reason || tr("admin.common.noNote", "No note")}</p>
                         </div>
                         <Button
                           type="button"
@@ -2609,7 +2720,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                           disabled={deletingTimeOffId === row.id}
                           onClick={() => deleteEmployeeTimeOff(row.id)}
                         >
-                          {deletingTimeOffId === row.id ? "..." : "حذف"}
+                          {deletingTimeOffId === row.id ? "..." : tr("common.delete", "Delete")}
                         </Button>
                       </div>
                     ))
@@ -2622,44 +2733,44 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
           {activeSection === "services" ? (
             <Card>
-              <h3>إدارة الخدمات</h3>
+              <h3>{tr("admin.services.title", "Services management")}</h3>
               <fieldset disabled={writeLocked} className="locked-fieldset">
               <div className="grid service-form-grid">
                 <input
                   className="input"
-                  placeholder="اسم الخدمة"
+                  placeholder={tr("admin.services.serviceName", "Service name")}
                   value={serviceForm.name}
                   onChange={(e) => setServiceForm((p) => ({ ...p, name: e.target.value }))}
                 />
                 <input
                   className="input"
                   type="number"
-                  placeholder="المدة"
+                  placeholder={tr("admin.services.durationPlaceholder", "Duration: 45")}
                   value={serviceForm.duration_minutes}
                   onChange={(e) => setServiceForm((p) => ({ ...p, duration_minutes: e.target.value }))}
                 />
                 <input
                   className="input"
                   type="number"
-                  placeholder="السعر"
+                  placeholder={tr("admin.services.pricePlaceholder", "Price: 20000")}
                   value={serviceForm.price}
                   onChange={(e) => setServiceForm((p) => ({ ...p, price: e.target.value }))}
                 />
                 <input
                   className="input"
                   type="number"
-                  placeholder="الترتيب"
+                  placeholder={tr("admin.services.sortPlaceholder", "Rank: 10")}
                   value={serviceForm.sort_order}
                   onChange={(e) => setServiceForm((p) => ({ ...p, sort_order: e.target.value }))}
                 />
                 <Button type="button" variant="secondary" onClick={addService} disabled={addingService}>
-                  {addingService ? "جاري الإضافة..." : "إضافة خدمة"}
+                  {addingService ? tr("admin.common.adding", "Adding...") : tr("admin.services.addService", "Add service")}
                 </Button>
               </div>
 
               <div className="settings-list">
                 {services.length === 0 ? (
-                  <div className="empty-box">لا توجد خدمات.</div>
+                  <div className="empty-box">{tr("admin.services.noServices", "No services.")}</div>
                 ) : (
                   services.map((row) => {
                     const isEditing = editingServiceId === row.id;
@@ -2705,7 +2816,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                   setEditingService((p) => ({ ...p, is_active: e.target.checked }))
                                 }
                               />
-                              {editingService.is_active ? "مرئية" : "مخفية"}
+                              {editingService.is_active ? tr("admin.common.visible", "Visible") : tr("admin.common.hidden", "Hidden")}
                             </label>
                             <div className="row-actions service-row-actions">
                               <Button
@@ -2714,10 +2825,10 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                 onClick={() => saveServiceEdit(row.id)}
                                 disabled={rowLoading === `service-save-${row.id}`}
                               >
-                                {rowLoading === `service-save-${row.id}` ? "جاري الحفظ..." : "حفظ"}
+                                {rowLoading === `service-save-${row.id}` ? tr("admin.common.saving", "Saving...") : tr("common.save", "Save")}
                               </Button>
                               <Button type="button" variant="ghost" onClick={() => setEditingServiceId("")}>
-                                إلغاء
+                                {tr("common.cancel", "Cancel")}
                               </Button>
                             </div>
                           </div>
@@ -2734,19 +2845,20 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                 <div>
                                   <b>{row.name}</b>
                                   <p className="muted">
-                                    {row.duration_minutes} دقيقة • {formatCurrencyIQD(row.price)}
+                                    {tr("admin.services.durationValue", "{{count}} min", { count: row.duration_minutes })} •{" "}
+                                    {formatMoney(row.price)}
                                   </p>
                                   <p className="muted">
-                                    {row.is_active ? "مرئية" : "مخفية"} • ترتيب: {row.sort_order || 0}
+                                    {row.is_active ? tr("admin.common.visible", "Visible") : tr("admin.common.hidden", "Hidden")} • {tr("admin.common.sortOrder", "Sort order")}: {row.sort_order || 0}
                                   </p>
                                 </div>
                               </div>
 
                               <div className="service-staff-meta">
-                                <small className="muted">الموظفين اللي يقدمون هالخدمة:</small>
+                                <small className="muted">{tr("admin.services.providedBy", "Provided by:")}</small>
                                 <div className="service-staff-badges">
                                   {assignedStaff.length === 0 ? (
-                                    <span className="service-staff-empty">بدون تعيين</span>
+                                    <span className="service-staff-empty">{tr("admin.services.noAssignment", "No assignment")}</span>
                                   ) : (
                                     assignedStaff.map((member) => (
                                       <span className="service-staff-badge" key={`${row.id}-${member.id}`}>
@@ -2766,7 +2878,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                       onClick={selectAllServiceAssignees}
                                       disabled={inlineAssignSaving || staff.length === 0}
                                     >
-                                      اختيار الكل
+                                      {tr("admin.common.selectAll", "Select all")}
                                     </Button>
                                     <Button
                                       type="button"
@@ -2774,19 +2886,19 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                       onClick={clearServiceAssignees}
                                       disabled={inlineAssignSaving}
                                     >
-                                      مسح الكل
+                                      {tr("admin.common.clearAll", "Clear all")}
                                     </Button>
                                     <Button
                                       type="button"
                                       onClick={() => saveServiceAssignments(row.id)}
                                       disabled={inlineAssignSaving}
                                     >
-                                      {inlineAssignSaving ? "جاري الحفظ..." : "حفظ التعيين"}
+                                      {inlineAssignSaving ? tr("admin.common.saving", "Saving...") : tr("admin.services.saveAssignment", "Save assignment")}
                                     </Button>
                                   </div>
                                   {staff.length === 0 ? (
                                     <div className="empty-box" style={{ marginTop: 8 }}>
-                                      أضيفي موظفين أولاً حتى تربطينهم بالخدمة.
+                                      {tr("admin.services.addStaffFirst", "Add employees first to assign this service.")}
                                     </div>
                                   ) : (
                                     <div className="service-assign-grid">
@@ -2821,15 +2933,15 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                 {serviceImageCompressing[row.id] ? (
                                   <>
                                     <span className="inline-spinner" />
-                                    جاري ضغط الصورة...
+                                    {tr("admin.media.compressingImage", "Compressing image...")}
                                   </>
                                 ) : serviceImageLoading[row.id] ? (
                                   <>
                                     <span className="inline-spinner" />
-                                    جاري رفع الصورة...
+                                    {tr("admin.media.uploadingImage", "Uploading image...")}
                                   </>
                                 ) : (
-                                  "رفع صورة"
+                                  tr("admin.media.uploadImage", "Upload image")
                                 )}
                                 <input
                                   type="file"
@@ -2843,14 +2955,14 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                 />
                               </label>
                               <Button type="button" variant="secondary" onClick={() => startEditService(row)}>
-                                تعديل
+                                {tr("common.edit", "Edit")}
                               </Button>
                               <Button
                                 type="button"
                                 variant={inlineAssignOpen ? "primary" : "ghost"}
                                 onClick={() => toggleServiceAssignEditor(row.id)}
                               >
-                                {inlineAssignOpen ? "إغلاق التعيين" : "تعيين موظفين"}
+                                {inlineAssignOpen ? tr("admin.services.closeAssign", "Close assignment") : tr("admin.services.assignEmployees", "Assign employees")}
                               </Button>
                               <Button
                                 type="button"
@@ -2859,13 +2971,13 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                 disabled={rowLoading === `service-toggle-${row.id}`}
                               >
                                 {rowLoading === `service-toggle-${row.id}`
-                                  ? "جاري..."
+                                  ? tr("common.loading", "Loading...")
                                   : row.is_active
-                                    ? "إخفاء"
-                                    : "إظهار"}
+                                    ? tr("common.hide", "Hide")
+                                    : tr("common.show", "Show")}
                               </Button>
                               <Button type="button" variant="danger" onClick={() => setDeleteDialog({ type: "service", row })}>
-                                حذف
+                                {tr("common.delete", "Delete")}
                               </Button>
                             </div>
                           </>
@@ -2881,36 +2993,36 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
           {activeSection === "employees" ? (
             <Card>
-              <h3>إدارة الموظفين</h3>
+              <h3>{tr("admin.employees.title", "Employees management")}</h3>
               <fieldset disabled={writeLocked} className="locked-fieldset">
               <div className="grid two">
                 <input
                   className="input"
-                  placeholder="اسم الموظف/الموظفة"
+                  placeholder={tr("admin.employees.name", "Employee name")}
                   value={staffForm.name}
                   onChange={(e) => setStaffForm((p) => ({ ...p, name: e.target.value }))}
                 />
                 <input
                   className="input"
                   type="number"
-                  placeholder="الترتيب"
+                  placeholder={tr("admin.common.sortOrder", "Sort order")}
                   value={staffForm.sort_order}
                   onChange={(e) => setStaffForm((p) => ({ ...p, sort_order: e.target.value }))}
                 />
                 <input
                   className="input"
-                  placeholder="رابط صورة (اختياري)"
+                  placeholder={tr("admin.employees.photoUrlOptional", "Photo URL (optional)")}
                   value={staffForm.photo_url}
                   onChange={(e) => setStaffForm((p) => ({ ...p, photo_url: e.target.value }))}
                 />
                 <Button type="button" variant="secondary" onClick={addStaff} disabled={addingStaff}>
-                  {addingStaff ? "جاري الإضافة..." : "إضافة"}
+                  {addingStaff ? tr("admin.common.adding", "Adding...") : tr("common.add", "Add")}
                 </Button>
               </div>
 
               <div className="settings-list">
                 {staff.length === 0 ? (
-                  <div className="empty-box">لا توجد موظفات/موظفين.</div>
+                  <div className="empty-box">{tr("admin.employees.noEmployees", "No employees.")}</div>
                 ) : (
                   staff.map((row) => {
                     const isEditing = editingStaffId === row.id;
@@ -2931,7 +3043,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                             />
                             <input
                               className="input"
-                              placeholder="رابط صورة (اختياري)"
+                              placeholder={tr("admin.employees.photoUrlOptional", "Photo URL (optional)")}
                               value={editingStaff.photo_url}
                               onChange={(e) => setEditingStaff((p) => ({ ...p, photo_url: e.target.value }))}
                             />
@@ -2943,7 +3055,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                   setEditingStaff((p) => ({ ...p, is_active: e.target.checked }))
                                 }
                               />
-                              {editingStaff.is_active ? "مرئي" : "مخفي"}
+                              {editingStaff.is_active ? tr("admin.common.visible", "Visible") : tr("admin.common.hidden", "Hidden")}
                             </label>
                             <div className="row-actions">
                               <Button
@@ -2952,10 +3064,10 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                 onClick={() => saveStaffEdit(row.id)}
                                 disabled={rowLoading === `staff-save-${row.id}`}
                               >
-                                {rowLoading === `staff-save-${row.id}` ? "جاري الحفظ..." : "حفظ"}
+                                {rowLoading === `staff-save-${row.id}` ? tr("admin.common.saving", "Saving...") : tr("common.save", "Save")}
                               </Button>
                               <Button type="button" variant="ghost" onClick={() => setEditingStaffId("")}>
-                                إلغاء
+                                {tr("common.cancel", "Cancel")}
                               </Button>
                             </div>
                           </div>
@@ -2971,7 +3083,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                               <div>
                                 <b>{row.name}</b>
                                 <p className="muted">
-                                  {row.is_active ? "مرئي" : "مخفي"} • ترتيب: {row.sort_order || 0}
+                                  {row.is_active ? tr("admin.common.visible", "Visible") : tr("admin.common.hidden", "Hidden")} • {tr("admin.common.sortOrder", "Sort order")}: {row.sort_order || 0}
                                 </p>
                               </div>
                             </div>
@@ -2984,15 +3096,15 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                 {staffImageCompressing[row.id] ? (
                                   <>
                                     <span className="inline-spinner" />
-                                    جاري ضغط الصورة...
+                                    {tr("admin.media.compressingImage", "Compressing image...")}
                                   </>
                                 ) : staffImageLoading[row.id] ? (
                                   <>
                                     <span className="inline-spinner" />
-                                    جاري رفع الصورة...
+                                    {tr("admin.media.uploadingImage", "Uploading image...")}
                                   </>
                                 ) : (
-                                  "رفع صورة"
+                                  tr("admin.media.uploadImage", "Upload image")
                                 )}
                                 <input
                                   type="file"
@@ -3006,7 +3118,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                 />
                               </label>
                               <Button type="button" variant="secondary" onClick={() => startEditStaff(row)}>
-                                تعديل
+                                {tr("common.edit", "Edit")}
                               </Button>
                               <Button
                                 type="button"
@@ -3015,13 +3127,13 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                                 disabled={rowLoading === `staff-toggle-${row.id}`}
                               >
                                 {rowLoading === `staff-toggle-${row.id}`
-                                  ? "جاري..."
+                                  ? tr("common.loading", "Loading...")
                                   : row.is_active
-                                    ? "إخفاء"
-                                    : "إظهار"}
+                                    ? tr("common.hide", "Hide")
+                                    : tr("common.show", "Show")}
                               </Button>
                               <Button type="button" variant="danger" onClick={() => setDeleteDialog({ type: "staff", row })}>
-                                حذف
+                                {tr("common.delete", "Delete")}
                               </Button>
                             </div>
                           </>
@@ -3037,24 +3149,34 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
               {activeSection === "commissions" ? (
                 <Card>
-                  <h3>العمولات</h3>
-                  <p className="muted">هذا القسم جاهز كمرحلة قادمة. تمت تهيئة قاعدة البيانات لحساب عمولات الموظفين لكل خدمة/حجز.</p>
+                  <h3>{tr("admin.sections.commissions", "Commissions")}</h3>
+                  <p className="muted">
+                    {tr(
+                      "admin.commissionsComingSoon",
+                      "This section is phase-ready. Database foundation is prepared for staff commissions per service/booking."
+                    )}
+                  </p>
                 </Card>
               ) : null}
 
               {activeSection === "expenses" ? (
                 <Card>
-                  <h3>المصروفات</h3>
-                  <p className="muted">هذا القسم جاهز كمرحلة قادمة. تمت تهيئة قاعدة البيانات لإدخال المصروفات اليومية وتحليل صافي الربح.</p>
+                  <h3>{tr("admin.sections.expenses", "Expenses")}</h3>
+                  <p className="muted">
+                    {tr(
+                      "admin.expensesComingSoon",
+                      "This section is phase-ready. Database foundation is prepared for daily expenses and net-profit analysis."
+                    )}
+                  </p>
                 </Card>
               ) : null}
 
           {activeSection === "settings" && activeSettingsSection === "assign" ? (
             <Card>
-              <h3>ربط الخدمات بالموظفين</h3>
+              <h3>{t("admin.settings.assign")}</h3>
               <fieldset disabled={writeLocked} className="locked-fieldset">
-              <SelectInput label="اختاري الموظف/الموظفة" value={assignStaffId} onChange={(e) => setAssignStaffId(e.target.value)}>
-                <option value="">اختيار</option>
+              <SelectInput label={tr("admin.schedules.selectEmployee", "Select employee")} value={assignStaffId} onChange={(e) => setAssignStaffId(e.target.value)}>
+                <option value="">{tr("admin.common.select", "Select")}</option>
                 {staff.map((row) => (
                   <option key={row.id} value={row.id}>
                     {row.name}
@@ -3064,19 +3186,19 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
               <div className="row-actions" style={{ marginTop: 10 }}>
                 <Button type="button" variant="ghost" onClick={selectAllAssign} disabled={!assignStaffId}>
-                  اختيار الكل
+                  {tr("admin.common.selectAll", "Select all")}
                 </Button>
                 <Button type="button" variant="ghost" onClick={clearAllAssign} disabled={!assignStaffId}>
-                  مسح الكل
+                  {tr("admin.common.clearAll", "Clear all")}
                 </Button>
                 <Button type="button" onClick={saveAssignments} disabled={!assignStaffId || saveAssignLoading}>
-                  {saveAssignLoading ? "جاري الحفظ..." : "حفظ التعيين"}
+                  {saveAssignLoading ? tr("admin.common.saving", "Saving...") : tr("admin.services.saveAssignment", "Save assignment")}
                 </Button>
               </div>
 
               {services.length === 0 ? (
                 <div className="empty-box" style={{ marginTop: 10 }}>
-                  لا توجد خدمات لتعيينها.
+                  {tr("admin.settings.noServicesToAssign", "No services to assign.")}
                 </div>
               ) : (
                 <div className="assign-grid">
@@ -3096,8 +3218,13 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                           {srv.name}
                         </label>
                         <small>
-                          {srv.duration_minutes} دقيقة • {formatCurrencyIQD(srv.price)}
-                          {disabled ? " • غير مفعلة" : currentlyAssigned ? " • معينة" : ""}
+                          {tr("admin.services.durationValue", "{{count}} min", { count: srv.duration_minutes })} •{" "}
+                          {formatMoney(srv.price)}
+                          {disabled
+                            ? ` • ${tr("admin.services.inactive", "Inactive")}`
+                            : currentlyAssigned
+                              ? ` • ${tr("admin.services.assigned", "Assigned")}`
+                              : ""}
                         </small>
                       </div>
                     );
@@ -3110,16 +3237,16 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
           {activeSection === "settings" && activeSettingsSection === "media" ? (
             <Card>
-              <h3>الصور</h3>
-              <p className="muted">ارفعي صور للمركز، وإذا ماكو صور راح تظهر صور افتراضية تلقائياً.</p>
+              <h3>{t("admin.settings.media")}</h3>
+              <p className="muted">{tr("admin.media.subtitle", "Upload salon media. If empty, default images are used automatically.")}</p>
               <fieldset disabled={writeLocked} className="locked-fieldset">
 
               <div className="media-admin-grid">
                 <div className="media-block">
-                  <h4>شعار المركز</h4>
+                  <h4>{tr("admin.media.logo", "Salon logo")}</h4>
                   <SafeImage
                     src={mediaDraft.logo_url}
-                    alt="شعار الصالون"
+                    alt={tr("admin.media.logoAlt", "Salon logo")}
                     className="logo-preview"
                     fallbackText={getInitials(salon.name)}
                   />
@@ -3127,15 +3254,15 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                     {logoCompressing ? (
                       <>
                         <span className="inline-spinner" />
-                        جاري ضغط الصورة...
+                        {tr("admin.media.compressingImage", "Compressing image...")}
                       </>
                     ) : logoUploading ? (
                       <>
                         <span className="inline-spinner" />
-                        جاري رفع الشعار...
+                        {tr("admin.media.uploadingLogo", "Uploading logo...")}
                       </>
                     ) : (
-                      "رفع/تبديل الشعار"
+                      tr("admin.media.uploadOrReplaceLogo", "Upload/replace logo")
                     )}
                     <input
                       type="file"
@@ -3151,21 +3278,21 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                 </div>
 
                 <div className="media-block">
-                  <h4>صورة الغلاف</h4>
-                  <SafeImage src={mediaDraft.cover_image_url} alt="غلاف الصالون" className="cover-preview" fallbackIcon="✨" />
+                  <h4>{tr("admin.media.cover", "Cover image")}</h4>
+                  <SafeImage src={mediaDraft.cover_image_url} alt={tr("admin.media.coverAlt", "Salon cover")} className="cover-preview" fallbackIcon="✨" />
                   <label className={`upload-main ${coverUploading || coverCompressing ? "disabled" : ""}`}>
                     {coverCompressing ? (
                       <>
                         <span className="inline-spinner" />
-                        جاري ضغط الصورة...
+                        {tr("admin.media.compressingImage", "Compressing image...")}
                       </>
                     ) : coverUploading ? (
                       <>
                         <span className="inline-spinner" />
-                        جاري رفع الغلاف...
+                        {tr("admin.media.uploadingCover", "Uploading cover...")}
                       </>
                     ) : (
-                      "رفع/تبديل الغلاف"
+                      tr("admin.media.uploadOrReplaceCover", "Upload/replace cover")
                     )}
                     <input
                       type="file"
@@ -3181,20 +3308,20 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                 </div>
 
                 <div className="media-block">
-                  <h4>معرض الصور (حد أقصى 8)</h4>
+                  <h4>{tr("admin.media.galleryMax", "Gallery (max 8)")}</h4>
                   <label className={`upload-main ${galleryUploading || galleryCompressing ? "disabled" : ""}`}>
                     {galleryCompressing ? (
                       <>
                         <span className="inline-spinner" />
-                        جاري ضغط الصورة...
+                        {tr("admin.media.compressingImage", "Compressing image...")}
                       </>
                     ) : galleryUploading ? (
                       <>
                         <span className="inline-spinner" />
-                        جاري رفع الصور...
+                        {tr("admin.media.uploadingImages", "Uploading images...")}
                       </>
                     ) : (
-                      "رفع صور للمعرض"
+                      tr("admin.media.uploadGalleryImages", "Upload gallery images")
                     )}
                     <input
                       type="file"
@@ -3209,12 +3336,12 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                   </label>
 
                   {galleryUrls.length === 0 ? (
-                    <div className="empty-box">لا توجد صور مرفوعة حالياً.</div>
+                    <div className="empty-box">{tr("admin.media.noUploadedImages", "No uploaded images yet.")}</div>
                   ) : (
                     <div className="admin-gallery-grid">
                       {galleryUrls.map((url) => (
                         <div className="admin-gallery-item" key={url}>
-                          <SafeImage src={url} alt="صورة المعرض" className="admin-gallery-thumb" fallbackIcon="🌸" />
+                          <SafeImage src={url} alt={tr("admin.media.galleryImageAlt", "Gallery image")} className="admin-gallery-thumb" fallbackIcon="🌸" />
                           <Button
                             type="button"
                             variant="danger"
@@ -3222,7 +3349,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                             disabled={galleryDeletingUrl === url}
                             onClick={() => handleRemoveGalleryImage(url)}
                           >
-                            {galleryDeletingUrl === url ? "..." : "حذف"}
+                            {galleryDeletingUrl === url ? "..." : tr("common.delete", "Delete")}
                           </Button>
                         </div>
                       ))}
@@ -3233,19 +3360,19 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
               <div className="grid">
                 <TextInput
-                  label="رابط شعار المركز (اختياري)"
+                  label={tr("admin.media.logoUrlOptional", "Salon logo URL (optional)")}
                   value={mediaDraft.logo_url}
                   onChange={(e) => setMediaDraft((p) => ({ ...p, logo_url: e.target.value }))}
                   placeholder="https://..."
                 />
                 <TextInput
-                  label="رابط صورة الغلاف (اختياري)"
+                  label={tr("admin.media.coverUrlOptional", "Cover image URL (optional)")}
                   value={mediaDraft.cover_image_url}
                   onChange={(e) => setMediaDraft((p) => ({ ...p, cover_image_url: e.target.value }))}
                   placeholder="https://..."
                 />
                 <label className="field">
-                  <span>روابط المعرض (رابط بكل سطر)</span>
+                  <span>{tr("admin.media.galleryUrlsLineByLine", "Gallery URLs (one URL per line)")}</span>
                   <textarea
                     className="input textarea"
                     value={mediaDraft.gallery_text}
@@ -3256,7 +3383,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
               </div>
 
               <Button type="button" onClick={saveSalonMedia} disabled={savingMedia}>
-                {savingMedia ? "جاري الحفظ..." : "حفظ الصور"}
+                {savingMedia ? tr("admin.common.saving", "Saving...") : tr("admin.media.saveImages", "Save images")}
               </Button>
               </fieldset>
             </Card>
@@ -3264,21 +3391,35 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
 
           {activeSection === "settings" && activeSettingsSection === "salon" ? (
             <Card>
-              <h3>إعدادات المركز</h3>
-              <p className="muted">تحكم بظهور المركز وحالته العامة.</p>
+              <h3>{t("admin.settings.salon")}</h3>
+              <p className="muted">{tr("admin.settings.salonSubtitle", "Control salon visibility and general status.")}</p>
               <fieldset disabled={writeLocked} className="locked-fieldset">
 
               <div className="stack-sm" style={{ marginTop: 10 }}>
                 <label className="field">
-                  <span>وضع الحجز</span>
+                  <span>{tr("admin.settings.bookingMode", "Booking mode")}</span>
                   <select
                     className="input"
                     value={salon.booking_mode || "choose_employee"}
                     onChange={(e) => saveSalonFlags({ booking_mode: e.target.value })}
                     disabled={savingSalonFlags}
                   >
-                    <option value="choose_employee">العميلة تختار الموظف/الموظفة</option>
-                    <option value="auto_assign">توزيع تلقائي حسب التوفر</option>
+                    <option value="choose_employee">{tr("admin.settings.bookingModeChoose", "Customer chooses employee")}</option>
+                    <option value="auto_assign">{tr("admin.settings.bookingModeAuto", "Auto assign by availability")}</option>
+                  </select>
+                </label>
+                <label className="field">
+                  <span>{tr("admin.settings.defaultLanguage", "Default language")}</span>
+                  <select
+                    className="input"
+                    value={salon.language_default || "en"}
+                    onChange={(e) => saveSalonFlags({ language_default: e.target.value })}
+                    disabled={savingSalonFlags}
+                  >
+                    <option value="ar">العربية</option>
+                    <option value="en">English</option>
+                    <option value="cs">Čeština</option>
+                    <option value="ru">Русский</option>
                   </select>
                 </label>
                 <label className="switch-pill">
@@ -3288,20 +3429,20 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                     onChange={(e) => saveSalonFlags({ is_listed: e.target.checked })}
                     disabled={savingSalonFlags}
                   />
-                  يظهر في صفحة الاستكشاف
+                  {tr("admin.settings.showInExplore", "Show in explore page")}
                 </label>
               </div>
 
               <div className="admin-share-block" style={{ marginTop: 12 }}>
-                <h4>رابط الحجز المباشر</h4>
+                <h4>{tr("admin.share.directBookingLink", "Direct booking link")}</h4>
                 <input className="input" value={bookingPageUrl} readOnly />
                 <div className="row-actions">
                   <Button variant="secondary" onClick={copyBookingLink} disabled={copyingLink || !bookingPageUrl}>
-                    {copyingLink ? "جاري النسخ..." : "نسخ رابط الحجز"}
+                    {copyingLink ? tr("admin.share.copying", "Copying...") : tr("admin.share.copyBookingLink", "Copy booking link")}
                   </Button>
                   {shareBookingWhatsappHref ? (
                     <Button as="a" variant="primary" href={shareBookingWhatsappHref} target="_blank" rel="noreferrer">
-                      مشاركة واتساب
+                      {tr("admin.share.shareWhatsapp", "Share on WhatsApp")}
                     </Button>
                   ) : null}
                 </div>
@@ -3312,20 +3453,25 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
             </div>
           </div>
         </>
+        </BillingGate>
       )}
 
       <ConfirmModal
         open={Boolean(deleteDialog)}
-        title={deleteDialog?.type === "service" ? "حذف الخدمة" : "حذف الموظفة"}
+        title={deleteDialog?.type === "service" ? tr("admin.services.deleteService", "Delete service") : tr("admin.employees.deleteEmployee", "Delete employee")}
         text={
           deleteDialog?.type === "service"
-            ? `راح يتم حذف خدمة ${deleteDialog?.row?.name || ""} وكل ربطها. متأكدة؟`
-            : `راح يتم حذف ${deleteDialog?.row?.name || ""} وكل تعييناته. متأكد/ة؟`
+            ? tr("admin.services.deleteServiceConfirm", "Service {{name}} and all assignments will be deleted. Are you sure?", {
+                name: deleteDialog?.row?.name || "",
+              })
+            : tr("admin.employees.deleteEmployeeConfirm", "{{name}} and all assignments will be deleted. Are you sure?", {
+                name: deleteDialog?.row?.name || "",
+              })
         }
         loading={deleteLoading}
         onCancel={() => !deleteLoading && setDeleteDialog(null)}
         onConfirm={deleteRow}
-        confirmText="نعم، حذف"
+        confirmText={tr("admin.common.confirmDelete", "Yes, delete")}
       />
 
       <Toast {...toast} />

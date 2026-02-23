@@ -1,0 +1,786 @@
+{
+  "common": {
+    "explore": "Prozkoumat",
+    "dashboard": "Nástěnka",
+    "billing": "Platby",
+    "staff": "Zaměstnanci",
+    "services": "Služby",
+    "subscription": "Předplatné",
+    "save": "Uložit",
+    "cancel": "Zrušit",
+    "refresh": "Obnovit",
+    "loading": "Načítání...",
+    "talkToSales": "Kontaktovat obchod",
+    "bookDemo": "Rezervovat demo",
+    "whatsappDemo": "WhatsApp demo",
+    "all": "Vše",
+    "whatsapp": "WhatsApp",
+    "confirm": "Potvrdit",
+    "back": "Zpět",
+    "processing": "Zpracování...",
+    "delete": "Smazat",
+    "edit": "Upravit",
+    "hide": "Skrýt",
+    "show": "Zobrazit",
+    "add": "Add"
+  },
+  "errors": {
+    "supabaseConfigMissing": "Nastavení Supabase chybí."
+  },
+  "nav": {
+    "centers": "Pro salony",
+    "features": "Funkce",
+    "pricing": "Ceník",
+    "faq": "FAQ",
+    "superadmin": "Super admin",
+    "menu": "Menu"
+  },
+  "home": {
+    "headline1": "Převeďte rezervace salonu",
+    "headline2": "na profesionální systém",
+    "headline3": "bez chaosu WhatsApp",
+    "subheadline": "Chytrý rezervační odkaz + pokročilý admin panel + kompletní správa personálu a služeb do 24 hodin.",
+    "sectionBeforeAfter": "Před a po CareChair",
+    "sectionShow": "Podívejte se na systém",
+    "sectionFeatures": "Funkce platformy",
+    "sectionPricing": "Flexibilní plány",
+    "sectionTestimonials": "Reference salónů",
+    "sectionFaq": "Často kladené dotazy",
+    "ctaMain": "Požádat o systém",
+    "ctaExplore": "Prozkoumat salony",
+    "finalTitle": "Připraveni na organizované rezervace?",
+    "finalSubtitle": "Spustíme systém rychle, abyste mohli od prvního dne fungovat s jistotou.",
+    "tag1": "Funguje na více zařízeních",
+    "tag2": "Organizované plánování",
+    "tag3": "Zrušení kdykoliv",
+    "heroImageAlt": "Prémiový salon v Bagdádu",
+    "beforeTitle": "Před CareChair",
+    "afterTitle": "Po CareChair",
+    "before": {
+      "1": "Příliš mnoho hovorů",
+      "2": "Ztracené termíny",
+      "3": "Tlak na personál"
+    },
+    "after": {
+      "1": "Jeden rezervační odkaz",
+      "2": "Přehledný rozvrh",
+      "3": "Rychlé potvrzení/odmítnutí"
+    },
+    "showcase": {
+      "adminTitle": "Admin panel",
+      "adminCaption": "Správa každodenních rezervací a stavů rychle a přehledně.",
+      "bookingTitle": "Rezervační stránka",
+      "bookingCaption": "Elegantní a rychlý rezervační tok z jakéhokoli zařízení.",
+      "exploreTitle": "Katalog",
+      "exploreCaption": "Profesionální prezentace salonů a služeb pro vyšší konverzi."
+    },
+    "features": {
+      "link": {
+        "title": "Jeden rezervační odkaz",
+        "text": "Sdílejte na Instagramu a WhatsApp a přijímejte rezervace přímo."
+      },
+      "workflow": {
+        "title": "Organizace personálu a služeb",
+        "text": "Jasné přiřazení služby ke správnému zaměstnanci."
+      },
+      "action": {
+        "title": "Okamžité akce rezervací",
+        "text": "Potvrzujte nebo odmítejte požadavky z jedné obrazovky."
+      },
+      "hours": {
+        "title": "Kontrola otevírací doby",
+        "text": "Flexibilní týdenní rozvrh podle provozu salonu."
+      },
+      "media": {
+        "title": "Profesionální prezentace",
+        "text": "Fotky a služby uspořádané pro vyšší důvěru klientek."
+      },
+      "scale": {
+        "title": "Připraveno na růst",
+        "text": "Od jedné pobočky až po síť poboček."
+      }
+    },
+    "pricingBullets": {
+      "1": "Rezervační odkaz + dashboard + plánování personálu",
+      "2": "Fakturace podle země a měny",
+      "3": "7denní trial"
+    },
+    "enterpriseBullets": {
+      "1": "Nasazení pro více zemí",
+      "2": "Pokročilý onboarding a migrace",
+      "3": "Vlastní workflow pro rostoucí řetězce"
+    },
+    "testimonials": {
+      "1": {
+        "quote": "Rezervace jsou přehledné a počet hovorů výrazně klesl.",
+        "name": "Majitelka salonu",
+        "location": "Bagdád"
+      },
+      "2": {
+        "quote": "Nejlepší byla rychlost spuštění a organizace týmu od prvního dne.",
+        "name": "Manažerka salonu",
+        "location": "Basra"
+      },
+      "3": {
+        "quote": "Rezervační stránka působí prémiově a dělá skvělý první dojem.",
+        "name": "Majitelka beauty centra",
+        "location": "Bagdád"
+      }
+    },
+    "faq": {
+      "1": {
+        "q": "Je to aplikace nebo systém?",
+        "a": "Je to webový systém fungující přes přímý odkaz na jakémkoli zařízení."
+      },
+      "2": {
+        "q": "Může běžet na více zařízeních současně?",
+        "a": "Ano, správa může běžet současně na mobilu, tabletu i notebooku."
+      },
+      "3": {
+        "q": "Jak přidám rezervační odkaz na Instagram?",
+        "a": "Dodáme hotový odkaz, který vložíte do bio na Instagramu nebo WhatsAppu."
+      },
+      "4": {
+        "q": "Jak probíhá potvrzení rezervace?",
+        "a": "Požadavky se ihned zobrazí v administraci, kde je potvrdíte nebo odmítnete."
+      }
+    },
+    "trust": {
+      "activeCenters": "+{{count}} aktivních center",
+      "monthlyBookings": "+{{count}} měsíčních rezervací",
+      "activation": "Aktivace do 24 hodin",
+      "cities": "Dostupné v Bagdádu a Basře"
+    }
+  },
+  "explore": {
+    "subtitle": "Najděte salony podle oblasti a služeb",
+    "platformBadge": "Platforma CareChair",
+    "heroTitle": "Objevte nejlepší salony v Bagdádu",
+    "heroText": "Vyberte službu, porovnejte centra a rezervujte ihned.",
+    "socialProof": "Centra používající CareChair pro správu rezervací ({{count}})",
+    "socialProofEarly": "Centra, která začala používat CareChair ({{count}})",
+    "featured": "Doporučené",
+    "defaultArea": "Bagdád",
+    "startingFrom": "Od",
+    "noServices": "Zatím nejsou aktivní služby.",
+    "bookNow": "Rezervovat",
+    "empty": "Tomuto filtru neodpovídají žádné salony.",
+    "categories": {
+      "all": "Vše",
+      "haircut": "Střih",
+      "color": "Barvení",
+      "nails": "Nehty",
+      "facial": "Pleť",
+      "makeup": "Make-up"
+    },
+    "filters": {
+      "area": "Oblast",
+      "allAreas": "Všechny oblasti",
+      "search": "Hledat salon nebo službu",
+      "searchPlaceholder": "Např.: barvení, pleť, Mansour",
+      "sort": "Řazení"
+    },
+    "sort": {
+      "nearest": "Nejbližší (brzy)",
+      "topRated": "Nejlépe hodnocené",
+      "mostBooked": "Nejvíce rezervované",
+      "newest": "Nejnovější"
+    },
+    "badges": {
+      "fastConfirm": "Rychlé potvrzení",
+      "easyBooking": "Snadná rezervace",
+      "whatsappAvailable": "WhatsApp dostupný",
+      "pendingActivation": "Čeká na aktivaci"
+    },
+    "errors": {
+      "loadFailed": "Nepodařilo se načíst katalog: {{message}}"
+    }
+  },
+  "pricing": {
+    "title": "Flexibilní plány pro rostoucí salony",
+    "subtitle": "Konečnou cenu připravíme dle země a potřeb salonu.",
+    "basic": "Basic",
+    "pro": "Pro",
+    "enterprise": "Enterprise",
+    "noPublicPrices": "Veřejné ceny nejsou zveřejněny. Kontaktujte obchod.",
+    "bookDemo": "Rezervovat demo",
+    "talkToSales": "Kontaktovat obchod"
+  },
+  "billingGate": {
+    "lockedTitle": "Přístup k účtu je omezen",
+    "lockedText": "Účet není aktivní. Dokončete trial/předplatné v sekci plateb.",
+    "openBilling": "Otevřít platby"
+  },
+  "billingAccess": {
+    "badges": {
+      "override": "Manuální override",
+      "inactive": "Neaktivní",
+      "suspended": "Pozastaveno",
+      "trialing": "Zkušební období",
+      "pendingSetup": "Čeká na setup",
+      "active": "Aktivní",
+      "pastDue": "Po splatnosti"
+    },
+    "lockMessages": {
+      "inactive": "Účet je momentálně neaktivní.",
+      "suspended": "Účet je pozastaven. Kontaktujte podporu.",
+      "pendingSetup": "Účet není aktivní. Dokončete setup poplatek a měsíční předplatné.",
+      "pastDue": "Předplatné je po splatnosti. Aktualizujte platbu.",
+      "default": "Účet je neaktivní. Dokončete setup a platby."
+    },
+    "trialEnded": "Ukončeno",
+    "hoursRemaining": "{{count}} hodin",
+    "daysRemaining": "{{count}} dní"
+  },
+  "footer": {
+    "tagline": "CareChair je profesionální rezervační platforma pro salony a beauty centra.",
+    "links": "Odkazy",
+    "legal": "Právní",
+    "contact": "Kontakt",
+    "terms": "Podmínky",
+    "privacy": "Soukromí",
+    "billing": "Platby a vrácení",
+    "cancellation": "Zrušení",
+    "whatsappUnavailable": "WhatsApp momentálně není dostupný",
+    "whatsappLabel": "WhatsApp",
+    "demoWhatsappMessage": "Dobrý den, chci demo CareChair pro svůj salon.",
+    "legalLine": "CareChair provozuje Infraengineering s.r.o."
+  },
+  "status": {
+    "inactive": "Neaktivní",
+    "trialing": "Zkušební",
+    "active": "Aktivní",
+    "past_due": "Po splatnosti",
+    "canceled": "Zrušeno",
+    "suspended": "Pozastaveno"
+  },
+  "superadmin": {
+    "title": "Super admin panel",
+    "subtitle": "Globální správa zemí, plateb a aktivace",
+    "createSalon": "Vytvořit salon",
+    "country": "Země",
+    "allCountries": "Všechny země",
+    "countriesConfig": "Nastavení zemí",
+    "enableCountry": "Povolit zemi",
+    "disableCountry": "Zakázat zemi",
+    "extendTrial": "Prodloužit trial",
+    "forceStatus": "Vynutit stav",
+    "internalOnly": "Pouze interní použití",
+    "internalSubtitle": "Globální správa zemí, předplatného a override stavu.",
+    "codeLabel": "Kód super admina",
+    "login": "Přihlásit",
+    "salonControl": "Správa salonů",
+    "statusFilter": "Filtr stavu",
+    "noSalons": "Pro tento filtr nebyly nalezeny žádné salony.",
+    "setupPaid": "Setup zaplacen",
+    "setupPending": "Setup čeká",
+    "endsAt": "Končí",
+    "trialEnd": "Konec trialu",
+    "suspensionReason": "Důvod pozastavení",
+    "bookingPage": "Rezervační stránka",
+    "salonAdmin": "Administrace salonu",
+    "changePasscode": "Změnit admin kód",
+    "newPasscode": "Nový kód",
+    "saving": "Ukládání...",
+    "savePasscode": "Uložit kód",
+    "hideFromExplore": "Skrýt z katalogu",
+    "showInExplore": "Zobrazit v katalogu",
+    "clearSetupPaid": "Zrušit setup paid",
+    "markSetupPaid": "Nastavit setup paid",
+    "disableOverride": "Vypnout override",
+    "enableOverride": "Zapnout override",
+    "unsuspend": "Obnovit",
+    "suspend": "Pozastavit",
+    "confirmSuspendTitle": "Pozastavit salon",
+    "confirmSuspendText": "Chcete pozastavit {{name}}?",
+    "currency": "Měna",
+    "timezone": "Časové pásmo",
+    "basicPriceId": "Stripe Basic Price ID",
+    "proPriceId": "Stripe Pro Price ID",
+    "trialDays": "Trial dny",
+    "vatPercent": "DPH %",
+    "form": {
+      "salonName": "Název salonu",
+      "slug": "Slug",
+      "area": "Oblast",
+      "whatsapp": "WhatsApp",
+      "adminPasscode": "Admin kód salonu",
+      "seedDefaults": "Vytvořit výchozí hodiny/služby/personál",
+      "creating": "Vytváření...",
+      "create": "Vytvořit salon"
+    },
+    "messages": {
+      "unlocked": "Super admin odemčen.",
+      "salonCreated": "Salon vytvořen a trial aktivován.",
+      "saved": "Změny uloženy.",
+      "passcodeUpdated": "Admin kód salonu aktualizován.",
+      "countrySaved": "Nastavení země aktualizováno: {{code}}.",
+      "trialExtended": "Trial prodloužen.",
+      "statusUpdated": "Stav předplatného aktualizován.",
+      "overrideEnabled": "Override zapnut.",
+      "overrideDisabled": "Override vypnut.",
+      "hiddenFromExplore": "Salon skryt z katalogu.",
+      "shownInExplore": "Salon zobrazen v katalogu.",
+      "setupPaymentMarked": "Setup poplatek označen jako zaplacený.",
+      "setupPaymentCleared": "Setup platba zrušena.",
+      "suspended": "Salon pozastaven.",
+      "unsuspended": "Pozastavení zrušeno."
+    },
+    "errors": {
+      "codeMissing": "Kód super admina není nastaven. Nastavte VITE_SUPERADMIN_CODE a restartujte dev.",
+      "invalidCode": "Neplatný kód super admina.",
+      "loadFailed": "Nepodařilo se načíst super admin panel: {{message}}",
+      "invalidSalonName": "Zadejte platný název salonu.",
+      "invalidSlug": "Zadejte platný slug.",
+      "invalidArea": "Zadejte platnou oblast.",
+      "invalidAdminPass": "Zadejte platný admin kód.",
+      "countryMissing": "Konfigurace země není dostupná.",
+      "createFailed": "Nepodařilo se vytvořit salon: {{message}}",
+      "updateFailed": "Nepodařilo se aktualizovat salon: {{message}}",
+      "passcodeTooShort": "Admin kód musí mít alespoň 3 znaky.",
+      "passcodeUpdateFailed": "Nepodařilo se změnit kód: {{message}}",
+      "countrySaveFailed": "Nepodařilo se uložit zemi: {{message}}",
+      "countriesMigrationMissing": "Tabulka countries chybí. Spusťte nejnovější migraci."
+    }
+  },
+  "legal": {
+    "subtitle": "Krátké shrnutí v arabštině, poté plný právní text v angličtině",
+    "quickSummary": "Rychlé shrnutí",
+    "billingSubtitle": "Pravidla plateb a vrácení",
+    "termsTitle": "Podmínky služby",
+    "privacyTitle": "Zásady ochrany osobních údajů",
+    "cancellationTitle": "Zrušení a pozastavení",
+    "billingSummary": {
+      "1": "V tuto chvíli není dostupná bezplatná zkušební verze CareChair.",
+      "2": "Setup poplatek je 300 až 500 USD a je nevratný.",
+      "3": "Měsíční předplatné je 30 až 50 USD a platí se předem.",
+      "4": "Platby probíhají přes Stripe; slevy jsou možné dle dohody.",
+      "5": "Po vystavení faktury není vrácení předplatného možné.",
+      "6": "Po zrušení zůstává přístup do konce zaplaceného období.",
+      "7": "Zpoždění platby vede k automatickému pozastavení služby."
+    },
+    "termsSummary": {
+      "1": "CareChair je rezervační platforma provozovaná Infraengineering s.r.o.",
+      "2": "Služba je B2B a není určena pro osobní použití.",
+      "3": "Setup poplatek je jednorázový a nevratný.",
+      "4": "Měsíční předplatné je účtováno předem a lze ho kdykoliv zrušit.",
+      "5": "Po zrušení přístup trvá jen do konce zaplaceného období.",
+      "6": "Při neuhrazení je účet automaticky pozastaven.",
+      "7": "Řídí se právem a soudy České republiky."
+    },
+    "privacySummary": {
+      "1": "Shromažďujeme nezbytná data pro provoz rezervací a systému.",
+      "2": "Data zahrnují salon, personál, klienty a termíny.",
+      "3": "Používáme Supabase, Stripe, Meta WhatsApp a Netlify.",
+      "4": "Dodržujeme GDPR principy transparentnosti a minimalizace.",
+      "5": "Data neprodáváme a sdílíme je jen pro provoz nebo zákonné povinnosti.",
+      "6": "Můžete požádat o přístup, opravu nebo výmaz dle práva.",
+      "7": "Pro dotazy kontaktujte oficiální e-mail."
+    },
+    "cancellationSummary": {
+      "1": "Předplatné lze zrušit kdykoliv bez výpovědní lhůty.",
+      "2": "Zrušení zastaví další obnovení, ne okamžitý přístup.",
+      "3": "Přístup zůstává do konce aktuálního období.",
+      "4": "Po konci období je účet neaktivní.",
+      "5": "Při neplatbě je účet automaticky pozastaven.",
+      "6": "Účet může být pozastaven z bezpečnostních důvodů.",
+      "7": "Právní spory řeší české právo a soudy."
+    },
+    "startSubscriptionMock": "Spustit předplatné (mock)",
+    "subscriptionMockText": "Toto je ukázka UI s povinným právním souhlasem před platbou.",
+    "consentPrefix": "Souhlasím s",
+    "and": "a",
+    "startSubscription": "Spustit předplatné"
+  },
+  "notFound": {
+    "title": "Stránka nenalezena",
+    "subtitle": "Zkontrolujte odkaz",
+    "text": "Tento odkaz není dostupný.",
+    "backToExplore": "Zpět na katalog"
+  },
+  "admin": {
+    "manageSalon": "Salon Management",
+    "manage": "Manage",
+    "dailyOpsSubtitle": "Daily operations dashboard for bookings and services",
+    "openBookingPage": "Open booking page",
+    "passcodeLabel": "Salon admin passcode",
+    "login": "Login",
+    "accountInactiveTitle": "Account inactive",
+    "topbarSubtitle": "Manage bookings and settings from one place.",
+    "refreshing": "Refreshing...",
+    "exportCsv": "Export CSV",
+    "activateMonthlySubscription": "Activate monthly subscription",
+    "sections": {
+      "dashboard": "Dashboard",
+      "bookings": "Bookings",
+      "calendar": "Calendar",
+      "billing": "Billing",
+      "clients": "Clients",
+      "employees": "Employees",
+      "services": "Services",
+      "schedules": "Schedules",
+      "commissions": "Commissions",
+      "expenses": "Expenses",
+      "reports": "Reports",
+      "settings": "Settings"
+    },
+    "settings": {
+      "assign": "Assign services to staff",
+      "media": "Media",
+      "salon": "Salon settings",
+      "noServicesToAssign": "No services to assign.",
+      "salonSubtitle": "Control salon visibility and general status.",
+      "bookingMode": "Booking mode",
+      "bookingModeChoose": "Customer chooses employee",
+      "bookingModeAuto": "Auto assign by availability",
+      "defaultLanguage": "Default language",
+      "showInExplore": "Show in explore page"
+    },
+    "messages": {
+      "unlocked": "Admin panel unlocked.",
+      "logoUploaded": "Salon logo uploaded.",
+      "coverUploaded": "Cover image uploaded.",
+      "galleryUploaded": "Gallery images uploaded.",
+      "galleryImageDeleted": "Image removed from gallery.",
+      "serviceImageUploaded": "Service image uploaded.",
+      "staffImageUploaded": "Employee image uploaded.",
+      "bookingAccepted": "Booking accepted.",
+      "bookingRejected": "Booking rejected.",
+      "savedWhatsappOff": "Saved ✅ (automatic WhatsApp notification is currently disabled)",
+      "workingHoursSaved": "Working hours saved.",
+      "employeeScheduleSaved": "Employee schedule saved.",
+      "timeOffAdded": "Time off added.",
+      "timeOffDeleted": "Time off deleted.",
+      "salonSettingsSaved": "Salon visibility settings saved.",
+      "salonMediaSaved": "Salon media saved.",
+      "serviceAdded": "Service added.",
+      "employeeAdded": "Employee added.",
+      "serviceUpdated": "Service updated.",
+      "employeeUpdated": "Employee updated.",
+      "serviceShown": "Service is now visible.",
+      "serviceHidden": "Service is now hidden.",
+      "employeeShown": "Employee is now visible.",
+      "employeeHidden": "Employee is now hidden.",
+      "serviceDeleted": "Service deleted.",
+      "employeeDeleted": "Employee deleted.",
+      "staffAssignmentsSaved": "Service assignments saved for employee.",
+      "serviceAssigneesSaved": "Assigned employees saved for this service.",
+      "csvDownloaded": "CSV downloaded.",
+      "bookingLinkCopied": "Booking link copied."
+    },
+    "errors": {
+      "invalidPasscode": "Invalid admin passcode.",
+      "supabaseIncomplete": "Supabase configuration is incomplete.",
+      "loadSalonFailed": "Failed to load salon: {{message}}",
+      "loadAdminDataFailed": "Failed to load admin data: {{message}}",
+      "accountLockedForEdits": "Account is not active for edits right now.",
+      "pickImageFirst": "Select an image first.",
+      "invalidImageType": "File type must be JPG, PNG, or WEBP.",
+      "mediaBucketMissing": "Media bucket was not found. Run storage migration or create bucket carechair-media.",
+      "imageCompressionFailed": "Failed to compress image before upload.",
+      "logoUploadFailed": "Failed to upload logo after compression: {{message}}",
+      "coverUploadFailed": "Failed to upload cover image after compression: {{message}}",
+      "galleryMaxReached": "You reached the maximum gallery limit (8 images).",
+      "noImageUploaded": "No image was uploaded.",
+      "galleryUploadFailed": "Failed to compress/upload gallery images: {{message}}",
+      "deleteImageFailed": "Failed to delete image: {{message}}",
+      "serviceImageUploadFailed": "Failed to compress/upload service image: {{message}}",
+      "staffImageUploadFailed": "Failed to compress/upload employee image: {{message}}",
+      "updateBookingStatusFailed": "Failed to update booking status: {{message}}",
+      "closeAfterOpen": "Closing time must be after opening time ({{day}}).",
+      "saveWorkingHoursFailed": "Failed to save working hours: {{message}}",
+      "invalidBreakPeriod": "Invalid break period ({{day}}).",
+      "saveEmployeeScheduleFailed": "Failed to save employee schedule: {{message}}",
+      "selectValidTimeOffPeriod": "Choose a valid time-off period.",
+      "addTimeOffFailed": "Failed to add time off: {{message}}",
+      "deleteTimeOffFailed": "Failed to delete time off: {{message}}",
+      "saveSettingsFailed": "Failed to save settings: {{message}}",
+      "saveMediaFailed": "Failed to save media: {{message}}",
+      "validServiceName": "Enter a valid service name.",
+      "validDurationNumber": "Duration must be a valid number.",
+      "validPriceNumber": "Price must be a valid number.",
+      "validSortNumber": "Sort order must be a number.",
+      "addServiceFailed": "Failed to add service: {{message}}",
+      "validEmployeeName": "Enter a valid employee name.",
+      "addEmployeeFailed": "Failed to add employee: {{message}}",
+      "invalidDuration": "Invalid duration.",
+      "invalidPrice": "Invalid price.",
+      "invalidSort": "Invalid sort order.",
+      "updateServiceFailed": "Failed to update service: {{message}}",
+      "updateEmployeeFailed": "Failed to update employee: {{message}}",
+      "toggleServiceFailed": "Failed to update service: {{message}}",
+      "toggleEmployeeFailed": "Failed to update employee: {{message}}",
+      "deleteFailed": "Delete failed: {{message}}",
+      "saveAssignmentsFailed": "Failed to save assignments: {{message}}",
+      "saveServiceAssignmentsFailed": "Failed to save service assignments: {{message}}",
+      "copyLinkFailed": "Failed to copy link: {{message}}",
+      "openCheckoutFailed": "Failed to open subscription checkout: {{message}}"
+    },
+    "common": {
+      "unknownStaff": "Unassigned",
+      "unknownService": "Unknown service",
+      "customer": "Customer",
+      "noData": "No data.",
+      "unknown": "Unknown",
+      "select": "Select",
+      "saving": "Ukládám...",
+      "adding": "Adding...",
+      "noNote": "No note",
+      "sortOrder": "Pořadí",
+      "visible": "Viditelné",
+      "hidden": "Skryté",
+      "selectAll": "Vybrat vše",
+      "clearAll": "Zrušit výběr",
+      "confirmDelete": "Yes, delete"
+    },
+    "analytics": {
+      "last30Days": "Last 30 days",
+      "periodTitle": "Analytics period",
+      "selectPeriod": "Select period",
+      "revenueByPeriod": "Revenue by period",
+      "revenueChart": "Revenue chart",
+      "employeePerformance": "Employee performance",
+      "employeeName": "Employee name",
+      "bookings": "Bookings",
+      "revenue": "Revenue",
+      "utilization": "Utilization %",
+      "rating": "Rating",
+      "servicesRevenueDistribution": "Revenue split by services",
+      "noConfirmedRevenueData": "No confirmed revenue data."
+    },
+    "share": {
+      "bookingLinkMessage": "This is your salon booking link:",
+      "title": "Share booking link",
+      "copying": "Copying...",
+      "copyBookingLink": "Copy booking link",
+      "shareWhatsapp": "Share on WhatsApp",
+      "whatsappAutoOff": "Automatic WhatsApp notifications are currently disabled",
+      "directBookingLink": "Direct booking link"
+    },
+    "checklist": {
+      "services": "Add services",
+      "staff": "Add employees",
+      "assign": "Assign services to employees",
+      "hours": "Set working hours",
+      "media": "Add salon photos (optional)"
+    },
+    "bookings": {
+      "service": "Service",
+      "noFilteredBookings": "No bookings match current filters.",
+      "bookingsCount": "{{count}} bookings",
+      "employee": "Employee",
+      "time": "Time",
+      "accepting": "Accepting...",
+      "accept": "Accept",
+      "rejecting": "Rejecting...",
+      "reject": "Reject",
+      "loadMore": "Load more",
+      "none": "No bookings."
+    },
+    "kpis": {
+      "todayRevenue": "Today revenue",
+      "monthRevenue": "This month revenue",
+      "todayBookings": "Total bookings today",
+      "activeEmployees": "Active employees",
+      "todayRequests": "Today's requests",
+      "pending": "Pending confirmation",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled"
+    },
+    "quickStartTitle": "Quick setup checklist",
+    "pricingMini": {
+      "title": "CareChair pricing",
+      "setup": "Setup fee: $300–$500 (non-refundable)",
+      "monthly": "Monthly subscription: $30–$50",
+      "cancel": "Cancel anytime. Access remains active until end of paid period."
+    },
+    "filters": {
+      "status": "Status",
+      "all": "All",
+      "date": "Date",
+      "today": "Today",
+      "thisWeek": "This week",
+      "searchByNamePhone": "Search by name or phone",
+      "searchPlaceholder": "Example: 07xxxxxxxxx"
+    },
+    "clients": {
+      "title": "Clients",
+      "count": "{{count}} clients",
+      "name": "Name",
+      "phone": "Phone",
+      "bookings": "Bookings",
+      "revenue": "Revenue",
+      "lastVisit": "Last visit",
+      "empty": "No clients yet."
+    },
+    "reports": {
+      "revenueTitle": "Revenue reports"
+    },
+    "calendar": {
+      "title": "Daily calendar",
+      "emptyDay": "No data for this date."
+    },
+    "billing": {
+      "title": "Billing & activation",
+      "accountInactive": "Your account is not active",
+      "setupFee": "Setup fee",
+      "paid": "Paid",
+      "unpaid": "Unpaid",
+      "monthlySubscription": "Monthly subscription",
+      "subscriptionEnds": "Subscription ends",
+      "trial": "Trial period",
+      "running": "Running",
+      "ends": "Ends {{date}}",
+      "disabled": "Disabled",
+      "countryCurrency": "Country / currency",
+      "setupViaAdmin": "Setup fee is paid via admin payment link",
+      "openSetupLink": "Open setup payment link",
+      "contactAdminSetup": "Contact admin to get manual setup payment link.",
+      "plan": "Plan"
+    },
+    "schedules": {
+      "title": "Employee schedules",
+      "selectEmployee": "Select employee",
+      "dayOff": "Day off",
+      "save": "Save schedule",
+      "timeOffTitle": "Time off & exceptions",
+      "timeOffReasonOptional": "Time off reason (optional)",
+      "addTimeOff": "Add time off",
+      "noTimeOff": "No time off records."
+    },
+    "services": {
+      "title": "Správa služeb",
+      "serviceName": "Název služby",
+      "durationMinutes": "Délka",
+      "price": "Cena",
+      "addService": "Přidat službu",
+      "noServices": "Žádné služby.",
+      "durationValue": "{{count}} min",
+      "providedBy": "Poskytují:",
+      "noAssignment": "Bez přiřazení",
+      "saveAssignment": "Uložit přiřazení",
+      "addStaffFirst": "Nejprve přidejte zaměstnance, pak přiřaďte službu.",
+      "closeAssign": "Zavřít přiřazení",
+      "assignEmployees": "Přiřadit zaměstnance",
+      "inactive": "Neaktivní",
+      "assigned": "Přiřazeno",
+      "deleteService": "Delete service",
+      "deleteServiceConfirm": "Service {{name}} and all assignments will be deleted. Are you sure?",
+      "durationPlaceholder": "Délka: 45",
+      "pricePlaceholder": "Cena: 20000",
+      "sortPlaceholder": "Pořadí: 10"
+    },
+    "media": {
+      "compressingImage": "Compressing image...",
+      "uploadingImage": "Uploading image...",
+      "uploadImage": "Upload image",
+      "subtitle": "Upload salon media. If empty, default images are used automatically.",
+      "logo": "Salon logo",
+      "logoAlt": "Salon logo",
+      "uploadingLogo": "Uploading logo...",
+      "uploadOrReplaceLogo": "Upload/replace logo",
+      "cover": "Cover image",
+      "coverAlt": "Salon cover",
+      "uploadingCover": "Uploading cover...",
+      "uploadOrReplaceCover": "Upload/replace cover",
+      "galleryMax": "Gallery (max 8)",
+      "uploadingImages": "Uploading images...",
+      "uploadGalleryImages": "Upload gallery images",
+      "noUploadedImages": "No uploaded images yet.",
+      "galleryImageAlt": "Gallery image",
+      "logoUrlOptional": "Salon logo URL (optional)",
+      "coverUrlOptional": "Cover image URL (optional)",
+      "galleryUrlsLineByLine": "Gallery URLs (one URL per line)",
+      "saveImages": "Save images"
+    },
+    "employees": {
+      "title": "Employees management",
+      "name": "Employee name",
+      "photoUrlOptional": "Photo URL (optional)",
+      "noEmployees": "No employees.",
+      "deleteEmployee": "Delete employee",
+      "deleteEmployeeConfirm": "{{name}} and all assignments will be deleted. Are you sure?"
+    },
+    "commissionsComingSoon": "This section is phase-ready. Database foundation is prepared for staff commissions per service/booking.",
+    "expensesComingSoon": "This section is phase-ready. Database foundation is prepared for daily expenses and net-profit analysis."
+  },
+  "booking": {
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled",
+      "no_show": "Nedostavil se"
+    },
+    "backToExplore": "Back to explore",
+    "linkUnavailableText": "This link is not available"
+  },
+  "calendar": {
+    "toolbar": {
+      "today": "Dnes",
+      "prev": "Předchozí",
+      "next": "Další"
+    },
+    "views": {
+      "day": "Den",
+      "week": "Týden",
+      "agenda": "Agenda"
+    },
+    "labels": {
+      "date": "Datum",
+      "time": "Čas",
+      "event": "Rezervace",
+      "allDay": "Celý den",
+      "noEvents": "V tomto období nejsou žádné rezervace"
+    },
+    "filters": {
+      "employee": "Zaměstnanec",
+      "employees": "Zaměstnanci",
+      "allEmployees": "Všichni zaměstnanci",
+      "status": "Stav",
+      "all": "Vše",
+      "service": "Služba",
+      "allServices": "Všechny služby"
+    },
+    "drawer": {
+      "create": "Vytvořit rezervaci",
+      "edit": "Upravit rezervaci"
+    },
+    "fields": {
+      "customerName": "Jméno klienta",
+      "customerPhone": "Telefon",
+      "service": "Služba",
+      "employee": "Zaměstnanec",
+      "startTime": "Začátek",
+      "duration": "Délka (minuty)",
+      "status": "Stav",
+      "notes": "Poznámky"
+    },
+    "actions": {
+      "addBooking": "+ Přidat rezervaci",
+      "delete": "Smazat"
+    },
+    "status": {
+      "no_show": "Nedostavil se"
+    },
+    "messages": {
+      "created": "Rezervace vytvořena.",
+      "updated": "Rezervace upravena.",
+      "cancelled": "Rezervace zrušena.",
+      "moved": "Rezervace přesunuta."
+    },
+    "errors": {
+      "load": "Nepodařilo se načíst kalendář",
+      "invalid": "Neplatná rezervace",
+      "save": "Nepodařilo se uložit rezervaci",
+      "update": "Nepodařilo se upravit rezervaci",
+      "delete": "Nepodařilo se zrušit rezervaci",
+      "move": "Nepodařilo se přesunout rezervaci",
+      "selectEmployee": "Nejprve vyberte zaměstnance.",
+      "invalidRange": "Neplatný časový rozsah.",
+      "closedDay": "Salon nebo zaměstnanec má zavřeno.",
+      "outsideWorkingHours": "Rezervace je mimo pracovní dobu.",
+      "insideBreak": "Čas koliduje s přestávkou.",
+      "overlap": "Tento termín koliduje s jinou rezervací."
+    }
+  }
+}

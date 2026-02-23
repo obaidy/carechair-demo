@@ -1,0 +1,882 @@
+{
+  "common": {
+    "explore": "Explore",
+    "dashboard": "Dashboard",
+    "billing": "Billing",
+    "staff": "Staff",
+    "services": "Services",
+    "subscription": "Subscription",
+    "save": "Save",
+    "cancel": "Cancel",
+    "refresh": "Refresh",
+    "loading": "Loading...",
+    "talkToSales": "Talk to Sales",
+    "bookDemo": "Book Demo",
+    "whatsappDemo": "WhatsApp Demo",
+    "all": "All",
+    "whatsapp": "WhatsApp",
+    "confirm": "Confirm",
+    "back": "Back",
+    "processing": "Processing...",
+    "delete": "Delete",
+    "edit": "Edit",
+    "hide": "Hide",
+    "show": "Show",
+    "add": "Add"
+  },
+  "errors": {
+    "supabaseConfigMissing": "Supabase configuration is missing."
+  },
+  "nav": {
+    "centers": "For Salons",
+    "features": "Features",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "superadmin": "Super Admin",
+    "menu": "Menu"
+  },
+  "home": {
+    "headline1": "Turn salon bookings",
+    "headline2": "into a professional system",
+    "headline3": "without WhatsApp chaos",
+    "subheadline": "Smart booking link + advanced admin panel + full staff/services management within 24 hours.",
+    "sectionBeforeAfter": "Before and After CareChair",
+    "sectionShow": "See the Product",
+    "sectionFeatures": "Platform Features",
+    "sectionPricing": "Flexible Plans",
+    "sectionTestimonials": "Salon Feedback",
+    "sectionFaq": "FAQ",
+    "ctaMain": "Request Your System",
+    "ctaExplore": "Explore Salons",
+    "finalTitle": "Ready for structured bookings?",
+    "finalSubtitle": "We launch quickly so you can run operations with confidence from day one.",
+    "tag1": "Works on multiple devices",
+    "tag2": "Structured scheduling",
+    "tag3": "Cancel anytime",
+    "heroImageAlt": "Premium salon in Baghdad",
+    "beforeTitle": "Before CareChair",
+    "afterTitle": "After CareChair",
+    "before": {
+      "1": "Too many calls",
+      "2": "Missed appointments",
+      "3": "Staff pressure"
+    },
+    "after": {
+      "1": "One booking link",
+      "2": "Clear schedule",
+      "3": "Instant accept/reject"
+    },
+    "showcase": {
+      "adminTitle": "Admin Dashboard",
+      "adminCaption": "Manage daily bookings and status updates quickly and clearly.",
+      "bookingTitle": "Booking Page",
+      "bookingCaption": "Elegant and fast booking flow from any device in seconds.",
+      "exploreTitle": "Explore",
+      "exploreCaption": "Professional listing pages that convert visits into bookings."
+    },
+    "features": {
+      "link": {
+        "title": "One booking link",
+        "text": "Share it on Instagram and WhatsApp to receive direct bookings."
+      },
+      "workflow": {
+        "title": "Staff & services organization",
+        "text": "Clear mapping between each service and the right employee."
+      },
+      "action": {
+        "title": "Instant booking actions",
+        "text": "Accept or reject requests from one focused panel."
+      },
+      "hours": {
+        "title": "Working hours control",
+        "text": "Flexible weekly schedules for each salon's operations."
+      },
+      "media": {
+        "title": "Professional salon presence",
+        "text": "Images and service layouts that improve customer confidence."
+      },
+      "scale": {
+        "title": "Ready to scale",
+        "text": "Grow from one branch to multiple branches with consistency."
+      }
+    },
+    "pricingBullets": {
+      "1": "Booking link + dashboard + staff scheduling",
+      "2": "Country-based billing and currency setup",
+      "3": "7-day trial available"
+    },
+    "enterpriseBullets": {
+      "1": "Multi-country deployment plan",
+      "2": "Advanced onboarding and migration support",
+      "3": "Custom workflows for growing chains"
+    },
+    "testimonials": {
+      "1": {
+        "quote": "Bookings became clear and call volume dropped noticeably.",
+        "name": "Salon Owner",
+        "location": "Baghdad"
+      },
+      "2": {
+        "quote": "Best part was launch speed and team organization from day one.",
+        "name": "Salon Manager",
+        "location": "Basra"
+      },
+      "3": {
+        "quote": "The booking page looks premium and gives strong first impressions.",
+        "name": "Beauty Center Owner",
+        "location": "Baghdad"
+      }
+    },
+    "faq": {
+      "1": {
+        "q": "Is it an app or a system?",
+        "a": "It is a web-based system that works from a direct link on any device."
+      },
+      "2": {
+        "q": "Can multiple devices use it at the same time?",
+        "a": "Yes, management can use it from phone, tablet, and laptop simultaneously."
+      },
+      "3": {
+        "q": "How do I add the booking link to Instagram?",
+        "a": "We provide a ready booking link to place in Instagram bio or WhatsApp."
+      },
+      "4": {
+        "q": "How is booking confirmation handled?",
+        "a": "Requests appear instantly in admin where you can accept/reject in seconds."
+      }
+    },
+    "trust": {
+      "activeCenters": "+{{count}} active centers",
+      "monthlyBookings": "+{{count}} monthly bookings",
+      "activation": "Activation within 24 hours",
+      "cities": "Available in Baghdad and Basra"
+    }
+  },
+  "explore": {
+    "subtitle": "Find salons by area and services",
+    "platformBadge": "CareChair Platform",
+    "heroTitle": "Discover the best salons in Baghdad",
+    "heroText": "Choose your service, compare centers, and book instantly.",
+    "socialProof": "Centers using CareChair to organize bookings ({{count}})",
+    "socialProofEarly": "Centers that started using CareChair ({{count}})",
+    "featured": "Featured",
+    "defaultArea": "Baghdad",
+    "startingFrom": "Starting from",
+    "noServices": "No active services yet.",
+    "bookNow": "Book now",
+    "empty": "No salons match the current filters.",
+    "categories": {
+      "all": "All",
+      "haircut": "Haircut",
+      "color": "Color",
+      "nails": "Nails",
+      "facial": "Skin",
+      "makeup": "Makeup"
+    },
+    "filters": {
+      "area": "Area",
+      "allAreas": "All areas",
+      "search": "Search salon or service",
+      "searchPlaceholder": "Example: color, facial, Mansour",
+      "sort": "Sort"
+    },
+    "sort": {
+      "nearest": "Nearest (soon)",
+      "topRated": "Top rated",
+      "mostBooked": "Most booked",
+      "newest": "Newest"
+    },
+    "badges": {
+      "fastConfirm": "Fast confirmation",
+      "easyBooking": "Easy booking",
+      "whatsappAvailable": "WhatsApp available",
+      "pendingActivation": "Pending activation"
+    },
+    "errors": {
+      "loadFailed": "Failed to load explore page: {{message}}"
+    }
+  },
+  "pricing": {
+    "title": "Flexible Plans for Growing Salons",
+    "subtitle": "Choose the setup that fits your operations. Final quote is provided by sales based on country and requirements.",
+    "basic": "Basic",
+    "pro": "Pro",
+    "enterprise": "Enterprise",
+    "noPublicPrices": "Public pricing is customized by market. Contact sales for a quote.",
+    "bookDemo": "Book Demo",
+    "talkToSales": "Talk to Sales"
+  },
+  "billingGate": {
+    "lockedTitle": "Account access is restricted",
+    "lockedText": "Your account is not active. Please complete trial/subscription setup in billing.",
+    "openBilling": "Open Billing"
+  },
+  "billingAccess": {
+    "badges": {
+      "override": "Manual override",
+      "inactive": "Inactive",
+      "suspended": "Suspended",
+      "trialing": "Trialing",
+      "pendingSetup": "Pending setup fee",
+      "active": "Active",
+      "pastDue": "Past due"
+    },
+    "lockMessages": {
+      "inactive": "Account is currently inactive.",
+      "suspended": "Account is suspended. Please contact support.",
+      "pendingSetup": "Your account is not active. Complete setup fee and monthly subscription.",
+      "pastDue": "Subscription is past due. Update payment to reactivate.",
+      "default": "Account is currently inactive. Complete setup and billing."
+    },
+    "trialEnded": "Ended",
+    "hoursRemaining": "{{count}} hours",
+    "daysRemaining": "{{count}} days"
+  },
+  "footer": {
+    "tagline": "CareChair is a professional booking platform for salons and beauty centers.",
+    "links": "Links",
+    "legal": "Legal",
+    "contact": "Contact",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "billing": "Billing & Refund",
+    "cancellation": "Cancellation",
+    "whatsappUnavailable": "WhatsApp is currently unavailable",
+    "whatsappLabel": "WhatsApp",
+    "demoWhatsappMessage": "Hello, I want to request a CareChair demo for my salon.",
+    "legalLine": "CareChair is operated by Infraengineering s.r.o."
+  },
+  "status": {
+    "inactive": "Inactive",
+    "trialing": "Trialing",
+    "active": "Active",
+    "past_due": "Past Due",
+    "canceled": "Canceled",
+    "suspended": "Suspended"
+  },
+  "superadmin": {
+    "title": "Super Admin Panel",
+    "subtitle": "Global control across countries, billing and activation",
+    "createSalon": "Create Salon",
+    "country": "Country",
+    "allCountries": "All countries",
+    "countriesConfig": "Countries Configuration",
+    "enableCountry": "Enable country",
+    "disableCountry": "Disable country",
+    "extendTrial": "Extend Trial",
+    "forceStatus": "Force Status",
+    "internalOnly": "Internal Use Only",
+    "internalSubtitle": "Global control for countries, subscriptions, and activation overrides.",
+    "codeLabel": "Super admin code",
+    "login": "Unlock",
+    "salonControl": "Salon Control",
+    "statusFilter": "Status filter",
+    "noSalons": "No salons found for this filter.",
+    "setupPaid": "Setup Paid",
+    "setupPending": "Setup Pending",
+    "endsAt": "Ends",
+    "trialEnd": "Trial end",
+    "suspensionReason": "Suspension reason",
+    "bookingPage": "Booking page",
+    "salonAdmin": "Salon admin",
+    "changePasscode": "Change admin passcode",
+    "newPasscode": "New passcode",
+    "saving": "Saving...",
+    "savePasscode": "Save passcode",
+    "hideFromExplore": "Hide from explore",
+    "showInExplore": "Show in explore",
+    "clearSetupPaid": "Clear setup paid",
+    "markSetupPaid": "Mark setup paid",
+    "disableOverride": "Disable override",
+    "enableOverride": "Enable override",
+    "unsuspend": "Unsuspend",
+    "suspend": "Suspend",
+    "confirmSuspendTitle": "Suspend salon",
+    "confirmSuspendText": "Do you want to suspend {{name}}?",
+    "currency": "Currency",
+    "timezone": "Timezone",
+    "basicPriceId": "Stripe Basic Price ID",
+    "proPriceId": "Stripe Pro Price ID",
+    "trialDays": "Trial days",
+    "vatPercent": "VAT %",
+    "form": {
+      "salonName": "Salon name",
+      "slug": "Slug",
+      "area": "Area",
+      "whatsapp": "WhatsApp",
+      "adminPasscode": "Salon admin passcode",
+      "seedDefaults": "Create default hours/services/staff",
+      "creating": "Creating...",
+      "create": "Create salon"
+    },
+    "messages": {
+      "unlocked": "Super admin unlocked.",
+      "salonCreated": "Salon created and trial activated.",
+      "saved": "Changes saved.",
+      "passcodeUpdated": "Salon admin passcode updated.",
+      "countrySaved": "Country settings updated for {{code}}.",
+      "trialExtended": "Trial extended.",
+      "statusUpdated": "Subscription status updated.",
+      "overrideEnabled": "Override enabled.",
+      "overrideDisabled": "Override disabled.",
+      "hiddenFromExplore": "Salon hidden from explore.",
+      "shownInExplore": "Salon shown in explore.",
+      "setupPaymentMarked": "Setup fee marked as paid.",
+      "setupPaymentCleared": "Setup fee payment cleared.",
+      "suspended": "Salon suspended.",
+      "unsuspended": "Suspension removed."
+    },
+    "errors": {
+      "codeMissing": "Super admin code is not set. Configure VITE_SUPERADMIN_CODE then restart dev.",
+      "invalidCode": "Invalid super admin code.",
+      "loadFailed": "Failed to load super admin panel: {{message}}",
+      "invalidSalonName": "Enter a valid salon name.",
+      "invalidSlug": "Enter a valid slug.",
+      "invalidArea": "Enter a valid area.",
+      "invalidAdminPass": "Enter a valid admin passcode.",
+      "countryMissing": "Country configuration is not available.",
+      "createFailed": "Failed to create salon: {{message}}",
+      "updateFailed": "Failed to update salon: {{message}}",
+      "passcodeTooShort": "Admin passcode must be at least 3 characters.",
+      "passcodeUpdateFailed": "Failed to update passcode: {{message}}",
+      "countrySaveFailed": "Failed to update country settings: {{message}}",
+      "countriesMigrationMissing": "Countries table is missing. Run the latest migration to enable country controls."
+    }
+  },
+  "legal": {
+    "subtitle": "Quick Arabic summary then full legal English text",
+    "quickSummary": "Quick summary",
+    "billingSubtitle": "Billing + refund legal policy",
+    "termsTitle": "Terms of Service",
+    "privacyTitle": "Privacy Policy",
+    "cancellationTitle": "Cancellation & Suspension",
+    "billingSummary": {
+      "1": "No free trial currently for CareChair service.",
+      "2": "Setup fee ranges from 300 to 500 USD and is non-refundable.",
+      "3": "Monthly subscription ranges from 30 to 50 USD and is billed in advance.",
+      "4": "Payments are processed via Stripe and discounts may apply by agreement.",
+      "5": "No refund for subscription after invoice issuance.",
+      "6": "If canceled, access remains until end of paid cycle only.",
+      "7": "Payment delay causes automatic service suspension."
+    },
+    "termsSummary": {
+      "1": "CareChair is a booking platform operated by Infraengineering s.r.o.",
+      "2": "Service is B2B and not intended for personal use.",
+      "3": "Setup fee is one-time and non-refundable.",
+      "4": "Monthly subscription is billed in advance and can be canceled anytime.",
+      "5": "After cancellation, access remains until end of paid cycle only.",
+      "6": "In case of non-payment, account is automatically suspended.",
+      "7": "Governing law and courts are Czech Republic."
+    },
+    "privacySummary": {
+      "1": "We collect required data to run salon bookings and system operations.",
+      "2": "Data includes salon profile, staff, clients, and appointments.",
+      "3": "We use providers such as Supabase, Stripe, Meta WhatsApp, and Netlify.",
+      "4": "We follow GDPR principles: transparency, minimization, and access rights.",
+      "5": "We do not sell personal data and only share for operations/legal obligations.",
+      "6": "You can request access, correction, or deletion under applicable law.",
+      "7": "For privacy requests, contact our official email."
+    },
+    "cancellationSummary": {
+      "1": "You can cancel subscription anytime without notice period.",
+      "2": "Cancellation stops next renewal, not immediate access.",
+      "3": "Access remains until end of current paid cycle.",
+      "4": "After cycle ends, account becomes inactive.",
+      "5": "In case of non-payment, system suspends account automatically.",
+      "6": "We may suspend accounts for security or abuse reasons.",
+      "7": "Legal disputes are governed by Czech law and courts."
+    },
+    "startSubscriptionMock": "Start Subscription (Mock)",
+    "subscriptionMockText": "This is a UI mock showing mandatory legal consent before checkout. Connect this block to your real Stripe checkout when ready.",
+    "consentPrefix": "I agree to the",
+    "and": "and",
+    "startSubscription": "Start Subscription"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "subtitle": "Please check the URL",
+    "text": "This link is unavailable.",
+    "backToExplore": "Back to explore"
+  },
+  "booking": {
+    "pageTitle": "Booking",
+    "subtitle": "Book your appointment in one minute",
+    "loadingSalonData": "Loading salon data",
+    "linkUnavailableTitle": "Link unavailable",
+    "linkUnavailableText": "This link is not available",
+    "backToExplore": "Back to explore",
+    "salonAdmin": "Salon Admin",
+    "demoRating": "★ 4.8 (Demo)",
+    "defaultCity": "Baghdad",
+    "bookNow": "Book now",
+    "contactWhatsapp": "WhatsApp contact",
+    "whyTitle": "Why book with CareChair?",
+    "galleryTitle": "Salon gallery",
+    "image": "Image",
+    "accountInactive": "Account is currently inactive",
+    "stepService": "Choose service",
+    "stepAutoAssign": "Auto-assign employee",
+    "stepStaff": "Choose staff",
+    "stepTime": "Choose time",
+    "name": "Name",
+    "phone": "Phone number",
+    "service": "Service",
+    "noActiveServices": "No active services available.",
+    "minutes": "{{count}} minutes",
+    "staff": "Employee",
+    "noAssignedStaffForService": "No employee is currently assigned to this service.",
+    "staffAssignment": "Staff assignment",
+    "autoAssignNote": "Employee will be auto-selected based on first available slot.",
+    "pickDay": "Choose day",
+    "pickTime": "Choose time",
+    "availableSlots": "Available slots ({{step}} min)",
+    "noAvailableStaffForService": "No employee available for this service right now.",
+    "serviceStaffInvalidSelection": "Selected service and employee are not compatible.",
+    "noSlotsThisDay": "No slots available for this day.",
+    "notesOptional": "Notes (optional)",
+    "summaryTitle": "Booking summary",
+    "price": "Price",
+    "time": "Time",
+    "submitting": "Submitting...",
+    "confirmBooking": "Confirm booking",
+    "successTitle": "Booking request sent ✅",
+    "successSubtitle": "The salon will confirm your appointment soon.",
+    "requestId": "Request number",
+    "contactWhatsappSalon": "Message salon on WhatsApp",
+    "salonWhatsappMissing": "Salon WhatsApp number is unavailable",
+    "backOrEdit": "Back to booking / edit time",
+    "notSelected": "Not selected",
+    "autoAssignByAvailability": "Auto-assign by availability",
+    "salonLogo": "Salon logo",
+    "trust": {
+      "fastConfirm": {
+        "title": "Fast confirmation",
+        "text": "Your request reaches the salon instantly."
+      },
+      "scheduling": {
+        "title": "Organized schedule",
+        "text": "Real available slots by staff availability."
+      },
+      "noCalls": {
+        "title": "No phone calls",
+        "text": "Everything works online in simple steps."
+      }
+    },
+    "whatsappFallback": {
+      "greeting": "Hello, I want to confirm my booking:",
+      "name": "Name",
+      "service": "Service",
+      "time": "Time",
+      "phone": "Phone"
+    },
+    "messages": {
+      "savedWhatsappOff": "Saved ✅ (Automatic WhatsApp notification is currently disabled)",
+      "sentSuccess": "Booking request sent successfully."
+    },
+    "errors": {
+      "loadSalonFailed": "Failed to load salon data: {{message}}",
+      "loadSlotsFailed": "Failed to load time slots: {{message}}",
+      "loadTimeOffFailed": "Failed to load employee time off: {{message}}",
+      "slotVerifyFailed": "Could not verify this slot.",
+      "salonClosedDay": "Salon is closed on this day.",
+      "invalidAppointmentTime": "Invalid appointment time.",
+      "outsideSalonHours": "Appointment is outside salon hours.",
+      "staffOffThisDay": "Employee is off on this day.",
+      "outsideStaffHours": "Appointment is outside employee hours.",
+      "insideBreakTime": "Appointment falls during break time.",
+      "staffOffThisTime": "Employee is off at this time.",
+      "slotJustBooked": "This slot was just booked.",
+      "dbConnectionFailed": "Database connection failed.",
+      "invalidName": "Please enter a valid name.",
+      "invalidPhone": "Please enter a valid phone number like 07xxxxxxxxx.",
+      "selectServiceAndTime": "Please choose service and time.",
+      "bookingUnavailable": "Booking is currently unavailable.",
+      "selectStaff": "Please choose an employee.",
+      "staffServiceMismatch": "This employee does not provide the selected service.",
+      "slotNoLongerAvailable": "This slot is no longer available.",
+      "staffAssignFailed": "Could not assign employee for this slot.",
+      "sendFailed": "Failed to submit booking: {{message}}"
+    },
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled",
+      "no_show": "No-show"
+    }
+  },
+  "admin": {
+    "manageSalon": "Salon Management",
+    "manage": "Manage",
+    "dailyOpsSubtitle": "Daily operations dashboard for bookings and services",
+    "openBookingPage": "Open booking page",
+    "passcodeLabel": "Salon admin passcode",
+    "login": "Login",
+    "accountInactiveTitle": "Account inactive",
+    "topbarSubtitle": "Manage bookings and settings from one place.",
+    "refreshing": "Refreshing...",
+    "exportCsv": "Export CSV",
+    "activateMonthlySubscription": "Activate monthly subscription",
+    "sections": {
+      "dashboard": "Dashboard",
+      "bookings": "Bookings",
+      "calendar": "Calendar",
+      "billing": "Billing",
+      "clients": "Clients",
+      "employees": "Employees",
+      "services": "Services",
+      "schedules": "Schedules",
+      "commissions": "Commissions",
+      "expenses": "Expenses",
+      "reports": "Reports",
+      "settings": "Settings"
+    },
+    "settings": {
+      "assign": "Assign services to staff",
+      "media": "Media",
+      "salon": "Salon settings",
+      "noServicesToAssign": "No services to assign.",
+      "salonSubtitle": "Control salon visibility and general status.",
+      "bookingMode": "Booking mode",
+      "bookingModeChoose": "Customer chooses employee",
+      "bookingModeAuto": "Auto assign by availability",
+      "defaultLanguage": "Default language",
+      "showInExplore": "Show in explore page"
+    },
+    "messages": {
+      "unlocked": "Admin panel unlocked.",
+      "logoUploaded": "Salon logo uploaded.",
+      "coverUploaded": "Cover image uploaded.",
+      "galleryUploaded": "Gallery images uploaded.",
+      "galleryImageDeleted": "Image removed from gallery.",
+      "serviceImageUploaded": "Service image uploaded.",
+      "staffImageUploaded": "Employee image uploaded.",
+      "bookingAccepted": "Booking accepted.",
+      "bookingRejected": "Booking rejected.",
+      "savedWhatsappOff": "Saved ✅ (automatic WhatsApp notification is currently disabled)",
+      "workingHoursSaved": "Working hours saved.",
+      "employeeScheduleSaved": "Employee schedule saved.",
+      "timeOffAdded": "Time off added.",
+      "timeOffDeleted": "Time off deleted.",
+      "salonSettingsSaved": "Salon visibility settings saved.",
+      "salonMediaSaved": "Salon media saved.",
+      "serviceAdded": "Service added.",
+      "employeeAdded": "Employee added.",
+      "serviceUpdated": "Service updated.",
+      "employeeUpdated": "Employee updated.",
+      "serviceShown": "Service is now visible.",
+      "serviceHidden": "Service is now hidden.",
+      "employeeShown": "Employee is now visible.",
+      "employeeHidden": "Employee is now hidden.",
+      "serviceDeleted": "Service deleted.",
+      "employeeDeleted": "Employee deleted.",
+      "staffAssignmentsSaved": "Service assignments saved for employee.",
+      "serviceAssigneesSaved": "Assigned employees saved for this service.",
+      "csvDownloaded": "CSV downloaded.",
+      "bookingLinkCopied": "Booking link copied."
+    },
+    "errors": {
+      "invalidPasscode": "Invalid admin passcode.",
+      "supabaseIncomplete": "Supabase configuration is incomplete.",
+      "loadSalonFailed": "Failed to load salon: {{message}}",
+      "loadAdminDataFailed": "Failed to load admin data: {{message}}",
+      "accountLockedForEdits": "Account is not active for edits right now.",
+      "pickImageFirst": "Select an image first.",
+      "invalidImageType": "File type must be JPG, PNG, or WEBP.",
+      "mediaBucketMissing": "Media bucket was not found. Run storage migration or create bucket carechair-media.",
+      "imageCompressionFailed": "Failed to compress image before upload.",
+      "logoUploadFailed": "Failed to upload logo after compression: {{message}}",
+      "coverUploadFailed": "Failed to upload cover image after compression: {{message}}",
+      "galleryMaxReached": "You reached the maximum gallery limit (8 images).",
+      "noImageUploaded": "No image was uploaded.",
+      "galleryUploadFailed": "Failed to compress/upload gallery images: {{message}}",
+      "deleteImageFailed": "Failed to delete image: {{message}}",
+      "serviceImageUploadFailed": "Failed to compress/upload service image: {{message}}",
+      "staffImageUploadFailed": "Failed to compress/upload employee image: {{message}}",
+      "updateBookingStatusFailed": "Failed to update booking status: {{message}}",
+      "closeAfterOpen": "Closing time must be after opening time ({{day}}).",
+      "saveWorkingHoursFailed": "Failed to save working hours: {{message}}",
+      "invalidBreakPeriod": "Invalid break period ({{day}}).",
+      "saveEmployeeScheduleFailed": "Failed to save employee schedule: {{message}}",
+      "selectValidTimeOffPeriod": "Choose a valid time-off period.",
+      "addTimeOffFailed": "Failed to add time off: {{message}}",
+      "deleteTimeOffFailed": "Failed to delete time off: {{message}}",
+      "saveSettingsFailed": "Failed to save settings: {{message}}",
+      "saveMediaFailed": "Failed to save media: {{message}}",
+      "validServiceName": "Enter a valid service name.",
+      "validDurationNumber": "Duration must be a valid number.",
+      "validPriceNumber": "Price must be a valid number.",
+      "validSortNumber": "Sort order must be a number.",
+      "addServiceFailed": "Failed to add service: {{message}}",
+      "validEmployeeName": "Enter a valid employee name.",
+      "addEmployeeFailed": "Failed to add employee: {{message}}",
+      "invalidDuration": "Invalid duration.",
+      "invalidPrice": "Invalid price.",
+      "invalidSort": "Invalid sort order.",
+      "updateServiceFailed": "Failed to update service: {{message}}",
+      "updateEmployeeFailed": "Failed to update employee: {{message}}",
+      "toggleServiceFailed": "Failed to update service: {{message}}",
+      "toggleEmployeeFailed": "Failed to update employee: {{message}}",
+      "deleteFailed": "Delete failed: {{message}}",
+      "saveAssignmentsFailed": "Failed to save assignments: {{message}}",
+      "saveServiceAssignmentsFailed": "Failed to save service assignments: {{message}}",
+      "copyLinkFailed": "Failed to copy link: {{message}}",
+      "openCheckoutFailed": "Failed to open subscription checkout: {{message}}"
+    },
+    "common": {
+      "unknownStaff": "Unassigned",
+      "unknownService": "Unknown service",
+      "customer": "Customer",
+      "noData": "No data.",
+      "unknown": "Unknown",
+      "select": "Select",
+      "saving": "Saving...",
+      "adding": "Adding...",
+      "noNote": "No note",
+      "sortOrder": "Sort order",
+      "visible": "Visible",
+      "hidden": "Hidden",
+      "selectAll": "Select all",
+      "clearAll": "Clear all",
+      "confirmDelete": "Yes, delete"
+    },
+    "analytics": {
+      "last30Days": "Last 30 days",
+      "periodTitle": "Analytics period",
+      "selectPeriod": "Select period",
+      "revenueByPeriod": "Revenue by period",
+      "revenueChart": "Revenue chart",
+      "employeePerformance": "Employee performance",
+      "employeeName": "Employee name",
+      "bookings": "Bookings",
+      "revenue": "Revenue",
+      "utilization": "Utilization %",
+      "rating": "Rating",
+      "servicesRevenueDistribution": "Revenue split by services",
+      "noConfirmedRevenueData": "No confirmed revenue data."
+    },
+    "share": {
+      "bookingLinkMessage": "This is your salon booking link:",
+      "title": "Share booking link",
+      "copying": "Copying...",
+      "copyBookingLink": "Copy booking link",
+      "shareWhatsapp": "Share on WhatsApp",
+      "whatsappAutoOff": "Automatic WhatsApp notifications are currently disabled",
+      "directBookingLink": "Direct booking link"
+    },
+    "checklist": {
+      "services": "Add services",
+      "staff": "Add employees",
+      "assign": "Assign services to employees",
+      "hours": "Set working hours",
+      "media": "Add salon photos (optional)"
+    },
+    "bookings": {
+      "service": "Service",
+      "noFilteredBookings": "No bookings match current filters.",
+      "bookingsCount": "{{count}} bookings",
+      "employee": "Employee",
+      "time": "Time",
+      "accepting": "Accepting...",
+      "accept": "Accept",
+      "rejecting": "Rejecting...",
+      "reject": "Reject",
+      "loadMore": "Load more",
+      "none": "No bookings."
+    },
+    "kpis": {
+      "todayRevenue": "Today revenue",
+      "monthRevenue": "This month revenue",
+      "todayBookings": "Total bookings today",
+      "activeEmployees": "Active employees",
+      "todayRequests": "Today's requests",
+      "pending": "Pending confirmation",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled"
+    },
+    "quickStartTitle": "Quick setup checklist",
+    "pricingMini": {
+      "title": "CareChair pricing",
+      "setup": "Setup fee: $300–$500 (non-refundable)",
+      "monthly": "Monthly subscription: $30–$50",
+      "cancel": "Cancel anytime. Access remains active until end of paid period."
+    },
+    "filters": {
+      "status": "Status",
+      "all": "All",
+      "date": "Date",
+      "today": "Today",
+      "thisWeek": "This week",
+      "searchByNamePhone": "Search by name or phone",
+      "searchPlaceholder": "Example: 07xxxxxxxxx"
+    },
+    "clients": {
+      "title": "Clients",
+      "count": "{{count}} clients",
+      "name": "Name",
+      "phone": "Phone",
+      "bookings": "Bookings",
+      "revenue": "Revenue",
+      "lastVisit": "Last visit",
+      "empty": "No clients yet."
+    },
+    "reports": {
+      "revenueTitle": "Revenue reports"
+    },
+    "calendar": {
+      "title": "Daily calendar",
+      "emptyDay": "No data for this date."
+    },
+    "billing": {
+      "title": "Billing & activation",
+      "accountInactive": "Your account is not active",
+      "setupFee": "Setup fee",
+      "paid": "Paid",
+      "unpaid": "Unpaid",
+      "monthlySubscription": "Monthly subscription",
+      "subscriptionEnds": "Subscription ends",
+      "trial": "Trial period",
+      "running": "Running",
+      "ends": "Ends {{date}}",
+      "disabled": "Disabled",
+      "countryCurrency": "Country / currency",
+      "setupViaAdmin": "Setup fee is paid via admin payment link",
+      "openSetupLink": "Open setup payment link",
+      "contactAdminSetup": "Contact admin to get manual setup payment link.",
+      "plan": "Plan"
+    },
+    "schedules": {
+      "title": "Employee schedules",
+      "selectEmployee": "Select employee",
+      "dayOff": "Day off",
+      "save": "Save schedule",
+      "timeOffTitle": "Time off & exceptions",
+      "timeOffReasonOptional": "Time off reason (optional)",
+      "addTimeOff": "Add time off",
+      "noTimeOff": "No time off records."
+    },
+    "services": {
+      "title": "Services management",
+      "serviceName": "Service name",
+      "durationMinutes": "Duration",
+      "price": "Price",
+      "addService": "Add service",
+      "noServices": "No services.",
+      "durationValue": "{{count}} min",
+      "providedBy": "Provided by:",
+      "noAssignment": "No assignment",
+      "saveAssignment": "Save assignment",
+      "addStaffFirst": "Add employees first to assign this service.",
+      "closeAssign": "Close assignment",
+      "assignEmployees": "Assign employees",
+      "inactive": "Inactive",
+      "assigned": "Assigned",
+      "deleteService": "Delete service",
+      "deleteServiceConfirm": "Service {{name}} and all assignments will be deleted. Are you sure?",
+      "durationPlaceholder": "Duration: 45",
+      "pricePlaceholder": "Price: 20000",
+      "sortPlaceholder": "Rank: 10"
+    },
+    "media": {
+      "compressingImage": "Compressing image...",
+      "uploadingImage": "Uploading image...",
+      "uploadImage": "Upload image",
+      "subtitle": "Upload salon media. If empty, default images are used automatically.",
+      "logo": "Salon logo",
+      "logoAlt": "Salon logo",
+      "uploadingLogo": "Uploading logo...",
+      "uploadOrReplaceLogo": "Upload/replace logo",
+      "cover": "Cover image",
+      "coverAlt": "Salon cover",
+      "uploadingCover": "Uploading cover...",
+      "uploadOrReplaceCover": "Upload/replace cover",
+      "galleryMax": "Gallery (max 8)",
+      "uploadingImages": "Uploading images...",
+      "uploadGalleryImages": "Upload gallery images",
+      "noUploadedImages": "No uploaded images yet.",
+      "galleryImageAlt": "Gallery image",
+      "logoUrlOptional": "Salon logo URL (optional)",
+      "coverUrlOptional": "Cover image URL (optional)",
+      "galleryUrlsLineByLine": "Gallery URLs (one URL per line)",
+      "saveImages": "Save images"
+    },
+    "employees": {
+      "title": "Employees management",
+      "name": "Employee name",
+      "photoUrlOptional": "Photo URL (optional)",
+      "noEmployees": "No employees.",
+      "deleteEmployee": "Delete employee",
+      "deleteEmployeeConfirm": "{{name}} and all assignments will be deleted. Are you sure?"
+    },
+    "commissionsComingSoon": "This section is phase-ready. Database foundation is prepared for staff commissions per service/booking.",
+    "expensesComingSoon": "This section is phase-ready. Database foundation is prepared for daily expenses and net-profit analysis."
+  },
+  "calendar": {
+    "toolbar": {
+      "today": "Today",
+      "prev": "Prev",
+      "next": "Next"
+    },
+    "views": {
+      "day": "Day",
+      "week": "Week",
+      "agenda": "Agenda"
+    },
+    "labels": {
+      "date": "Date",
+      "time": "Time",
+      "event": "Event",
+      "allDay": "All Day",
+      "noEvents": "No events in this range"
+    },
+    "filters": {
+      "employee": "Employee",
+      "employees": "Employees",
+      "allEmployees": "All employees",
+      "status": "Status",
+      "all": "All",
+      "service": "Service",
+      "allServices": "All services"
+    },
+    "drawer": {
+      "create": "Create booking",
+      "edit": "Edit booking"
+    },
+    "fields": {
+      "customerName": "Customer name",
+      "customerPhone": "Customer phone",
+      "service": "Service",
+      "employee": "Employee",
+      "startTime": "Start time",
+      "duration": "Duration (minutes)",
+      "status": "Status",
+      "notes": "Notes"
+    },
+    "actions": {
+      "addBooking": "+ Add booking",
+      "delete": "Delete"
+    },
+    "status": {
+      "no_show": "No-show"
+    },
+    "messages": {
+      "created": "Booking created.",
+      "updated": "Booking updated.",
+      "cancelled": "Booking cancelled.",
+      "moved": "Booking moved."
+    },
+    "errors": {
+      "load": "Failed to load calendar data",
+      "invalid": "Invalid booking",
+      "save": "Failed to save booking",
+      "update": "Failed to update booking",
+      "delete": "Failed to cancel booking",
+      "move": "Failed to move booking",
+      "selectEmployee": "Select an employee first.",
+      "invalidRange": "Invalid time range.",
+      "closedDay": "Employee/salon is closed on this day.",
+      "outsideWorkingHours": "This booking is outside working hours.",
+      "insideBreak": "This time overlaps break hours.",
+      "overlap": "This slot overlaps another booking."
+    }
+  }
+}
