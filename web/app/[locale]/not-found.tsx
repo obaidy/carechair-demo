@@ -1,11 +1,9 @@
-import {getMessages} from 'next-intl/server';
+import {getLocale, getMessages} from 'next-intl/server';
 import {Link} from '@/i18n/navigation';
 import {tx} from '@/lib/messages';
 
-type Props = {params: Promise<{locale: string}>};
-
-export default async function LocaleNotFound({params}: Props) {
-  const {locale} = await params;
+export default async function LocaleNotFound() {
+  const locale = await getLocale();
   const messages = await getMessages({locale});
 
   return (

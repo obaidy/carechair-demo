@@ -18,6 +18,7 @@ import {
   formatAddress
 } from '@/lib/maps';
 import {normalizeSlug} from '@/lib/slug';
+import PageShell from '@/components/PageShell';
 
 type PageProps = {
   params: Promise<{locale: string; country: string; city: string; slug: string}>;
@@ -71,10 +72,9 @@ export default async function SlugPage({params}: PageProps) {
     }
 
     return (
-      <div className="cc-container cc-section">
+      <PageShell title={decodeURIComponent(slug).replace(/-/g, ' ')} subtitle={tx(messages, 'service.subtitle', 'Salons that currently offer this service.')}>
         <section className="cc-section">
           <h1>{decodeURIComponent(slug).replace(/-/g, ' ')}</h1>
-          <p className="muted">{tx(messages, 'service.subtitle', 'Salons that currently offer this service.')}</p>
         </section>
 
         <section className="explore-grid">
@@ -94,7 +94,7 @@ export default async function SlugPage({params}: PageProps) {
             </article>
           ))}
         </section>
-      </div>
+      </PageShell>
     );
   }
 
@@ -137,13 +137,8 @@ export default async function SlugPage({params}: PageProps) {
   };
 
   return (
-    <div className="cc-container cc-section">
+    <PageShell title={salon.name} subtitle={address || salon.area || tx(messages, 'salon.addressUnavailable', 'Address unavailable')}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(jsonLd)}} />
-
-      <section className="panel hero-lite">
-        <h2>{salon.name}</h2>
-        <p>{address || salon.area || tx(messages, 'salon.addressUnavailable', 'Address unavailable')}</p>
-      </section>
 
       <section className="grid two">
         <article className="booking-card">
@@ -219,6 +214,6 @@ export default async function SlugPage({params}: PageProps) {
         hours={hours}
         employeeHours={employeeHours}
       />
-    </div>
+    </PageShell>
   );
 }

@@ -6,6 +6,7 @@ import {getCityListingData, countrySlugFromSalon, citySlugFromSalon} from '@/lib
 import {Link} from '@/i18n/navigation';
 import {normalizeSlug} from '@/lib/slug';
 import {Card} from '@/components/ui';
+import PageShell from '@/components/PageShell';
 
 type PageProps = {
   params: Promise<{locale: string; country: string; city: string}>;
@@ -35,10 +36,9 @@ export default async function CityPage({params}: PageProps) {
   const cityName = decodeURIComponent(city).replace(/-/g, ' ');
 
   return (
-    <div className="cc-container cc-section">
+    <PageShell title={cityName} subtitle={tx(messages, 'city.subtitle', 'Listed salons and services in this city.')}>
       <section className="cc-section">
         <h1>{cityName}</h1>
-        <p className="muted">{tx(messages, 'city.subtitle', 'Listed salons and services in this city.')}</p>
       </section>
 
       <section className="explore-grid">
@@ -67,6 +67,6 @@ export default async function CityPage({params}: PageProps) {
           );
         })}
       </section>
-    </div>
+    </PageShell>
   );
 }

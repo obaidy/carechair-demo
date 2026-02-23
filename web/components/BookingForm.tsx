@@ -1,9 +1,9 @@
 'use client';
 
 import {useEffect, useMemo, useState, type FormEvent} from 'react';
-import {useTranslations} from 'next-intl';
 import {z} from 'zod';
 import {createBrowserSupabaseClient} from '@/lib/supabase/browser';
+import {useTx} from '@/lib/messages-client';
 import {
   combineDateTime,
   generateSlots,
@@ -81,8 +81,11 @@ export default function BookingForm({
   hours,
   employeeHours
 }: BookingFormProps) {
-  const t = useTranslations('booking');
-  const tCommon = useTranslations('common');
+  const tx = useTx();
+  const t = (key: string, vars?: Record<string, string | number | boolean | null | undefined>) =>
+    tx(`booking.${key}`, key, vars);
+  const tCommon = (key: string, vars?: Record<string, string | number | boolean | null | undefined>) =>
+    tx(`common.${key}`, key, vars);
   const [mounted, setMounted] = useState(false);
 
   const [serviceId, setServiceId] = useState<string>('');

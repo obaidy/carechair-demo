@@ -1,7 +1,9 @@
 import {getMessages} from 'next-intl/server';
 import {tx} from '@/lib/messages';
 import {buildMetadata} from '@/lib/seo';
+import MainNav from '@/components/MainNav';
 import HomeLanding from '@/components/HomeLanding';
+import PublicFooter from '@/components/PublicFooter';
 
 type Props = {params: Promise<{locale: string}>};
 
@@ -18,5 +20,11 @@ export async function generateMetadata({params}: Props) {
 
 export default async function HomePage({params}: Props) {
   await params;
-  return <HomeLanding />;
+  return (
+    <>
+      <MainNav />
+      <HomeLanding />
+      <PublicFooter />
+    </>
+  );
 }
