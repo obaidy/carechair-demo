@@ -313,8 +313,8 @@ export default function HomePage() {
             <div className="landing-hero-content-wrap">
               <div className="landing-hero-content">
                 <h1>
-                  <span className="hero-line">{t("home.headline1")}</span>
-                  <span className="hero-line hero-line-accent">{t("home.headline2")}</span>
+                  <span className="hero-line">{t("home.headline1")}</span>{" "}
+                  <span className="hero-line hero-line-accent">{t("home.headline2")}</span>{" "}
                   <span className="hero-line">{t("home.headline3")}</span>
                 </h1>
                 <p>{t("home.subheadline")}</p>
