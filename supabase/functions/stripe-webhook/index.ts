@@ -4,25 +4,36 @@ import Stripe from "https://esm.sh/stripe@14.25.0?target=denonext";
 
 type SalonRow = {
   id: string;
+  status: string | null;
+  country_code: string | null;
   setup_paid: boolean | null;
   setup_required: boolean | null;
+  subscription_status: string | null;
   billing_status: string | null;
-  trial_enabled: boolean | null;
+  trial_end_at: string | null;
   trial_end: string | null;
   manual_override_active: boolean | null;
   is_active: boolean | null;
 };
 
+function getAccessStatus(salon: SalonRow) {
+  return String(salon.status || salon.subscription_status || salon.billing_status || "draft");
+}
+
+function getSubscriptionStatus(salon: SalonRow) {
+  return String(salon.subscription_status || salon.billing_status || "inactive");
+}
+
+function getTrialEnd(salon: SalonRow) {
+  return salon.trial_end_at || salon.trial_end || null;
+}
+
 function computeIsActiveFromSalon(salon: SalonRow, nowMs = Date.now()) {
   if (salon.manual_override_active) return true;
-  if (salon.billing_status === "suspended") return false;
 
-  const trialEndMs = salon.trial_end ? new Date(salon.trial_end).getTime() : 0;
-  if (salon.trial_enabled && Number.isFinite(trialEndMs) && trialEndMs > nowMs) return true;
+  const status = getAccessStatus(salon);
+  if (status === "trialing" || status === "active") return true;
 
-  if ((salon.setup_required ?? true) && !salon.setup_paid) return false;
-  if (salon.billing_status === "active") return true;
-  if (salon.billing_status === "past_due") return false;
   return false;
 }
 
@@ -46,6 +57,17 @@ function fromStripeUnix(seconds?: number | null) {
   return new Date(seconds * 1000).toISOString();
 }
 
+function addDaysIso(days: number) {
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function shouldStartNonIqTrialAfterCheckout(salon: SalonRow) {
+  const countryCode = String(salon.country_code || "IQ").toUpperCase();
+  if (countryCode === "IQ") return false;
+  const status = getAccessStatus(salon);
+  return ["pending_billing", "pending_approval", "draft", "inactive"].includes(status);
+}
+
 async function findSalonByRefs(
   supabase: ReturnType<typeof createClient>,
   refs: { salonId?: string; stripeCustomerId?: string; stripeSubscriptionId?: string }
@@ -53,7 +75,7 @@ async function findSalonByRefs(
   if (refs.salonId) {
     const byId = await supabase
       .from("salons")
-      .select("id, setup_paid, setup_required, billing_status, trial_enabled, trial_end, manual_override_active, is_active")
+      .select("id, status, country_code, setup_paid, setup_required, subscription_status, billing_status, trial_end_at, trial_end, manual_override_active, is_active")
       .eq("id", refs.salonId)
       .maybeSingle();
     if (byId.error) throw byId.error;
@@ -63,7 +85,7 @@ async function findSalonByRefs(
   if (refs.stripeSubscriptionId) {
     const bySub = await supabase
       .from("salons")
-      .select("id, setup_paid, setup_required, billing_status, trial_enabled, trial_end, manual_override_active, is_active")
+      .select("id, status, country_code, setup_paid, setup_required, subscription_status, billing_status, trial_end_at, trial_end, manual_override_active, is_active")
       .eq("stripe_subscription_id", refs.stripeSubscriptionId)
       .maybeSingle();
     if (bySub.error) throw bySub.error;
@@ -73,7 +95,7 @@ async function findSalonByRefs(
   if (refs.stripeCustomerId) {
     const byCustomer = await supabase
       .from("salons")
-      .select("id, setup_paid, setup_required, billing_status, trial_enabled, trial_end, manual_override_active, is_active")
+      .select("id, status, country_code, setup_paid, setup_required, subscription_status, billing_status, trial_end_at, trial_end, manual_override_active, is_active")
       .eq("stripe_customer_id", refs.stripeCustomerId)
       .maybeSingle();
     if (byCustomer.error) throw byCustomer.error;
@@ -90,17 +112,36 @@ async function patchSalon(
 ) {
   const currentRes = await supabase
     .from("salons")
-    .select("id, setup_paid, setup_required, billing_status, trial_enabled, trial_end, manual_override_active, is_active")
+    .select("id, status, country_code, setup_paid, setup_required, subscription_status, billing_status, trial_end_at, trial_end, manual_override_active, is_active")
     .eq("id", salonId)
     .single();
   if (currentRes.error) throw currentRes.error;
 
   const merged = { ...(currentRes.data as SalonRow), ...(patch as Partial<SalonRow>) };
-  const isActive = computeIsActiveFromSalon(merged as SalonRow);
+  const normalizedStatus = String((patch.subscription_status || patch.billing_status || getSubscriptionStatus(merged as SalonRow)) || "inactive");
+  const normalizedAccessStatus = String((patch.status || getAccessStatus(merged as SalonRow)) || "draft");
+  const trialValue = (patch.trial_end_at ?? patch.trial_end ?? getTrialEnd(merged as SalonRow)) || null;
+
+  const isActive = computeIsActiveFromSalon({
+    ...(merged as SalonRow),
+    status: normalizedAccessStatus,
+    subscription_status: normalizedStatus,
+    billing_status: normalizedStatus,
+    trial_end_at: trialValue,
+    trial_end: trialValue
+  });
 
   const up = await supabase
     .from("salons")
-    .update({ ...patch, is_active: isActive })
+    .update({
+      ...patch,
+      status: normalizedAccessStatus,
+      subscription_status: normalizedStatus,
+      billing_status: normalizedStatus,
+      trial_end_at: trialValue,
+      trial_end: trialValue,
+      is_active: isActive
+    })
     .eq("id", salonId);
   if (up.error) throw up.error;
 }
@@ -127,9 +168,7 @@ serve(async (req) => {
     return new Response("Missing stripe-signature header", { status: 400 });
   }
 
-  const stripe = new Stripe(STRIPE_SECRET_KEY, {
-    apiVersion: "2024-06-20",
-  });
+  const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" });
   const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
   const rawBody = await req.text();
@@ -138,12 +177,12 @@ serve(async (req) => {
     event = await stripe.webhooks.constructEventAsync(rawBody, signature, STRIPE_WEBHOOK_SECRET, undefined, cryptoProvider);
   } catch (err) {
     return new Response(`Webhook signature verification failed: ${err instanceof Error ? err.message : "unknown"}`, {
-      status: 400,
+      status: 400
     });
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
+    auth: { persistSession: false, autoRefreshToken: false }
   });
 
   try {
@@ -157,7 +196,7 @@ serve(async (req) => {
         const salon = await findSalonByRefs(supabase, {
           salonId,
           stripeCustomerId: customerId,
-          stripeSubscriptionId: subscriptionId,
+          stripeSubscriptionId: subscriptionId
         });
         if (!salon) break;
 
@@ -167,11 +206,15 @@ serve(async (req) => {
           currentPeriodEnd = fromStripeUnix(sub.current_period_end);
         }
 
+        const startTrial = shouldStartNonIqTrialAfterCheckout(salon);
+        const nextStatus = startTrial ? "trialing" : getAccessStatus(salon) === "trialing" ? "trialing" : "active";
         await patchSalon(supabase, salon.id, {
           stripe_customer_id: customerId || null,
           stripe_subscription_id: subscriptionId || null,
           current_period_end: currentPeriodEnd,
-          billing_status: "active",
+          status: nextStatus,
+          subscription_status: "active",
+          ...(startTrial ? { trial_end_at: addDaysIso(7) } : {})
         });
         break;
       }
@@ -184,15 +227,19 @@ serve(async (req) => {
 
         const salon = await findSalonByRefs(supabase, {
           stripeCustomerId: customerId,
-          stripeSubscriptionId: subscriptionId,
+          stripeSubscriptionId: subscriptionId
         });
         if (!salon) break;
 
+        const startTrial = shouldStartNonIqTrialAfterCheckout(salon);
+        const nextStatus = startTrial ? "trialing" : getAccessStatus(salon) === "trialing" ? "trialing" : "active";
         await patchSalon(supabase, salon.id, {
           stripe_customer_id: customerId || null,
           stripe_subscription_id: subscriptionId || null,
           current_period_end: currentPeriodEnd,
-          billing_status: "active",
+          status: nextStatus,
+          subscription_status: "active",
+          ...(startTrial ? { trial_end_at: addDaysIso(7) } : {})
         });
         break;
       }
@@ -204,14 +251,15 @@ serve(async (req) => {
 
         const salon = await findSalonByRefs(supabase, {
           stripeCustomerId: customerId,
-          stripeSubscriptionId: subscriptionId,
+          stripeSubscriptionId: subscriptionId
         });
         if (!salon) break;
 
         await patchSalon(supabase, salon.id, {
           stripe_customer_id: customerId || null,
           stripe_subscription_id: subscriptionId || null,
-          billing_status: "past_due",
+          status: "past_due",
+          subscription_status: "past_due"
         });
         break;
       }
@@ -223,17 +271,28 @@ serve(async (req) => {
 
         const salon = await findSalonByRefs(supabase, {
           stripeCustomerId: customerId,
-          stripeSubscriptionId: subscriptionId,
+          stripeSubscriptionId: subscriptionId
         });
         if (!salon) break;
+
+        const mappedStatus = mapStripeSubscriptionStatus(sub.status);
+        const trialEnd = sub.status === "trialing" ? fromStripeUnix(sub.trial_end ?? null) : null;
+        const startTrial = shouldStartNonIqTrialAfterCheckout(salon);
+        const nextStatus = startTrial
+          ? "trialing"
+          : mappedStatus === "trialing"
+            ? "trialing"
+            : mappedStatus === "active"
+              ? "active"
+              : "past_due";
 
         await patchSalon(supabase, salon.id, {
           stripe_customer_id: customerId || null,
           stripe_subscription_id: subscriptionId || null,
           current_period_end: fromStripeUnix(sub.current_period_end),
-          billing_status: mapStripeSubscriptionStatus(sub.status),
-          trial_enabled: sub.status === "trialing",
-          trial_end: sub.status === "trialing" ? fromStripeUnix(sub.trial_end ?? null) : salon.trial_end,
+          status: nextStatus,
+          subscription_status: mappedStatus,
+          trial_end_at: startTrial ? addDaysIso(7) : trialEnd
         });
         break;
       }
@@ -245,14 +304,15 @@ serve(async (req) => {
 
         const salon = await findSalonByRefs(supabase, {
           stripeCustomerId: customerId,
-          stripeSubscriptionId: subscriptionId,
+          stripeSubscriptionId: subscriptionId
         });
         if (!salon) break;
 
         await patchSalon(supabase, salon.id, {
           stripe_customer_id: customerId || null,
           stripe_subscription_id: subscriptionId || null,
-          billing_status: "canceled",
+          status: "past_due",
+          subscription_status: "canceled"
         });
         break;
       }
@@ -263,15 +323,12 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" }
     });
   } catch (err) {
-    return new Response(
-      JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Webhook handling failed" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Webhook handling failed" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 });
