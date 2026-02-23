@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import {getMessages} from 'next-intl/server';
 import {t} from '@/lib/messages';
 import {buildMetadata} from '@/lib/seo';
 import {getExploreData, citySlugFromSalon, countrySlugFromSalon} from '@/lib/data/public';
+import {Link} from '@/i18n/navigation';
 
 export async function generateMetadata() {
   const messages = await getMessages();

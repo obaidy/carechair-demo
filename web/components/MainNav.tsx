@@ -1,29 +1,30 @@
 'use client';
 
-import Link from 'next/link';
 import {useTranslations} from 'next-intl';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import BrandLogo from '@/components/BrandLogo';
+import {Link, usePathname} from '@/i18n/navigation';
 
 export default function MainNav() {
   const t = useTranslations('nav');
+  const pathname = usePathname();
 
   return (
-    <header className="site-header">
+    <header className="site-header cc-sticky-nav">
       <div className="container site-header__inner">
-        <Link href="/" className="brand-link">
-          CareChair
-        </Link>
+        <div className="site-header-main">
+          <BrandLogo className="site-brand" />
+        </div>
 
-        <nav className="site-nav" aria-label="Primary navigation">
-          <Link href="/" className="site-nav__link">
+        <div className="header-actions">
+          <Link href="/" className={`ghost-link${pathname === '/' ? ' is-active' : ''}`}>
             {t('home')}
           </Link>
-          <Link href="/explore" className="site-nav__link">
+          <Link href="/explore" className={`ghost-link${pathname === '/explore' ? ' is-active' : ''}`}>
             {t('explore')}
           </Link>
-        </nav>
-
-        <LanguageSwitcher />
+          <LanguageSwitcher />
+        </div>
       </div>
     </header>
   );

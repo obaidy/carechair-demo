@@ -1,20 +1,14 @@
-import createMiddleware from 'next-intl/middleware';
 import {NextResponse} from 'next/server';
 import type {NextRequest} from 'next/server';
-import {DEFAULT_LOCALE, getLocaleCookieName, isSupportedLocale, SUPPORTED_LOCALES} from '@/lib/i18n';
+import {getLocaleCookieName, isSupportedLocale} from '@/lib/i18n';
 
-const handleI18nRouting = createMiddleware({
-  locales: [...SUPPORTED_LOCALES],
-  defaultLocale: DEFAULT_LOCALE,
-  localePrefix: 'never',
-  localeCookie: {
-    name: getLocaleCookieName(),
-    maxAge: 60 * 60 * 24 * 365,
-    sameSite: 'lax'
-  }
-});
+function normalizePathname(pathname: string): string {
+  if (pathname === '/') return pathname;
+  return pathname.replace(/\/+$/, '');
+}
 
 export default function middleware(request: NextRequest) {
+  const normalizedPathname = normalizePathname(request.nextUrl.pathname);
   const localeFromQuery = request.nextUrl.searchParams.get('lang');
 
   if (isSupportedLocale(localeFromQuery)) {
@@ -31,7 +25,27 @@ export default function middleware(request: NextRequest) {
     return response;
   }
 
-  return handleI18nRouting(request);
+  if (normalizedPathname === '/home') {
+    const targetUrl = request.nextUrl.clone();
+    targetUrl.pathname = '/';
+    return NextResponse.redirect(targetUrl);
+  }
+
+  const localeHomeMatch = normalizedPathname.match(/^\/(en|ar|cs|ru)\/home$/i);
+  if (localeHomeMatch) {
+    const targetUrl = request.nextUrl.clone();
+    targetUrl.pathname = '/';
+
+    const response = NextResponse.redirect(targetUrl);
+    response.cookies.set(getLocaleCookieName(), localeHomeMatch[1].toLowerCase(), {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax'
+    });
+    return response;
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {

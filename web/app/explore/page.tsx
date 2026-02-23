@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import {getMessages} from 'next-intl/server';
 import {t} from '@/lib/messages';
 import {buildMetadata} from '@/lib/seo';
+import {Link} from '@/i18n/navigation';
 import {
   citySlugFromSalon,
   countrySlugFromSalon,

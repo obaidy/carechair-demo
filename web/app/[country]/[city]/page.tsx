@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import {notFound} from 'next/navigation';
 import {getMessages} from 'next-intl/server';
 import {t} from '@/lib/messages';
 import {buildMetadata} from '@/lib/seo';
 import {getCityListingData, countrySlugFromSalon, citySlugFromSalon} from '@/lib/data/public';
+import {Link} from '@/i18n/navigation';
 import {normalizeSlug} from '@/lib/slug';
 
 type PageProps = {
