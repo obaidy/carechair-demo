@@ -1,0 +1,96 @@
+{
+  "common": {
+    "language": "Jazyk",
+    "loading": "Načítání...",
+    "saving": "Ukládání...",
+    "noData": "Žádná data"
+  },
+  "nav": {
+    "home": "Domů",
+    "explore": "Prozkoumat"
+  },
+  "meta": {
+    "defaultTitle": "Platforma pro rezervaci salonů",
+    "defaultDescription": "Najděte salon a rezervujte okamžitě."
+  },
+  "home": {
+    "metaTitle": "CareChair | Rezervace salonů online",
+    "metaDescription": "Objevujte salony, porovnávejte služby a rezervujte během minut.",
+    "eyebrow": "Veřejné SEO stránky",
+    "title": "Rezervujte ověřené salony během sekund",
+    "subtitle": "Hledejte podle města, porovnávejte služby a rezervujte si termín.",
+    "ctaExplore": "Prozkoumat salony",
+    "featured": "Doporučené salony",
+    "bookNow": "Rezervovat"
+  },
+  "explore": {
+    "metaTitle": "Prozkoumejte salony podle města a služby",
+    "metaDescription": "Najděte zveřejněné salony a porovnejte dostupnost služeb.",
+    "title": "Prozkoumat salony",
+    "subtitle": "Veřejně dostupné salony k rezervaci.",
+    "viewSalon": "Detail salonu",
+    "cityPage": "Stránka města"
+  },
+  "city": {
+    "metaTitle": "Salony ve městě | CareChair",
+    "metaDescription": "Prohlédněte si zveřejněné salony v tomto městě.",
+    "subtitle": "Zveřejněné salony a služby v tomto městě.",
+    "viewSalon": "Detail salonu",
+    "viewService": "Salony podle služby"
+  },
+  "service": {
+    "metaDescription": "Najděte salony s touto službou a rezervujte online.",
+    "subtitle": "Salony, které aktuálně nabízejí tuto službu.",
+    "bookSalon": "Rezervovat salon"
+  },
+  "salon": {
+    "metaDescription": "Profil salonu, služby a online rezervace.",
+    "directions": "Navigace",
+    "appleMaps": "Apple Mapy",
+    "googleMaps": "Google Mapy",
+    "mapPreview": "Náhled mapy",
+    "mapUnavailable": "Náhled mapy není dostupný",
+    "hours": "Otevírací doba",
+    "closed": "Zavřeno",
+    "services": "Služby",
+    "staff": "Personál",
+    "addressUnavailable": "Adresa není dostupná"
+  },
+  "booking": {
+    "formTitle": "Rezervace termínu",
+    "service": "Služba",
+    "staff": "Personál",
+    "autoAssign": "Personál bude vybrán automaticky podle dostupnosti.",
+    "date": "Datum",
+    "timeSlots": "Dostupné časy (každých {step} min)",
+    "name": "Jméno",
+    "phone": "Telefon",
+    "notes": "Poznámky (volitelné)",
+    "submit": "Potvrdit rezervaci",
+    "success": {
+      "title": "Rezervace vytvořena",
+      "message": "Požadavek na termín byl odeslán.",
+      "id": "ID požadavku",
+      "service": "Služba",
+      "staff": "Personál",
+      "time": "Čas",
+      "newBooking": "Vytvořit další rezervaci"
+    },
+    "errors": {
+      "loadSlots": "Teď nelze načíst termíny.",
+      "slotUnavailable": "Vybraný termín už není dostupný.",
+      "closedDay": "Salon je v tento den zavřený.",
+      "closedHour": "Vybraný čas je mimo otevírací dobu.",
+      "staffOff": "Personál má v tento den volno.",
+      "staffHour": "Vybraný čas je mimo pracovní dobu personálu.",
+      "staffBreak": "Vybraný čas koliduje s přestávkou.",
+      "slotTaken": "Tento termín byl právě rezervován.",
+      "staffOffTime": "Personál není v tomto čase dostupný.",
+      "misconfigured": "Chybí konfigurace Supabase.",
+      "invalidForm": "Vyplňte prosím platné údaje.",
+      "invalidServiceStaff": "Zvolte platnou kombinaci služby a personálu.",
+      "noSlots": "Pro tento den nejsou volné termíny.",
+      "generic": "Rezervaci se teď nepodařilo dokončit."
+    }
+  }
+}

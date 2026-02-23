@@ -1,0 +1,96 @@
+{
+  "common": {
+    "language": "Language",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "noData": "No data"
+  },
+  "nav": {
+    "home": "Home",
+    "explore": "Explore"
+  },
+  "meta": {
+    "defaultTitle": "Salon booking platform",
+    "defaultDescription": "Find salons and book instantly."
+  },
+  "home": {
+    "metaTitle": "CareChair | Book salons online",
+    "metaDescription": "Discover salons, compare services, and book in minutes.",
+    "eyebrow": "Public SEO Pages",
+    "title": "Book trusted salons in seconds",
+    "subtitle": "Search by city, compare services, and reserve your slot instantly.",
+    "ctaExplore": "Explore salons",
+    "featured": "Featured salons",
+    "bookNow": "Book now"
+  },
+  "explore": {
+    "metaTitle": "Explore salons by city and service",
+    "metaDescription": "Find listed salons and compare service availability.",
+    "title": "Explore salons",
+    "subtitle": "Public listed salons available for booking.",
+    "viewSalon": "View salon",
+    "cityPage": "City page"
+  },
+  "city": {
+    "metaTitle": "City salons | CareChair",
+    "metaDescription": "Browse listed salons in this city.",
+    "subtitle": "Listed salons and services in this city.",
+    "viewSalon": "View salon",
+    "viewService": "View service salons"
+  },
+  "service": {
+    "metaDescription": "Find salons offering this service and book online.",
+    "subtitle": "Salons that currently offer this service.",
+    "bookSalon": "Book this salon"
+  },
+  "salon": {
+    "metaDescription": "View salon profile, services, and book online.",
+    "directions": "Directions",
+    "appleMaps": "Apple Maps",
+    "googleMaps": "Google Maps",
+    "mapPreview": "Location preview",
+    "mapUnavailable": "Map preview unavailable",
+    "hours": "Working hours",
+    "closed": "Closed",
+    "services": "Services",
+    "staff": "Staff",
+    "addressUnavailable": "Address unavailable"
+  },
+  "booking": {
+    "formTitle": "Book appointment",
+    "service": "Service",
+    "staff": "Staff",
+    "autoAssign": "Staff is auto-assigned by availability.",
+    "date": "Date",
+    "timeSlots": "Available time slots (every {step} min)",
+    "name": "Your name",
+    "phone": "Phone",
+    "notes": "Notes (optional)",
+    "submit": "Confirm booking",
+    "success": {
+      "title": "Booking created",
+      "message": "Your appointment request was submitted.",
+      "id": "Request ID",
+      "service": "Service",
+      "staff": "Staff",
+      "time": "Time",
+      "newBooking": "Book another slot"
+    },
+    "errors": {
+      "loadSlots": "Unable to load slots right now.",
+      "slotUnavailable": "Selected slot is no longer available.",
+      "closedDay": "Salon is closed on that day.",
+      "closedHour": "Selected time is outside salon hours.",
+      "staffOff": "Selected staff is off on this day.",
+      "staffHour": "Selected time is outside staff hours.",
+      "staffBreak": "Selected time overlaps staff break.",
+      "slotTaken": "This slot has just been booked.",
+      "staffOffTime": "Staff is unavailable at this time.",
+      "misconfigured": "Supabase configuration is missing.",
+      "invalidForm": "Please enter valid booking details.",
+      "invalidServiceStaff": "Choose a valid service/staff combination.",
+      "noSlots": "No available slots for this date.",
+      "generic": "Unable to complete booking right now."
+    }
+  }
+}
