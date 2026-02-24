@@ -125,7 +125,7 @@ export default function SalonAdminPage() {
 
   const [bookings, setBookings] = useState([]);
   const [bookingStatusFilter, setBookingStatusFilter] = useState("all");
-  const [bookingDateFilter, setBookingDateFilter] = useState("today");
+  const [bookingDateFilter, setBookingDateFilter] = useState("all");
   const [bookingSearch, setBookingSearch] = useState("");
   const [visibleBookingCount, setVisibleBookingCount] = useState(BOOKINGS_PAGE_SIZE);
   const [bookingsLoading, setBookingsLoading] = useState(false);
@@ -466,7 +466,11 @@ export default function SalonAdminPage() {
         const haystack = `${String(row.customer_name || "").toLowerCase()} ${String(row.customer_phone || "").toLowerCase()}`;
         return haystack.includes(query);
       })
-      .sort((a, b) => new Date(a.appointment_start).getTime() - new Date(b.appointment_start).getTime());
+      .sort((a, b) => {
+        const aSort = new Date(a.created_at || a.appointment_start).getTime();
+        const bSort = new Date(b.created_at || b.appointment_start).getTime();
+        return bSort - aSort;
+      });
   }, [bookings, bookingStatusFilter, bookingDateFilter, bookingSearch, todayKey]);
 
   const visibleBookings = useMemo(
@@ -485,7 +489,7 @@ export default function SalonAdminPage() {
       }
       map[key].items.push(row);
     }
-    return Object.values(map).sort((a, b) => a.key.localeCompare(b.key));
+    return Object.values(map).sort((a, b) => b.key.localeCompare(a.key));
   }, [visibleBookings]);
 
   const kpis = useMemo(() => {
