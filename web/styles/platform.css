@@ -1331,6 +1331,37 @@ select:disabled {
   .calendar-shell .rbc-time-content {
     border-radius: 0;
   }
+
+  /* Mobile: make booking chips more readable in tight columns. */
+  .calendar-shell .rbc-event {
+    min-height: 58px;
+    padding: 6px 8px;
+  }
+
+  .calendar-shell .rbc-event-label {
+    display: none;
+  }
+
+  .calendar-shell .calendar-event-chip {
+    gap: 4px;
+  }
+
+  .calendar-shell .calendar-status-dot {
+    display: none;
+  }
+
+  .calendar-shell .calendar-event-copy {
+    gap: 0;
+  }
+
+  .calendar-shell .calendar-event-copy b {
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .calendar-shell .calendar-event-copy small {
+    display: none;
+  }
 }
 
 @media (min-width: 769px) {
