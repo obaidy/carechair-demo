@@ -8,8 +8,18 @@ export default function RouteScrollManager() {
   const popNavigationRef = useRef(false);
 
   useEffect(() => {
-    const previous = window.history.scrollRestoration;
-    window.history.scrollRestoration = 'manual';
+    const historyApi = window.history;
+    const previous =
+      historyApi && typeof historyApi.scrollRestoration === 'string'
+        ? historyApi.scrollRestoration
+        : null;
+    if (historyApi && typeof historyApi.scrollRestoration === 'string') {
+      try {
+        historyApi.scrollRestoration = 'manual';
+      } catch {
+        // Ignore browsers/webviews that disallow setting this property.
+      }
+    }
 
     const scrollTop = () => window.scrollTo({top: 0, left: 0, behavior: 'auto'});
     const onPageShow = () => scrollTop();
@@ -19,7 +29,13 @@ export default function RouteScrollManager() {
 
     return () => {
       window.removeEventListener('pageshow', onPageShow);
-      window.history.scrollRestoration = previous;
+      if (historyApi && typeof historyApi.scrollRestoration === 'string' && previous) {
+        try {
+          historyApi.scrollRestoration = previous;
+        } catch {
+          // No-op.
+        }
+      }
     };
   }, []);
 

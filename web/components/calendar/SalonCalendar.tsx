@@ -298,6 +298,15 @@ export default function SalonCalendar({
     [isMobile]
   );
 
+  const resolvedView = useMemo(() => {
+    const current = String(view || '');
+    return availableViews.includes(current as any) ? current : String(availableViews[0]);
+  }, [availableViews, view]);
+
+  useEffect(() => {
+    if (resolvedView !== view) setView(resolvedView);
+  }, [resolvedView, view]);
+
   const setFilter = useCallback((key: 'employeeIds' | 'employeeSingle' | 'status' | 'serviceId', value: string[] | string) => {
     setFilters((prev) => ({...prev, [key]: value}));
   }, []);
@@ -973,7 +982,7 @@ export default function SalonCalendar({
             resourceIdAccessor="resourceId"
             resourceTitleAccessor="resourceTitle"
             date={date}
-            view={view as any}
+            view={resolvedView as any}
             views={availableViews as any}
             dayLayoutAlgorithm={isMobile ? 'no-overlap' : 'overlap'}
             step={10}
@@ -995,7 +1004,7 @@ export default function SalonCalendar({
             }}
             onNavigate={(nextDate: unknown) => setDate(nextDate as Date)}
             onRangeChange={(nextRange: unknown) => {
-              const parsed = toDateRangeParams(nextRange, view);
+              const parsed = toDateRangeParams(nextRange, resolvedView);
               if (parsed?.start && parsed?.end) {
                 setRange((prev) => {
                   const nextStart = parsed.start.getTime();
@@ -1040,7 +1049,7 @@ export default function SalonCalendar({
                   employeeScopeLabel={employeeScopeLabel}
                   onNavigate={(action) => props.onNavigate(action)}
                   onView={(nextView) => props.onView(nextView)}
-                  view={String(props.view || view)}
+                  view={String(props.view || resolvedView)}
                   t={t}
                   isMobile={isMobile}
                   filters={filters}
