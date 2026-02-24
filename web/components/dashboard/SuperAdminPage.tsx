@@ -172,7 +172,7 @@ export default function SuperAdminPage() {
   );
   const navigate = useCallback((to) => router.push(to), [router]);
 
-  const {unlocked, setUnlocked} = useSuperAdminSession();
+  const {unlocked, setUnlocked, adminCode, setAdminCode} = useSuperAdminSession();
   const [codeInput, setCodeInput] = useState("");
   const [adminSessionId] = useState(() => {
     try {
@@ -202,7 +202,7 @@ export default function SuperAdminPage() {
   const [invites, setInvites] = useState([]);
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [inviteForm, setInviteForm] = useState({
-    country_code: "SY",
+    country_code: "IQ",
     max_uses: "1",
     expires_at: "",
   });
@@ -251,6 +251,8 @@ export default function SuperAdminPage() {
   const isInvitesPage = routePath.startsWith("/sa/invites");
   const isDetailPage = Boolean(detailSalonId);
   const isMainPage = !isOverviewPage && !isApprovalsPage && !isInvitesPage && !isDetailPage;
+
+  const getAdminCode = useCallback(() => String(adminCode || codeInput.trim() || SUPER_ADMIN_CODE).trim(), [adminCode, codeInput]);
 
   async function loadAll() {
     if (!supabase) {
@@ -331,7 +333,7 @@ export default function SuperAdminPage() {
       });
 
       if (unlocked) {
-        const adminCode = SUPER_ADMIN_CODE;
+        const adminCode = getAdminCode();
         const [salonHealthRes, globalStatsRes] = await Promise.all([
           supabase.rpc("superadmin_overview_salons", { p_admin_code: adminCode }),
           supabase.rpc("superadmin_overview_stats", { p_admin_code: adminCode }),
@@ -359,7 +361,7 @@ export default function SuperAdminPage() {
     if (!supabase || !unlocked || !salonId) return;
     try {
       await supabase.rpc("admin_actions_write", {
-        p_admin_code: SUPER_ADMIN_CODE,
+        p_admin_code: getAdminCode(),
         p_admin_user_id: adminSessionId,
         p_salon_id: salonId,
         p_action_type: actionType,
@@ -375,7 +377,7 @@ export default function SuperAdminPage() {
     setActionsLoading(true);
     try {
       const { data, error } = await supabase.rpc("admin_actions_list", {
-        p_admin_code: SUPER_ADMIN_CODE,
+        p_admin_code: getAdminCode(),
         p_salon_id: salonId,
         p_limit: 100,
       });
@@ -392,7 +394,7 @@ export default function SuperAdminPage() {
     if (!supabase || !unlocked) return;
     setOverviewLoading(true);
     try {
-      const adminCode = SUPER_ADMIN_CODE;
+      const adminCode = getAdminCode();
       const [salonHealthRes, globalStatsRes] = await Promise.all([
         supabase.rpc("superadmin_overview_salons", { p_admin_code: adminCode }),
         supabase.rpc("superadmin_overview_stats", { p_admin_code: adminCode }),
@@ -415,14 +417,14 @@ export default function SuperAdminPage() {
 
   function getInviteLink(token) {
     if (!token) return "";
-    return `${window.location.origin}/apply?invite=${encodeURIComponent(token)}`;
+    return `${window.location.origin}/${locale}/onboarding/salon-setup?invite=${encodeURIComponent(token)}`;
   }
 
   async function loadInvites() {
     if (!supabase || !unlocked) return;
     setInvitesLoading(true);
     try {
-      const adminCode = SUPER_ADMIN_CODE;
+      const adminCode = getAdminCode();
       const { data, error } = await supabase.rpc("superadmin_list_invites", {
         p_admin_code: adminCode,
         p_limit: 400,
@@ -449,7 +451,7 @@ export default function SuperAdminPage() {
 
     setCreatingInvite(true);
     try {
-      const adminCode = SUPER_ADMIN_CODE;
+      const adminCode = getAdminCode();
       const { data, error } = await supabase.rpc("superadmin_create_invite", {
         p_admin_code: adminCode,
         p_country_code: countryCode,
@@ -479,7 +481,7 @@ export default function SuperAdminPage() {
     if (!supabase || !inviteId) return;
     setRowLoading(`invite-${inviteId}`);
     try {
-      const adminCode = SUPER_ADMIN_CODE;
+      const adminCode = getAdminCode();
       const { data, error } = await supabase.rpc("superadmin_revoke_invite", {
         p_admin_code: adminCode,
         p_invite_id: inviteId,
@@ -753,7 +755,7 @@ export default function SuperAdminPage() {
     if (!supabase || !row?.id) return;
     setRowLoading(`delete-${row.id}`);
     try {
-      const adminCode = SUPER_ADMIN_CODE;
+      const adminCode = getAdminCode();
       const { data, error } = await supabase.rpc("admin_delete_salon", {
         p_admin_code: adminCode,
         p_salon_id: row.id,
@@ -1120,12 +1122,14 @@ export default function SuperAdminPage() {
             className="admin-lock"
             onSubmit={(event) => {
               event.preventDefault();
-              if (!SUPER_ADMIN_CODE) {
-                showToast("error", t("superadmin.errors.codeMissing"));
+              const enteredCode = codeInput.trim();
+              if (!enteredCode) {
+                showToast("error", t("superadmin.errors.invalidCode"));
                 return;
               }
-              if (codeInput.trim() === SUPER_ADMIN_CODE) {
+              if (enteredCode === SUPER_ADMIN_CODE) {
                 setUnlocked(true);
+                setAdminCode(enteredCode);
                 showToast("success", t("superadmin.messages.unlocked"));
               } else {
                 showToast("error", t("superadmin.errors.invalidCode"));
