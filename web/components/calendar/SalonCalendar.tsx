@@ -289,8 +289,14 @@ export default function SalonCalendar({
   });
 
   useEffect(() => {
-    if (isMobile) setView(Views.AGENDA);
+    if (!isMobile) return;
+    setView((prev) => (prev === Views.WEEK ? Views.DAY : prev));
   }, [isMobile]);
+
+  const availableViews = useMemo(
+    () => (isMobile ? [Views.DAY, Views.AGENDA] : [Views.DAY, Views.WEEK, Views.AGENDA]),
+    [isMobile]
+  );
 
   const setFilter = useCallback((key: 'employeeIds' | 'employeeSingle' | 'status' | 'serviceId', value: string[] | string) => {
     setFilters((prev) => ({...prev, [key]: value}));
@@ -968,7 +974,8 @@ export default function SalonCalendar({
             resourceTitleAccessor="resourceTitle"
             date={date}
             view={view as any}
-            views={[Views.DAY, Views.WEEK, Views.AGENDA]}
+            views={availableViews as any}
+            dayLayoutAlgorithm={isMobile ? 'no-overlap' : 'overlap'}
             step={10}
             timeslots={6}
             selectable={writeLocked ? false : 'ignoreEvents'}
@@ -978,7 +985,14 @@ export default function SalonCalendar({
             min={minTime}
             max={maxTime}
             messages={calendarMessages}
-            onView={(nextView: unknown) => setView(String(nextView))}
+            onView={(nextView: unknown) => {
+              const parsed = String(nextView);
+              if (isMobile && parsed === Views.WEEK) {
+                setView(Views.DAY);
+                return;
+              }
+              setView(parsed);
+            }}
             onNavigate={(nextDate: unknown) => setDate(nextDate as Date)}
             onRangeChange={(nextRange: unknown) => {
               const parsed = toDateRangeParams(nextRange, view);

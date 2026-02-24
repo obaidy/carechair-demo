@@ -8,6 +8,22 @@ export default function RouteScrollManager() {
   const popNavigationRef = useRef(false);
 
   useEffect(() => {
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+
+    const scrollTop = () => window.scrollTo({top: 0, left: 0, behavior: 'auto'});
+    const onPageShow = () => scrollTop();
+
+    scrollTop();
+    window.addEventListener('pageshow', onPageShow);
+
+    return () => {
+      window.removeEventListener('pageshow', onPageShow);
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
+
+  useEffect(() => {
     const onPopState = () => {
       popNavigationRef.current = true;
     };
@@ -22,7 +38,7 @@ export default function RouteScrollManager() {
       return;
     }
 
-    window.scrollTo({top: 0, behavior: 'auto'});
+    window.scrollTo({top: 0, left: 0, behavior: 'auto'});
   }, [pathname]);
 
   return null;

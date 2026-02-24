@@ -91,14 +91,16 @@ export default function CalendarToolbar({
           >
             {t('calendar.views.day', 'Day')}
           </Button>
-          <Button
-            type="button"
-            className={`calendar-view-btn${view === 'week' ? ' active' : ''}`}
-            variant={view === 'week' ? 'primary' : 'ghost'}
-            onClick={() => onView('week')}
-          >
-            {t('calendar.views.week', 'Week')}
-          </Button>
+          {!isMobile ? (
+            <Button
+              type="button"
+              className={`calendar-view-btn${view === 'week' ? ' active' : ''}`}
+              variant={view === 'week' ? 'primary' : 'ghost'}
+              onClick={() => onView('week')}
+            >
+              {t('calendar.views.week', 'Week')}
+            </Button>
+          ) : null}
           <Button
             type="button"
             className={`calendar-view-btn${view === 'agenda' ? ' active' : ''}`}

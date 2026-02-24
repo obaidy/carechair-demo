@@ -380,6 +380,11 @@ export default function BookingForm({
     }
   }, [slotIso, availableSlots]);
 
+  useEffect(() => {
+    if (!success) return;
+    window.scrollTo({top: 0, left: 0, behavior: 'smooth'});
+  }, [success]);
+
   async function verifySlotStillAvailable(targetStaffId: string, selectedSlot: Slot) {
     if (!supabase || !salon.id || !selectedService) return {ok: false, reason: t('errors.slotUnavailable')};
 
