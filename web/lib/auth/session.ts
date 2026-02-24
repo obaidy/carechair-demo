@@ -15,6 +15,5 @@ export function roleForPath(pathWithoutLocale: string): WebAuthRole | null {
 }
 
 export function canAccessRoute(role: WebAuthRole, required: WebAuthRole): boolean {
-  if (role === 'superadmin') return true;
   return role === required;
 }

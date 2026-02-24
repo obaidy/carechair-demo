@@ -1,5 +1,3 @@
-import {resolveImageSrc} from '@/lib/images';
-
 export const DEFAULT_HERO_IMAGES = [
   '/images/default/hero-1.jpg',
   '/images/default/hero-2.jpg',
@@ -89,10 +87,9 @@ export function getDefaultAvatar(staffNameOrId: string): string {
 export function getSalonMedia(salon: {slug?: string; name?: string; cover_image_url?: string | null; gallery_image_urls?: string[] | string | null}) {
   const defaults = getDefaultSalonImages(String(salon?.slug || salon?.name || 'salon'));
   const providedGallery = parseGalleryValue(salon?.gallery_image_urls || null);
-  const coverInput = String(salon?.cover_image_url || '').trim() || providedGallery[0] || defaults.cover;
-  const cover = resolveImageSrc(coverInput, 'cover');
+  const cover = String(salon?.cover_image_url || '').trim() || providedGallery[0] || defaults.cover;
 
-  const mixed = [...providedGallery, ...defaults.gallery].filter(Boolean);
+  const mixed = [cover, ...providedGallery, ...defaults.gallery].filter(Boolean);
   const unique: string[] = [];
   for (const item of mixed) {
     if (!unique.includes(item)) unique.push(item);
@@ -105,7 +102,7 @@ export function getSalonMedia(salon: {slug?: string; name?: string; cover_image_
 
   return {
     cover,
-    gallery: unique.slice(0, 4).map((item) => resolveImageSrc(item, 'gallery'))
+    gallery: unique.slice(0, 4)
   };
 }
 

@@ -1,5 +1,8 @@
-import {getTranslations} from 'next-intl/server';
+import {redirect} from 'next/navigation';
 import DashboardNav from '@/components/DashboardNav';
+import {readAuthSession} from '@/lib/auth/server';
+import {getMessages, tx} from '@/lib/messages';
+import type {Locale} from '@/lib/i18n';
 
 type Props = {
   children: React.ReactNode;
@@ -8,22 +11,27 @@ type Props = {
 
 export default async function SalonDashboardLayout({children, params}: Props) {
   const {locale} = await params;
-  const t = await getTranslations();
+  const session = await readAuthSession();
+  if (!session || session.role !== 'salon_admin' || !session.salonId) {
+    redirect(`/${locale}/login?error=session`);
+  }
+
+  const messages = await getMessages(locale as Locale);
 
   const items = [
-    {href: `/${locale}/app`, label: t('dashboard.overview', {defaultValue: 'Overview'})},
-    {href: `/${locale}/app/bookings`, label: t('dashboard.bookings', {defaultValue: 'Bookings'})},
-    {href: `/${locale}/app/calendar`, label: t('dashboard.calendar', {defaultValue: 'Calendar'})},
-    {href: `/${locale}/app/staff`, label: t('dashboard.staff', {defaultValue: 'Staff'})},
-    {href: `/${locale}/app/services`, label: t('dashboard.services', {defaultValue: 'Services'})},
-    {href: `/${locale}/app/clients`, label: t('dashboard.clients', {defaultValue: 'Clients'})},
-    {href: `/${locale}/app/settings`, label: t('dashboard.settings', {defaultValue: 'Settings'})}
+    {href: '/app', label: tx(messages, 'dashboard.overview', 'Overview')},
+    {href: '/app/bookings', label: tx(messages, 'dashboard.bookings', 'Bookings')},
+    {href: '/app/calendar', label: tx(messages, 'dashboard.calendar', 'Calendar')},
+    {href: '/app/staff', label: tx(messages, 'dashboard.staff', 'Staff')},
+    {href: '/app/services', label: tx(messages, 'dashboard.services', 'Services')},
+    {href: '/app/clients', label: tx(messages, 'dashboard.clients', 'Clients')},
+    {href: '/app/settings', label: tx(messages, 'dashboard.settings', 'Settings')}
   ];
 
   return (
     <div className="platform-page">
       <DashboardNav
-        title={t('dashboard.salonTitle', {defaultValue: 'Salon Admin'})}
+        title={tx(messages, 'dashboard.salonTitle', 'Salon Admin')}
         items={items}
         logoutHref={`/api/auth/logout?next=/${locale}/login`}
       />

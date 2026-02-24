@@ -16,7 +16,7 @@ export default async function ForbiddenPage() {
             <Link href="/" className="btn btn-primary">
               {tx(messages, 'nav.home', 'Home')}
             </Link>
-            <Link href="/login" className="btn btn-secondary">
+            <Link href="/login?force=1" className="btn btn-secondary">
               {tx(messages, 'nav.login', 'Login')}
             </Link>
           </div>

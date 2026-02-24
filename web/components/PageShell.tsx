@@ -73,9 +73,6 @@ export default function PageShell({
           <Link className={`ghost-link${isSuperadminRoute ? ' is-active' : ''}`} href="/sa">
             {t('nav.superadmin', 'Super Admin')}
           </Link>
-          <Link className={`ghost-link${pathname === `/${locale}/login` ? ' is-active' : ''}`} href="/login">
-            {t('nav.login', 'Login')}
-          </Link>
           <LanguageSwitcher />
           {right}
         </div>
@@ -105,13 +102,6 @@ export default function PageShell({
                 onClick={() => setMenuOpen(false)}
               >
                 {t('nav.superadmin', 'Super Admin')}
-              </Link>
-              <Link
-                className={`platform-mobile-link${pathname === `/${locale}/login` ? ' is-active' : ''}`}
-                href="/login"
-                onClick={() => setMenuOpen(false)}
-              >
-                {t('nav.login', 'Login')}
               </Link>
               <LanguageSwitcher className="platform-mobile-lang" onLanguageChange={() => setMenuOpen(false)} />
               {right ? <div className="platform-mobile-extra">{right}</div> : null}

@@ -37,16 +37,16 @@ export default function MobileDrawer({
     };
   }, [open, onClose]);
 
-  if (typeof document === 'undefined') return null;
+  if (!open || typeof document === 'undefined') return null;
 
   return createPortal(
     <>
-      <div className={`cc-mobile-drawer-backdrop${open ? ' open' : ''}`} onClick={() => onClose?.()} aria-hidden={!open} />
+      <div className="cc-mobile-drawer-backdrop open" onClick={() => onClose?.()} aria-hidden={false} />
       <aside
         id={id}
-        className={`cc-mobile-drawer-panel${open ? ' open' : ''}${className ? ` ${className}` : ''}`}
+        className={`cc-mobile-drawer-panel open${className ? ` ${className}` : ''}`}
         dir={direction}
-        aria-hidden={!open}
+        aria-hidden={false}
         role="dialog"
         aria-modal="true"
       >

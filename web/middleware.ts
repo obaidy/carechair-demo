@@ -31,14 +31,6 @@ export default function middleware(request: NextRequest) {
     const pathWithoutLocale = localeMatch[2] || '/';
     const requiredRole = roleForPath(pathWithoutLocale);
     const roleValue = request.cookies.get(AUTH_ROLE_COOKIE)?.value;
-
-    if (pathWithoutLocale === '/login' && isWebAuthRole(roleValue)) {
-      const targetUrl = request.nextUrl.clone();
-      targetUrl.pathname = roleValue === 'superadmin' ? `/${locale}/sa` : `/${locale}/app`;
-      targetUrl.search = '';
-      return NextResponse.redirect(targetUrl);
-    }
-
     if (requiredRole) {
       if (!isWebAuthRole(roleValue)) {
         const targetUrl = request.nextUrl.clone();
@@ -48,10 +40,10 @@ export default function middleware(request: NextRequest) {
       }
 
       if (!canAccessRoute(roleValue, requiredRole)) {
-        const forbiddenUrl = request.nextUrl.clone();
-        forbiddenUrl.pathname = `/${locale}/403`;
-        forbiddenUrl.search = '';
-        return NextResponse.rewrite(forbiddenUrl);
+        const targetUrl = request.nextUrl.clone();
+        targetUrl.pathname = `/${locale}/login`;
+        targetUrl.searchParams.set('next', `${pathname}${search || ''}`);
+        return NextResponse.redirect(targetUrl);
       }
     }
   }

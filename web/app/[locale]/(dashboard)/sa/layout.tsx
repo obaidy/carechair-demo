@@ -1,5 +1,6 @@
-import {getTranslations} from 'next-intl/server';
-import DashboardNav from '@/components/DashboardNav';
+import {redirect} from 'next/navigation';
+import {readAuthSession} from '@/lib/auth/server';
+import {SuperAdminSessionProvider} from '@/components/dashboard/SuperAdminSessionContext';
 
 type Props = {
   children: React.ReactNode;
@@ -8,20 +9,10 @@ type Props = {
 
 export default async function SuperadminLayout({children, params}: Props) {
   const {locale} = await params;
-  const t = await getTranslations();
+  const session = await readAuthSession();
+  if (!session || session.role !== 'superadmin') {
+    redirect(`/${locale}/login?next=/${locale}/sa`);
+  }
 
-  const items = [
-    {href: `/${locale}/sa`, label: t('superadmin.overview', {defaultValue: 'Overview'})}
-  ];
-
-  return (
-    <div className="platform-page">
-      <DashboardNav
-        title={t('nav.superadmin', {defaultValue: 'Superadmin'})}
-        items={items}
-        logoutHref={`/api/auth/logout?next=/${locale}/login`}
-      />
-      <main className="platform-main">{children}</main>
-    </div>
-  );
+  return <SuperAdminSessionProvider>{children}</SuperAdminSessionProvider>;
 }

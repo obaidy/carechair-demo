@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import {getMessages} from 'next-intl/server';
 import BookingForm from '@/components/BookingForm';
+import BookingGallery from '@/components/BookingGallery';
 import SafeImage from '@/components/SafeImage';
 import {Button, Card} from '@/components/ui';
 import {tx} from '@/lib/messages';
@@ -21,7 +22,7 @@ import {
 } from '@/lib/maps';
 import {normalizeSlug} from '@/lib/slug';
 import {formatSalonOperationalCurrency} from '@/lib/format';
-import {getDefaultAvatar, getInitials, getSalonMedia, getServiceImage} from '@/lib/media';
+import {getInitials, getSalonMedia} from '@/lib/media';
 import {isValidE164WithoutPlus, normalizeIraqiPhone} from '@/lib/phone';
 import {resolveImageSrcServer} from '@/lib/images-server';
 import PageShell from '@/components/PageShell';
@@ -163,20 +164,11 @@ export default async function SlugPage({params}: PageProps) {
   const {salon, location, services, staff, staffServices, hours, employeeHours} = salonPayload;
   const media = getSalonMedia(salon);
 
-  const [coverImage, logoImage, galleryImages, serviceImages, staffImages] = await Promise.all([
+  const [coverImage, logoImage, galleryImages] = await Promise.all([
     resolveImageSrcServer(salon.cover_image_url || media.cover, 'cover'),
     resolveImageSrcServer(salon.logo_url || '', 'logo'),
-    Promise.all(media.gallery.map((img) => resolveImageSrcServer(img, 'gallery'))),
-    Promise.all(
-      services.map(async (service) => [service.id, await resolveImageSrcServer(service.image_url || getServiceImage(service.name), 'service')] as const)
-    ),
-    Promise.all(
-      staff.map(async (member) => [member.id, await resolveImageSrcServer(member.photo_url || getDefaultAvatar(member.id || member.name), 'staff')] as const)
-    )
+    Promise.all(media.gallery.map((img) => resolveImageSrcServer(img, 'gallery')))
   ]);
-
-  const serviceImageById = Object.fromEntries(serviceImages);
-  const staffImageById = Object.fromEntries(staffImages);
 
   const address = formatAddress(location);
   const staticMapUrl = buildMapboxStaticPreviewUrl(location?.lat, location?.lng, 600, 300);
@@ -220,9 +212,27 @@ export default async function SlugPage({params}: PageProps) {
   return (
     <PageShell
       title={salon.name}
-      subtitle={address || salon.area || tx(messages, 'salon.addressUnavailable', 'Address unavailable')}
+      subtitle={tx(messages, 'booking.subtitle', 'Book your appointment in one minute')}
+      mobileMenuContent={
+        <div className="platform-mobile-drawer-links">
+          <Link className="platform-mobile-link" href="/explore">
+            {tx(messages, 'common.explore', 'Explore')}
+          </Link>
+          <Link className="platform-mobile-link" href="/#pricing">
+            {tx(messages, 'nav.pricing', 'Pricing')}
+          </Link>
+          <Link className="platform-mobile-link" href={`/s/${encodeURIComponent(String(salon.slug || ''))}/admin`}>
+            {tx(messages, 'booking.salonAdmin', 'Salon Admin')}
+          </Link>
+          {hasWhatsapp ? (
+            <a className="platform-mobile-link" href={`https://wa.me/${whatsappPhone}`} target="_blank" rel="noreferrer">
+              {tx(messages, 'booking.contactWhatsapp', 'Contact on WhatsApp')}
+            </a>
+          ) : null}
+        </div>
+      }
       right={
-        <Button as={Link as any} variant="ghost" href="/app">
+        <Button as={Link as any} variant="ghost" href={`/s/${encodeURIComponent(String(salon.slug || ''))}/admin`}>
           {tx(messages, 'booking.salonAdmin', 'Salon Admin')}
         </Button>
       }
@@ -309,51 +319,7 @@ export default async function SlugPage({params}: PageProps) {
 
       <Card>
         <h3 className="section-title">{tx(messages, 'booking.galleryTitle', 'Salon gallery')}</h3>
-        <div className="gallery-grid">
-          {galleryImages.map((img, idx) => (
-            <SafeImage key={`${img}-${idx}`} src={img} alt={`${tx(messages, 'booking.image', 'Image')} ${idx + 1}`} className="gallery-tile" fallbackKey="gallery" />
-          ))}
-        </div>
-      </Card>
-
-      <Card>
-        <h3 className="section-title">{tx(messages, 'salon.hours', 'Working hours')}</h3>
-        <ul className="hours-list">
-          {hours.map((row) => (
-            <li key={`${row.day_of_week}-${row.open_time}-${row.close_time}`}>
-              <span>{dayLabel(row.day_of_week, locale)}</span>
-              <span>
-                {row.is_closed
-                  ? tx(messages, 'salon.closed', 'Closed')
-                  : `${String(row.open_time || '').slice(0, 5)} - ${String(row.close_time || '').slice(0, 5)}`}
-              </span>
-            </li>
-          ))}
-        </ul>
-
-        <h3 className="section-title">{tx(messages, 'salon.services', 'Services')}</h3>
-        <div className="service-grid-compact">
-          {services.map((service) => (
-            <div key={service.id} className="service-mini-card active" aria-hidden="true">
-              <SafeImage src={serviceImageById[service.id]} alt={service.name} className="service-mini-image" fallbackKey="service" />
-              <div className="service-mini-meta">
-                <b>{service.name}</b>
-                <small>{tx(messages, 'booking.minutes', '{{count}} min', {count: service.duration_minutes})}</small>
-                <span>{formatSalonOperationalCurrency(service.price, salon, locale)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <h3 className="section-title">{tx(messages, 'salon.staff', 'Staff')}</h3>
-        <div className="staff-avatar-grid">
-          {staff.map((member) => (
-            <div key={member.id} className="staff-avatar-card active" aria-hidden="true">
-              <SafeImage src={staffImageById[member.id]} alt={member.name} className="staff-avatar-image" fallbackText={getInitials(member.name)} fallbackKey="staff" />
-              <b>{member.name}</b>
-            </div>
-          ))}
-        </div>
+        <BookingGallery images={galleryImages} imageLabel={tx(messages, 'booking.image', 'Image')} />
       </Card>
 
       <div id="booking-form">

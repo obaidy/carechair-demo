@@ -1,19 +1,19 @@
 'use client';
 
-import {useEffect, useMemo, useState, type FormEvent} from 'react';
+import {useCallback, useEffect, useMemo, useState, type FormEvent} from 'react';
 import {useLocale} from 'next-intl';
 import {z} from 'zod';
 import {createBrowserSupabaseClient} from '@/lib/supabase/browser';
 import SafeImage from '@/components/SafeImage';
+import {Button} from '@/components/ui';
 import {useTx} from '@/lib/messages-client';
 import {
   combineDateTime,
   generateSlots,
-  isValidE164WithoutPlus,
-  normalizePhone,
   SLOT_STEP_MINUTES,
   toDateInput
 } from '@/lib/booking';
+import {isValidE164WithoutPlus, normalizeIraqiPhone} from '@/lib/phone';
 import {formatSalonOperationalCurrency} from '@/lib/format';
 import {getDefaultAvatar, getInitials, getServiceImage} from '@/lib/media';
 import type {
@@ -42,7 +42,7 @@ type Slot = {
 
 const bookingSchema = z.object({
   customerName: z.string().trim().min(2),
-  customerPhone: z.string().trim().refine((value) => isValidE164WithoutPlus(normalizePhone(value)), {
+  customerPhone: z.string().trim().refine((value) => isValidE164WithoutPlus(normalizeIraqiPhone(value)), {
     message: 'invalid_phone'
   })
 });
@@ -79,6 +79,17 @@ const BOOKING_FALLBACKS: Record<string, string> = {
   'success.staff': 'Staff',
   'success.time': 'Time',
   'success.newBooking': 'Book another appointment',
+  successTitle: 'Booking request sent',
+  successSubtitle: 'The salon will confirm your appointment soon.',
+  requestId: 'Request ID',
+  contactWhatsappSalon: 'Message salon on WhatsApp',
+  salonWhatsappMissing: 'Salon WhatsApp number is unavailable',
+  backOrEdit: 'Back to booking / edit time',
+  'whatsappFallback.greeting': 'Hello, I want to confirm my booking:',
+  'whatsappFallback.name': 'Name',
+  'whatsappFallback.service': 'Service',
+  'whatsappFallback.time': 'Time',
+  'whatsappFallback.phone': 'Phone',
   'errors.loadSlots': 'Failed to load available slots.',
   'errors.slotUnavailable': 'This slot is no longer available.',
   'errors.closedDay': 'Salon is closed on this day.',
@@ -135,10 +146,16 @@ export default function BookingForm({
 }: BookingFormProps) {
   const locale = useLocale();
   const tx = useTx();
-  const t = (key: string, vars?: Record<string, string | number | boolean | null | undefined>) =>
-    tx(`booking.${key}`, BOOKING_FALLBACKS[key] || key, vars);
-  const tCommon = (key: string, vars?: Record<string, string | number | boolean | null | undefined>) =>
-    tx(`common.${key}`, key, vars);
+  const t = useCallback(
+    (key: string, vars?: Record<string, string | number | boolean | null | undefined>) =>
+      tx(`booking.${key}`, BOOKING_FALLBACKS[key] || key, vars),
+    [tx]
+  );
+  const tCommon = useCallback(
+    (key: string, vars?: Record<string, string | number | boolean | null | undefined>) => tx(`common.${key}`, key, vars),
+    [tx]
+  );
+  const loadSlotsErrorMessage = t('errors.loadSlots');
   const [mounted, setMounted] = useState(false);
 
   const [serviceId, setServiceId] = useState<string>('');
@@ -154,7 +171,7 @@ export default function BookingForm({
   const [notes, setNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const [success, setSuccess] = useState<null | {id: string; appointment: string; staff: string; service: string}>(null);
+  const [success, setSuccess] = useState<null | {id: string; appointment: string; staff: string; service: string; phone: string; whatsappHref: string}>(null);
 
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
 
@@ -261,7 +278,7 @@ export default function BookingForm({
         setDayBookings((bookingsRes.data || []) as Array<{staff_id: string; appointment_start: string; appointment_end: string}>);
         setDayTimeOff((timeOffRes.data || []) as Array<{staff_id: string; start_at: string; end_at: string}>);
       } catch (loadError) {
-        setError((loadError as Error)?.message || t('errors.loadSlots'));
+        setError((loadError as Error)?.message || loadSlotsErrorMessage);
       } finally {
         setLoadingSlots(false);
       }
@@ -276,7 +293,7 @@ export default function BookingForm({
     bookingMode,
     eligibleStaffIds,
     staffId,
-    t
+    loadSlotsErrorMessage
   ]);
 
   const hoursByDay = useMemo(() => {
@@ -498,7 +515,7 @@ export default function BookingForm({
         return;
       }
 
-      const normalizedPhone = normalizePhone(customerPhone);
+      const normalizedPhone = normalizeIraqiPhone(customerPhone);
       let clientId: string | null = null;
 
       const clientRes = await supabase
@@ -536,7 +553,7 @@ export default function BookingForm({
             price_amount: Number(selectedService.price || 0),
             currency: String(salon.currency_code || 'USD').toUpperCase(),
             salon_slug: salon.slug,
-            salon_whatsapp: normalizePhone(String(salon.whatsapp || '')),
+            salon_whatsapp: normalizeIraqiPhone(String(salon.whatsapp || '')),
             service: selectedService.name,
             staff: resolvedStaff.name,
             appointment_at: selectedSlot.startIso
@@ -547,7 +564,17 @@ export default function BookingForm({
 
       if (bookingRes.error) throw bookingRes.error;
 
-      const whatsapp = normalizePhone(String(salon.whatsapp || ''));
+      const whatsapp = normalizeIraqiPhone(String(salon.whatsapp || ''));
+      const appointmentLocal = formatDateTime(selectedSlot.startIso, locale, salon.timezone || 'UTC');
+      const manualMessage = `${t('whatsappFallback.greeting')}
+${t('whatsappFallback.name')}: ${customerName.trim()}
+${t('whatsappFallback.service')}: ${selectedService.name}
+${t('whatsappFallback.time')}: ${appointmentLocal}
+${t('whatsappFallback.phone')}: ${normalizedPhone}`;
+      const manualWhatsappHref = isValidE164WithoutPlus(whatsapp)
+        ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(manualMessage)}`
+        : '';
+
       if (isValidE164WithoutPlus(whatsapp)) {
         await supabase.functions.invoke('send-whatsapp', {
           body: {
@@ -556,7 +583,7 @@ export default function BookingForm({
             params: [
               customerName.trim(),
               selectedService.name,
-              formatDateTime(selectedSlot.startIso, undefined, salon.timezone || 'UTC'),
+              appointmentLocal,
               normalizedPhone
             ]
           }
@@ -567,7 +594,9 @@ export default function BookingForm({
         id: bookingRes.data.id,
         appointment: bookingRes.data.appointment_start || selectedSlot.startIso,
         staff: resolvedStaff.name,
-        service: selectedService.name
+        service: selectedService.name,
+        phone: normalizedPhone,
+        whatsappHref: manualWhatsappHref
       });
 
       setNotes('');
@@ -617,6 +646,10 @@ export default function BookingForm({
     time: slotIso ? formatDateTime(slotIso, locale, salon.timezone || 'UTC') : t('pickTime')
   };
 
+  function resetBookingFlow() {
+    setSuccess(null);
+  }
+
   if (!mounted) {
     return (
       <section className="booking-form-modern" aria-busy="true" aria-live="polite">
@@ -630,18 +663,28 @@ export default function BookingForm({
     return (
       <section className="success-screen">
         <div className="success-icon">✓</div>
-        <h3>{t('success.title')}</h3>
-        <p>{t('success.message')}</p>
+        <h3>{t('successTitle')}</h3>
+        <p>{t('successSubtitle')}</p>
         <div className="success-details">
-          <p><b>{t('success.id')}:</b> {success.id}</p>
-          <p><b>{t('success.service')}:</b> {success.service}</p>
-          <p><b>{t('success.staff')}:</b> {success.staff}</p>
-          <p><b>{t('success.time')}:</b> {formatDateTime(success.appointment, locale, salon.timezone || 'UTC')}</p>
+          <p><b>{t('requestId')}:</b> {success.id}</p>
+          <p><b>{t('service')}:</b> {success.service}</p>
+          <p><b>{t('staff')}:</b> {success.staff}</p>
+          <p><b>{t('time')}:</b> {formatDateTime(success.appointment, locale, salon.timezone || 'UTC')}</p>
+          <p><b>{t('phone')}:</b> {success.phone}</p>
         </div>
         <div className="row-actions center">
-          <button type="button" className="btn btn-secondary" onClick={() => setSuccess(null)}>
-            {t('success.newBooking')}
-          </button>
+          {success.whatsappHref ? (
+            <Button as="a" href={success.whatsappHref} target="_blank" rel="noreferrer">
+              {t('contactWhatsappSalon')}
+            </Button>
+          ) : (
+            <Button type="button" variant="ghost" disabled>
+              {t('salonWhatsappMissing')}
+            </Button>
+          )}
+          <Button type="button" variant="secondary" onClick={resetBookingFlow}>
+            {t('backOrEdit')}
+          </Button>
         </div>
       </section>
     );
@@ -687,12 +730,12 @@ export default function BookingForm({
 
       <div className="field full">
         <span>{t('service')}</span>
-        {filteredServices.length === 0 ? (
+        {services.length === 0 ? (
           <div className="empty-box">{t('noActiveServices')}</div>
         ) : (
           <div className="service-grid-compact">
-            {filteredServices.map((service) => {
-              const disabled = bookingMode === 'choose_employee' && Boolean(staffId) && !assignmentSet.has(`${staffId}:${service.id}`);
+            {services.map((service) => {
+              const disabled = Boolean(staffId) && !assignmentSet.has(`${staffId}:${service.id}`);
               const active = serviceId === service.id;
 
               return (
@@ -819,7 +862,7 @@ export default function BookingForm({
 
       {error ? <p className="muted" style={{color: 'var(--danger)'}}>{error}</p> : null}
 
-      <button type="submit" className="btn btn-primary full" disabled={submitting || !slotIso || !isValidPair}>
+      <button type="submit" className="ui-btn ui-btn-primary full" disabled={submitting || !slotIso || !isValidPair}>
         {submitting ? tCommon('saving') : t('confirmBooking')}
       </button>
     </form>

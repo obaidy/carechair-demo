@@ -443,6 +443,12 @@ export async function getPublicSalonByPath(country: string, city: string, salonS
   } as PublicSalonPayload;
 }
 
+export async function getPublicSalonBySlug(salonSlug: string): Promise<SalonRow | null> {
+  const targetSalonSlug = normalizeSlug(decodePathPart(salonSlug));
+  const salons = await getPublicSalons();
+  return salons.find((row) => slugEquals(row.slug, targetSalonSlug)) || null;
+}
+
 export async function getSiteMapData() {
   const {data: explore} = await getExploreDataSafe();
   const cityPaths = new Set<string>();
@@ -507,6 +513,15 @@ export async function getPublicSalonByPathSafe(
 ): Promise<SafeQueryResult<PublicSalonPayload | null>> {
   try {
     const data = await getPublicSalonByPath(country, city, salonSlug);
+    return {data, error: null};
+  } catch (error) {
+    return {data: null, error: toErrorMessage(error)};
+  }
+}
+
+export async function getPublicSalonBySlugSafe(salonSlug: string): Promise<SafeQueryResult<SalonRow | null>> {
+  try {
+    const data = await getPublicSalonBySlug(salonSlug);
     return {data, error: null};
   } catch (error) {
     return {data: null, error: toErrorMessage(error)};

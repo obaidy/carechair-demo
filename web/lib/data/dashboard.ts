@@ -2,6 +2,7 @@ import 'server-only';
 
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 import {readAuthSession} from '@/lib/auth/server';
+import {getSuperadminCode} from '@/lib/auth/config';
 
 type SalonRecord = {
   id: string;
@@ -10,15 +11,87 @@ type SalonRecord = {
   area: string | null;
   country_code: string | null;
   currency_code: string | null;
+  whatsapp?: string | null;
   status?: string | null;
   subscription_status?: string | null;
   billing_status?: string | null;
   trial_end_at?: string | null;
   trial_end?: string | null;
+  current_period_end?: string | null;
+  setup_paid?: boolean | null;
+  manual_override_until?: string | null;
+  admin_passcode?: string | null;
+  suspended_reason?: string | null;
   is_active?: boolean;
   is_public?: boolean;
   is_listed?: boolean;
   created_at?: string | null;
+};
+
+type SuperadminHealthRow = {
+  salon_id: string;
+  salon_name: string | null;
+  country_code: string | null;
+  status: string | null;
+  is_active: boolean | null;
+  is_listed: boolean | null;
+  trial_end_at: string | null;
+  subscription_status: string | null;
+  staff_count: number | null;
+  services_count: number | null;
+  total_bookings: number | null;
+  bookings_last_7_days: number | null;
+  bookings_last_30_days: number | null;
+  last_booking_at: string | null;
+  total_customers: number | null;
+  customers_last_30_days: number | null;
+  new_customers_last_30_days: number | null;
+  repeat_customers_last_30_days: number | null;
+};
+
+type SuperadminStatsRow = {
+  total_salons: number | null;
+  pending_approval_count: number | null;
+  trialing_count: number | null;
+  active_count: number | null;
+  past_due_count: number | null;
+  suspended_count: number | null;
+  total_bookings: number | null;
+  bookings_today: number | null;
+  bookings_last_7_days: number | null;
+  bookings_last_30_days: number | null;
+  total_unique_customers: number | null;
+  new_customers_last_30_days: number | null;
+  repeat_customers_last_30_days: number | null;
+  customers_last_30_days: number | null;
+};
+
+type CountryRecord = {
+  code: string;
+  name_en?: string | null;
+  name_ar?: string | null;
+  name_cs?: string | null;
+  name_ru?: string | null;
+  default_currency?: string | null;
+  timezone_default?: string | null;
+  stripe_price_id_basic?: string | null;
+  stripe_price_id_pro?: string | null;
+  trial_days_default?: number | null;
+  vat_percent?: number | null;
+  is_enabled?: boolean | null;
+  is_public?: boolean | null;
+  requires_manual_billing?: boolean | null;
+};
+
+type SalonInviteRecord = {
+  id: string;
+  token: string;
+  country_code: string;
+  created_at: string;
+  expires_at: string | null;
+  max_uses: number;
+  uses: number;
+  created_by: string | null;
 };
 
 type BookingRecord = {
@@ -52,11 +125,24 @@ type StaffRecord = {
   name: string;
   is_active: boolean;
   sort_order: number | null;
+  photo_url?: string | null;
+};
+
+type StaffServiceRecord = {
+  salon_id: string;
+  staff_id: string;
+  service_id: string;
 };
 
 function missingColumn(error: unknown, columnName: string): boolean {
   const raw = String((error as {message?: string})?.message || '').toLowerCase();
   return raw.includes('column') && raw.includes(columnName.toLowerCase());
+}
+
+function missingRelation(error: unknown, relationName: string): boolean {
+  const raw = String((error as {message?: string; code?: string})?.message || '').toLowerCase();
+  const code = String((error as {code?: string})?.code || '');
+  return code === '42p01' || (raw.includes('relation') && raw.includes(relationName.toLowerCase()));
 }
 
 export async function getSessionSalon(): Promise<SalonRecord | null> {
@@ -66,10 +152,7 @@ export async function getSessionSalon(): Promise<SalonRecord | null> {
   const supabase = createServerSupabaseClient();
   if (!supabase) return null;
 
-  let query = supabase
-    .from('salons')
-    .select('id,slug,name,area,country_code,currency_code,status,subscription_status,billing_status,is_active,is_public,is_listed,created_at,trial_end_at,trial_end')
-    .limit(1);
+  let query = supabase.from('salons').select('*').limit(1);
 
   if (session.salonId) {
     query = query.eq('id', session.salonId);
@@ -82,7 +165,11 @@ export async function getSessionSalon(): Promise<SalonRecord | null> {
   const res = await query.maybeSingle();
   if (res.error || !res.data) return null;
 
-  return res.data as SalonRecord;
+  const salon = res.data as SalonRecord;
+  return {
+    ...salon,
+    is_public: Boolean(salon.is_public ?? salon.is_listed)
+  };
 }
 
 export async function getSalonOverview(salonId: string) {
@@ -104,8 +191,20 @@ export async function getSalonOverview(salonId: string) {
   start30.setDate(start30.getDate() - 30);
   const todayKey = new Date().toISOString().slice(0, 10);
 
-  const [bookingsRes, servicesRes, staffRes] = await Promise.all([
-    supabase.from('bookings').select('id,status,appointment_start,customer_phone,service_id,price,service_price').eq('salon_id', salonId).limit(4000),
+  let bookingsRes: any = await supabase
+    .from('bookings')
+    .select('id,status,appointment_start,customer_phone,service_id,price,service_price')
+    .eq('salon_id', salonId)
+    .limit(4000);
+  if (bookingsRes.error && (missingColumn(bookingsRes.error, 'price') || missingColumn(bookingsRes.error, 'service_price'))) {
+    bookingsRes = await supabase
+      .from('bookings')
+      .select('id,status,appointment_start,customer_phone,service_id')
+      .eq('salon_id', salonId)
+      .limit(4000);
+  }
+
+  const [servicesRes, staffRes] = await Promise.all([
     supabase.from('services').select('id,price').eq('salon_id', salonId),
     supabase.from('staff').select('id').eq('salon_id', salonId)
   ]);
@@ -164,12 +263,21 @@ export async function getSalonBookings(salonId: string, limit = 200): Promise<Bo
   const supabase = createServerSupabaseClient();
   if (!supabase) return [];
 
-  const res = await supabase
+  let res: any = await supabase
     .from('bookings')
     .select('id,salon_id,staff_id,service_id,customer_name,customer_phone,status,appointment_start,appointment_end,created_at,price,service_price')
     .eq('salon_id', salonId)
     .order('appointment_start', {ascending: false})
     .limit(limit);
+
+  if (res.error && (missingColumn(res.error, 'price') || missingColumn(res.error, 'service_price'))) {
+    res = await supabase
+      .from('bookings')
+      .select('id,salon_id,staff_id,service_id,customer_name,customer_phone,status,appointment_start,appointment_end,created_at')
+      .eq('salon_id', salonId)
+      .order('appointment_start', {ascending: false})
+      .limit(limit);
+  }
 
   if (res.error) throw res.error;
   return (res.data || []) as BookingRecord[];
@@ -195,12 +303,25 @@ export async function getSalonStaff(salonId: string): Promise<StaffRecord[]> {
 
   const res = await supabase
     .from('staff')
-    .select('id,salon_id,name,is_active,sort_order')
+    .select('id,salon_id,name,is_active,sort_order,photo_url')
     .eq('salon_id', salonId)
     .order('sort_order', {ascending: true});
 
   if (res.error) throw res.error;
   return (res.data || []) as StaffRecord[];
+}
+
+export async function getSalonStaffServices(salonId: string): Promise<StaffServiceRecord[]> {
+  const supabase = createServerSupabaseClient();
+  if (!supabase) return [];
+
+  const res = await supabase
+    .from('staff_services')
+    .select('salon_id,staff_id,service_id')
+    .eq('salon_id', salonId);
+
+  if (res.error) throw res.error;
+  return (res.data || []) as StaffServiceRecord[];
 }
 
 export async function getSalonClients(salonId: string) {
@@ -230,25 +351,127 @@ export async function getSuperadminSalons(): Promise<SalonRecord[]> {
   const supabase = createServerSupabaseClient();
   if (!supabase) return [];
 
-  const selectColumns =
-    'id,slug,name,area,country_code,currency_code,status,subscription_status,billing_status,is_active,is_public,is_listed,created_at,trial_end_at,trial_end';
+  const res = await supabase.from('salons').select('*').order('created_at', {ascending: false});
+  if (res.error) throw res.error;
 
-  const primary = await supabase.from('salons').select(selectColumns).order('created_at', {ascending: false});
-  if (!primary.error) {
-    return (primary.data || []) as SalonRecord[];
+  return (res.data || []).map((row) => ({
+    ...(row as SalonRecord),
+    is_public: Boolean((row as SalonRecord).is_public ?? (row as SalonRecord).is_listed)
+  }));
+}
+
+export async function getSuperadminOverviewData() {
+  const salons = await getSuperadminSalons();
+  const supabase = createServerSupabaseClient();
+
+  const fallbackStats = {
+    total_salons: salons.length,
+    pending_approval_count: salons.filter((row) => String(row.status || '') === 'pending_approval').length,
+    trialing_count: salons.filter((row) => String(row.status || '') === 'trialing').length,
+    active_count: salons.filter((row) => String(row.status || '') === 'active').length,
+    past_due_count: salons.filter((row) => String(row.status || '') === 'past_due').length,
+    suspended_count: salons.filter((row) => String(row.status || '') === 'suspended').length,
+    total_bookings: 0,
+    bookings_today: 0,
+    bookings_last_7_days: 0,
+    bookings_last_30_days: 0,
+    total_unique_customers: 0,
+    new_customers_last_30_days: 0,
+    repeat_customers_last_30_days: 0,
+    customers_last_30_days: 0
+  } as SuperadminStatsRow;
+
+  if (!supabase) {
+    return {
+      salons,
+      healthRows: [] as SuperadminHealthRow[],
+      healthBySalonId: new Map<string, SuperadminHealthRow>(),
+      stats: fallbackStats
+    };
   }
 
-  if (!missingColumn(primary.error, 'is_public')) {
-    throw primary.error;
+  const adminCode = getSuperadminCode();
+  const [healthRes, statsRes] = await Promise.all([
+    supabase.rpc('superadmin_overview_salons', {p_admin_code: adminCode}),
+    supabase.rpc('superadmin_overview_stats', {p_admin_code: adminCode})
+  ]);
+
+  if (healthRes.error || statsRes.error) {
+    return {
+      salons,
+      healthRows: [] as SuperadminHealthRow[],
+      healthBySalonId: new Map<string, SuperadminHealthRow>(),
+      stats: fallbackStats
+    };
   }
 
-  const fallback = await supabase
-    .from('salons')
-    .select('id,slug,name,area,country_code,currency_code,status,subscription_status,billing_status,is_active,is_listed,created_at,trial_end_at,trial_end')
-    .order('created_at', {ascending: false});
+  const healthRows = (healthRes.data || []) as SuperadminHealthRow[];
+  const healthBySalonId = new Map<string, SuperadminHealthRow>();
+  for (const row of healthRows) {
+    healthBySalonId.set(String(row.salon_id), row);
+  }
 
-  if (fallback.error) throw fallback.error;
-  return (fallback.data || []).map((row) => ({...(row as SalonRecord), is_public: Boolean((row as SalonRecord).is_listed)}));
+  const stats = (((statsRes.data || []) as SuperadminStatsRow[])[0] || fallbackStats) as SuperadminStatsRow;
+
+  return {
+    salons,
+    healthRows,
+    healthBySalonId,
+    stats
+  };
+}
+
+export async function getSuperadminCountries(): Promise<CountryRecord[]> {
+  const supabase = createServerSupabaseClient();
+  if (!supabase) {
+    return [
+      {code: 'AE', name_en: 'United Arab Emirates', default_currency: 'AED', timezone_default: 'Asia/Dubai', trial_days_default: 7, vat_percent: 0, is_enabled: true, is_public: true, requires_manual_billing: false},
+      {code: 'CZ', name_en: 'Czech Republic', default_currency: 'CZK', timezone_default: 'Europe/Prague', trial_days_default: 7, vat_percent: 0, is_enabled: true, is_public: true, requires_manual_billing: false},
+      {code: 'EU', name_en: 'Europe', default_currency: 'EUR', timezone_default: 'Europe/Berlin', trial_days_default: 7, vat_percent: 0, is_enabled: true, is_public: true, requires_manual_billing: false},
+      {code: 'IQ', name_en: 'Iraq', default_currency: 'USD', timezone_default: 'Asia/Baghdad', trial_days_default: 7, vat_percent: 0, is_enabled: true, is_public: true, requires_manual_billing: false},
+      {code: 'SY', name_en: 'Syria', default_currency: 'SYP', timezone_default: 'Asia/Damascus', trial_days_default: 7, vat_percent: 0, is_enabled: true, is_public: false, requires_manual_billing: true}
+    ];
+  }
+
+  const res = await supabase
+    .from('countries')
+    .select(
+      'code,name_en,name_ar,name_cs,name_ru,default_currency,timezone_default,stripe_price_id_basic,stripe_price_id_pro,trial_days_default,vat_percent,is_enabled,is_public,requires_manual_billing'
+    )
+    .order('code', {ascending: true});
+
+  if (res.error) {
+    if (missingRelation(res.error, 'countries')) {
+      return [
+        {code: 'AE', name_en: 'United Arab Emirates', default_currency: 'AED', timezone_default: 'Asia/Dubai', trial_days_default: 7, vat_percent: 0, is_enabled: true, is_public: true, requires_manual_billing: false},
+        {code: 'CZ', name_en: 'Czech Republic', default_currency: 'CZK', timezone_default: 'Europe/Prague', trial_days_default: 7, vat_percent: 0, is_enabled: true, is_public: true, requires_manual_billing: false},
+        {code: 'EU', name_en: 'Europe', default_currency: 'EUR', timezone_default: 'Europe/Berlin', trial_days_default: 7, vat_percent: 0, is_enabled: true, is_public: true, requires_manual_billing: false},
+        {code: 'IQ', name_en: 'Iraq', default_currency: 'USD', timezone_default: 'Asia/Baghdad', trial_days_default: 7, vat_percent: 0, is_enabled: true, is_public: true, requires_manual_billing: false},
+        {code: 'SY', name_en: 'Syria', default_currency: 'SYP', timezone_default: 'Asia/Damascus', trial_days_default: 7, vat_percent: 0, is_enabled: true, is_public: false, requires_manual_billing: true}
+      ];
+    }
+    throw res.error;
+  }
+
+  return (res.data || []) as CountryRecord[];
+}
+
+export async function getSuperadminInvites(limit = 200) {
+  const supabase = createServerSupabaseClient();
+  if (!supabase) {
+    return {rows: [] as SalonInviteRecord[], available: false};
+  }
+
+  const res = await supabase.rpc('superadmin_list_invites', {
+    p_admin_code: getSuperadminCode(),
+    p_limit: limit
+  });
+
+  if (res.error) {
+    return {rows: [] as SalonInviteRecord[], available: false};
+  }
+
+  return {rows: ((res.data || []) as SalonInviteRecord[]), available: true};
 }
 
 export async function getSuperadminSalonDetail(salonId: string) {
@@ -256,36 +479,20 @@ export async function getSuperadminSalonDetail(salonId: string) {
   if (!supabase) return null;
 
   const [salonRes, overview, bookings] = await Promise.all([
-    supabase
-      .from('salons')
-      .select('id,slug,name,area,country_code,currency_code,status,subscription_status,billing_status,is_active,is_public,is_listed,created_at,trial_end_at,trial_end')
-      .eq('id', salonId)
-      .maybeSingle(),
+    supabase.from('salons').select('*').eq('id', salonId).maybeSingle(),
     getSalonOverview(salonId),
     getSalonBookings(salonId, 300)
   ]);
 
-  if (salonRes.error) {
-    if (!missingColumn(salonRes.error, 'is_public')) throw salonRes.error;
-
-    const legacy = await supabase
-      .from('salons')
-      .select('id,slug,name,area,country_code,currency_code,status,subscription_status,billing_status,is_active,is_listed,created_at,trial_end_at,trial_end')
-      .eq('id', salonId)
-      .maybeSingle();
-    if (legacy.error || !legacy.data) return null;
-
-    return {
-      salon: {...(legacy.data as SalonRecord), is_public: Boolean((legacy.data as SalonRecord).is_listed)},
-      overview,
-      bookings
-    };
-  }
+  if (salonRes.error) throw salonRes.error;
 
   if (!salonRes.data) return null;
 
   return {
-    salon: salonRes.data as SalonRecord,
+    salon: {
+      ...(salonRes.data as SalonRecord),
+      is_public: Boolean((salonRes.data as SalonRecord).is_public ?? (salonRes.data as SalonRecord).is_listed)
+    },
     overview,
     bookings
   };

@@ -236,7 +236,7 @@ export default async function ExplorePage({params, searchParams}: Props) {
                   </div>
 
                   <div className="row-actions">
-                    <Button as={Link as any} href={href}>
+                    <Button as={Link as any} href={href} prefetch={false}>
                       {tx(messages, 'explore.bookNow', 'Book now')}
                     </Button>
                     {hasWhats ? (
@@ -244,7 +244,7 @@ export default async function ExplorePage({params, searchParams}: Props) {
                         {tx(messages, 'common.whatsapp', 'WhatsApp')}
                       </Button>
                     ) : (
-                      <Button as={Link as any} variant="secondary" href={cityHref}>
+                      <Button as={Link as any} variant="secondary" href={cityHref} prefetch={false}>
                         {tx(messages, 'explore.cityPage', 'City page')}
                       </Button>
                     )}
