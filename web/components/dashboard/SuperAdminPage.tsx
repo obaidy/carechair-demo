@@ -162,6 +162,10 @@ export default function SuperAdminPage() {
   const t = useCallback(
     (key, fallbackOrVars, vars) => {
       if (typeof fallbackOrVars === "string") return tx(key, fallbackOrVars, vars);
+      if (fallbackOrVars && typeof fallbackOrVars === "object" && typeof fallbackOrVars.defaultValue === "string") {
+        const {defaultValue, ...rest} = fallbackOrVars;
+        return tx(key, defaultValue, rest);
+      }
       return tx(key, key, fallbackOrVars);
     },
     [tx]

@@ -96,7 +96,14 @@ export default function SalonAdminPage() {
   const module = Array.isArray(moduleValue) ? moduleValue[0] : moduleValue;
   const i18n = useMemo(() => ({language: locale, dir: () => (String(locale).startsWith('ar') ? 'rtl' : 'ltr')}), [locale]);
   const t = useCallback(
-    (key: string, options?: Record<string, string | number | boolean | null | undefined>) => tx(key, key, options),
+    (
+      key: string,
+      fallbackOrVars?: string | Record<string, string | number | boolean | null | undefined>,
+      vars?: Record<string, string | number | boolean | null | undefined>
+    ) => {
+      if (typeof fallbackOrVars === "string") return tx(key, fallbackOrVars, vars);
+      return tx(key, key, fallbackOrVars);
+    },
     [tx]
   );
   const navigate = useCallback(
@@ -189,14 +196,7 @@ export default function SalonAdminPage() {
   const [checkoutPlanType, setCheckoutPlanType] = useState("basic");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const tr = useCallback(
-    (key, defaultValue, options = {}) =>
-      t(key, {
-        defaultValue,
-        ...options,
-      }),
-    [t]
-  );
+  const tr = useCallback((key, defaultValue, options = {}) => t(key, defaultValue || key, options), [t]);
 
   const numberLocale = useMemo(() => {
     const lang = String(i18n.language || "en-US");
