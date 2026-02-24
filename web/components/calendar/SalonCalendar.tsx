@@ -126,23 +126,22 @@ function useMobile(breakpoint = 768): boolean {
 
 function CalendarEvent({
   event,
-  detailMode,
   toneStyle
 }: {
   event: CalendarEventRecord;
-  detailMode: 'employee' | 'service';
   toneStyle?: EmployeeToneStyle;
 }) {
-  const detailText =
-    detailMode === 'employee' ? String(event.employeeName || '-') : String(event.serviceName || '-');
   const style = toneStyle || DEFAULT_EMPLOYEE_TONE;
+  const serviceName = String(event.serviceName || '-');
+  const employeeName = String(event.employeeName || '-');
 
   return (
     <div className="calendar-event-chip calendar-employee-tone-chip" style={style as any}>
       <span className={`calendar-status-dot ${event.status || 'pending'}`} />
       <div className="calendar-event-copy">
         <b>{event.customerName || event.title}</b>
-        <small>{detailText}</small>
+        <small className="calendar-event-detail">{serviceName}</small>
+        <small className="calendar-event-detail secondary">{employeeName}</small>
       </div>
     </div>
   );
@@ -432,8 +431,6 @@ export default function SalonCalendar({
 
     return t('calendar.filters.employee', 'Employee');
   }, [allEmployeesSelected, employees, filters.employeeIds, filters.employeeSingle, isMobile, t]);
-
-  const detailMode: 'employee' | 'service' = allEmployeesSelected ? 'employee' : 'service';
 
   const employeeToneById = useMemo(() => {
     const map: Record<string, EmployeeToneStyle> = {};
@@ -1064,13 +1061,12 @@ export default function SalonCalendar({
               event: (props: any) => (
                 <CalendarEvent
                   event={props.event as CalendarEventRecord}
-                  detailMode={detailMode}
                   toneStyle={getEmployeeToneForEvent(props.event as CalendarEventRecord)}
                 />
               ),
               agenda: {
                 event: (props: {event: CalendarEventRecord}) => (
-                  <CalendarEvent event={props.event} detailMode={detailMode} toneStyle={getEmployeeToneForEvent(props.event)} />
+                  <CalendarEvent event={props.event} toneStyle={getEmployeeToneForEvent(props.event)} />
                 )
               }
             }}

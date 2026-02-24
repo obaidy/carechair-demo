@@ -1121,6 +1121,10 @@ select:disabled {
   font-weight: 600;
 }
 
+.calendar-event-copy small.calendar-event-detail.secondary {
+  opacity: 0.85;
+}
+
 .rbc-event-status-pending {
   border-inline-start: 3px solid #f59e0b !important;
 }
@@ -1334,7 +1338,7 @@ select:disabled {
 
   /* Mobile: make booking chips more readable in tight columns. */
   .calendar-shell .rbc-event {
-    min-height: 58px;
+    min-height: 66px;
     padding: 6px 8px;
   }
 
@@ -1351,7 +1355,7 @@ select:disabled {
   }
 
   .calendar-shell .calendar-event-copy {
-    gap: 0;
+    gap: 1px;
   }
 
   .calendar-shell .calendar-event-copy b {
@@ -1360,7 +1364,9 @@ select:disabled {
   }
 
   .calendar-shell .calendar-event-copy small {
-    display: none;
+    display: block;
+    font-size: 10px;
+    line-height: 1.15;
   }
 }
 
