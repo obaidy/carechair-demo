@@ -575,6 +575,55 @@ export default function SalonCalendar({
     [writeLocked, selectedServiceForCreate, findBookableEmployeeForSlot]
   );
 
+  const openCreateDraft = useCallback(
+    (input?: {start?: Date; service?: ServiceRow | null; employeeId?: string}) => {
+      if (writeLocked) return;
+
+      const service = input?.service || selectedServiceForCreate || activeServices[0] || services[0] || null;
+
+      const duration = Math.max(5, Number(service?.duration_minutes || 30));
+      const providedStart = input?.start ? snapDate(input.start) : null;
+      const now = snapDate(new Date());
+      const start = providedStart && providedStart.getTime() > now.getTime() ? providedStart : now;
+      const end = new Date(start);
+      end.setMinutes(end.getMinutes() + duration);
+
+      const scopedEmployeeIds =
+        isMobile && String(filters.employeeSingle || '') !== 'all'
+          ? [String(filters.employeeSingle)]
+          : visibleEmployeeIds.map((id) => String(id));
+      const eligibleEmployeeIds = scopedEmployeeIds.filter(
+        (employeeId) =>
+          employeeIdSet.has(String(employeeId)) &&
+          isEmployeeEligibleForService(String(employeeId), String(service?.id || ''))
+      );
+      const employeeId = String(input?.employeeId || eligibleEmployeeIds[0] || '');
+
+      setError('');
+      setDrawerMode('create');
+      setSelectedBooking({
+        start,
+        end,
+        service_id: String(service?.id || ''),
+        employee_id: employeeId,
+        status: 'pending',
+        duration
+      });
+      setDrawerOpen(true);
+    },
+    [
+      writeLocked,
+      selectedServiceForCreate,
+      activeServices,
+      services,
+      isMobile,
+      filters.employeeSingle,
+      visibleEmployeeIds,
+      employeeIdSet,
+      isEmployeeEligibleForService
+    ]
+  );
+
   const unavailableBackgroundEvents = useMemo(() => {
     if (view === Views.AGENDA) return [] as CalendarBackgroundBlock[];
     if (!selectedServiceForCreate || !range?.start || !range?.end) return [] as CalendarBackgroundBlock[];
@@ -684,12 +733,14 @@ export default function SalonCalendar({
 
       const match = findBookableEmployeeForSlot(slotInfo, selectedService);
       if (!match) {
-        setError(
-          t(
-            'calendar.errors.unavailableSlot',
-            'This time slot is not bookable for the selected scope. Choose another available slot.'
-          )
-        );
+        if (!isMobile) {
+          setError(
+            t(
+              'calendar.errors.unavailableSlot',
+              'This time slot is not bookable for the selected scope. Choose another available slot.'
+            )
+          );
+        }
         return;
       }
 
@@ -705,7 +756,7 @@ export default function SalonCalendar({
       });
       setDrawerOpen(true);
     },
-    [writeLocked, selectedServiceForCreate, findBookableEmployeeForSlot, t]
+    [writeLocked, selectedServiceForCreate, findBookableEmployeeForSlot, t, isMobile]
   );
 
   const openEdit = useCallback((event: CalendarEventRecord) => {
@@ -921,6 +972,7 @@ export default function SalonCalendar({
             step={10}
             timeslots={6}
             selectable={writeLocked ? false : 'ignoreEvents'}
+            longPressThreshold={1}
             popup
             showMultiDayTimes
             min={minTime}
@@ -1006,12 +1058,7 @@ export default function SalonCalendar({
           <button
             type="button"
             className="calendar-fab"
-            onClick={() =>
-              openCreate({
-                start: new Date(),
-                resourceId: filters.employeeSingle !== 'all' ? filters.employeeSingle : employees?.[0]?.id
-              })
-            }
+            onClick={() => openCreateDraft({start: new Date()})}
           >
             {t('calendar.actions.addBooking', '+ Add booking')}
           </button>
