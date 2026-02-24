@@ -2,7 +2,7 @@ import {notFound} from 'next/navigation';
 import {getMessages} from 'next-intl/server';
 import {tx} from '@/lib/messages';
 import {buildMetadata} from '@/lib/seo';
-import {getCityListingDataSafe, countrySlugFromSalon, citySlugFromSalon} from '@/lib/data/public';
+import {citySlugFromSalon, countrySlugFromSalon, getCityListingDataSafe} from '@/lib/data/public';
 import {Link} from '@/i18n/navigation';
 import {normalizeSlug} from '@/lib/slug';
 import SafeImage from '@/components/SafeImage';
@@ -113,7 +113,7 @@ export default async function CityPage({params}: PageProps) {
                 </div>
 
                 <div className="row-actions">
-                  <Button as={Link as any} href={`/${countryPath}/${cityPath}/${normalizeSlug(salon.slug)}`}>
+                  <Button as={Link as any} href={`/s/${encodeURIComponent(normalizeSlug(salon.slug))}`}>
                     {tx(messages, 'explore.bookNow', 'Book now')}
                   </Button>
                   {hasWhats ? (

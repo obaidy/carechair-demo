@@ -184,7 +184,7 @@ export default async function ExplorePage({params, searchParams}: Props) {
           {sorted.map(({salon, services}) => {
             const country = countrySlugFromSalon(salon);
             const city = citySlugFromSalon(salon);
-            const href = `/${country}/${city}/${normalizeSlug(salon.slug)}`;
+            const href = `/s/${encodeURIComponent(normalizeSlug(salon.slug))}`;
             const cityHref = `/${country}/${city}`;
             const media = getSalonMedia(salon);
             const minPrice = services.reduce((min, row) => (Number(row.price) < min ? Number(row.price) : min), Number.POSITIVE_INFINITY);

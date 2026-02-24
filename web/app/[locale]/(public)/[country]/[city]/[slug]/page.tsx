@@ -9,8 +9,6 @@ import {tx} from '@/lib/messages';
 import {buildMetadata} from '@/lib/seo';
 import {Link} from '@/i18n/navigation';
 import {
-  citySlugFromSalon,
-  countrySlugFromSalon,
   getPublicSalonByPathSafe,
   getServiceListingDataSafe
 } from '@/lib/data/public';
@@ -143,7 +141,7 @@ export default async function SlugPage({params}: PageProps) {
                   </div>
 
                   <div className="row-actions">
-                    <Button as={Link as any} href={`/${countrySlugFromSalon(salon)}/${citySlugFromSalon(salon)}/${normalizeSlug(salon.slug)}`}>
+                    <Button as={Link as any} href={`/s/${encodeURIComponent(normalizeSlug(salon.slug))}`}>
                       {tx(messages, 'service.bookSalon', 'Book this salon')}
                     </Button>
                     {hasWhats ? (
