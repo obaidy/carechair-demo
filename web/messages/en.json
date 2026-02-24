@@ -37,120 +37,120 @@
     "menu": "Menu"
   },
   "home": {
-    "headline1": "Turn salon bookings",
-    "headline2": "into a professional system",
-    "headline3": "without WhatsApp chaos",
-    "subheadline": "Smart booking link + advanced admin panel + full staff/services management within 24 hours.",
-    "sectionBeforeAfter": "Before and After CareChair",
-    "sectionShow": "See the Product",
-    "sectionFeatures": "Platform Features",
-    "sectionPricing": "Flexible Plans",
-    "sectionTestimonials": "Salon Feedback",
+    "headline1": "Fill your salon calendar",
+    "headline2": "and cut no-shows",
+    "headline3": "within 7 days",
+    "subheadline": "Online booking + automated WhatsApp reminders + smart admin panel. Launch fast and prove ROI in a 14-day guided trial.",
+    "sectionBeforeAfter": "Before vs After CareChair",
+    "sectionShow": "See It in Action",
+    "sectionFeatures": "Features That Grow Revenue",
+    "sectionPricing": "Plans That Scale With You",
+    "sectionTestimonials": "What Salon Owners Say",
     "sectionFaq": "FAQ",
-    "ctaMain": "Request Your System",
+    "ctaMain": "Start Free Trial",
     "ctaExplore": "Explore Salons",
-    "finalTitle": "Ready for structured bookings?",
-    "finalSubtitle": "We launch quickly so you can run operations with confidence from day one.",
-    "tag1": "Works on multiple devices",
-    "tag2": "Structured scheduling",
-    "tag3": "Cancel anytime",
-    "heroImageAlt": "Premium salon in Baghdad",
+    "finalTitle": "Ready to turn empty slots into revenue?",
+    "finalSubtitle": "Start now and see early impact in 7 days, with a full 14-day guided trial.",
+    "tag1": "Automated WhatsApp reminders",
+    "tag2": "Smart calendar & team scheduling",
+    "tag3": "Bilingual and multi-market ready",
+    "heroImageAlt": "Salon team serving clients in Baghdad",
     "beforeTitle": "Before CareChair",
     "afterTitle": "After CareChair",
     "before": {
-      "1": "Too many calls",
-      "2": "Missed appointments",
-      "3": "Staff pressure"
+      "1": "Last-minute cancellations and no-shows",
+      "2": "Manual follow-up by calls and WhatsApp",
+      "3": "Unclear staff schedules and busy hours"
     },
     "after": {
-      "1": "One booking link",
-      "2": "Clear schedule",
-      "3": "Instant accept/reject"
+      "1": "Automated confirmations and reminders",
+      "2": "Clear live calendar for every employee",
+      "3": "More confirmed bookings and repeat clients"
     },
     "showcase": {
-      "adminTitle": "Admin Dashboard",
-      "adminCaption": "Manage daily bookings and status updates quickly and clearly.",
-      "bookingTitle": "Booking Page",
-      "bookingCaption": "Elegant and fast booking flow from any device in seconds.",
-      "exploreTitle": "Explore",
-      "exploreCaption": "Professional listing pages that convert visits into bookings."
+      "adminTitle": "Owner Dashboard",
+      "adminCaption": "Track no-show rate, confirmed bookings, repeat clients, and weekly revenue in one place.",
+      "bookingTitle": "High-Converting Booking Page",
+      "bookingCaption": "Fast mobile booking flow that helps clients confirm in less than a minute.",
+      "exploreTitle": "Marketplace Presence",
+      "exploreCaption": "Professional salon pages that convert visits into bookings."
     },
     "features": {
       "link": {
-        "title": "One booking link",
-        "text": "Share it on Instagram and WhatsApp to receive direct bookings."
+        "title": "One booking link everywhere",
+        "text": "Use the same link on Instagram, WhatsApp, and Google to capture direct bookings."
       },
       "workflow": {
-        "title": "Staff & services organization",
-        "text": "Clear mapping between each service and the right employee."
+        "title": "Smart service-to-staff matching",
+        "text": "Show only employees who actually provide the selected service."
       },
       "action": {
         "title": "Instant booking actions",
-        "text": "Accept or reject requests from one focused panel."
+        "text": "Confirm, move, or cancel bookings from a single focused workspace."
       },
       "hours": {
-        "title": "Working hours control",
-        "text": "Flexible weekly schedules for each salon's operations."
+        "title": "Real availability control",
+        "text": "Block unavailable hours and stop out-of-hours bookings before they happen."
       },
       "media": {
-        "title": "Professional salon presence",
-        "text": "Images and service layouts that improve customer confidence."
+        "title": "Premium salon presentation",
+        "text": "Show your real gallery and service visuals to build trust quickly."
       },
       "scale": {
-        "title": "Ready to scale",
-        "text": "Grow from one branch to multiple branches with consistency."
+        "title": "Growth-ready operations",
+        "text": "Standardize workflows from one branch to multiple branches with confidence."
       }
     },
     "pricingBullets": {
-      "1": "Booking link + dashboard + staff scheduling",
-      "2": "Country-based billing and currency setup",
-      "3": "7-day trial available"
+      "1": "Booking page + admin dashboard + smart calendar",
+      "2": "Automated WhatsApp reminders and confirmations",
+      "3": "Early impact in 7 days with a full 14-day trial"
     },
     "enterpriseBullets": {
-      "1": "Multi-country deployment plan",
-      "2": "Advanced onboarding and migration support",
-      "3": "Custom workflows for growing chains"
+      "1": "Multi-branch and multi-city rollout plans",
+      "2": "Hands-on onboarding and migration support",
+      "3": "Custom operating workflows for scaling teams"
     },
     "testimonials": {
       "1": {
-        "quote": "Bookings became clear and call volume dropped noticeably.",
+        "quote": "We cut missed appointments noticeably in the first week.",
         "name": "Salon Owner",
         "location": "Baghdad"
       },
       "2": {
-        "quote": "Best part was launch speed and team organization from day one.",
+        "quote": "Our team finally works from one clear calendar, not scattered chats.",
         "name": "Salon Manager",
         "location": "Basra"
       },
       "3": {
-        "quote": "The booking page looks premium and gives strong first impressions.",
+        "quote": "Clients book faster now, and repeat visits increased.",
         "name": "Beauty Center Owner",
         "location": "Baghdad"
       }
     },
     "faq": {
       "1": {
-        "q": "Is it an app or a system?",
-        "a": "It is a web-based system that works from a direct link on any device."
+        "q": "How fast can we launch?",
+        "a": "Most salons go live in 24-48 hours after setup details are confirmed."
       },
       "2": {
-        "q": "Can multiple devices use it at the same time?",
-        "a": "Yes, management can use it from phone, tablet, and laptop simultaneously."
+        "q": "Can my team use it on multiple devices?",
+        "a": "Yes. Owners, managers, and staff can work on phone, tablet, and desktop."
       },
       "3": {
-        "q": "How do I add the booking link to Instagram?",
-        "a": "We provide a ready booking link to place in Instagram bio or WhatsApp."
+        "q": "Will this reduce no-shows?",
+        "a": "Yes. Automated reminders and clearer availability usually reduce no-shows quickly."
       },
       "4": {
-        "q": "How is booking confirmation handled?",
-        "a": "Requests appear instantly in admin where you can accept/reject in seconds."
+        "q": "How long is the trial?",
+        "a": "You get a 14-day guided trial, with early performance signals visible in about 7 days."
       }
     },
     "trust": {
-      "activeCenters": "+{{count}} active centers",
+      "activeCenters": "+{{count}} active salons",
       "monthlyBookings": "+{{count}} monthly bookings",
-      "activation": "Activation within 24 hours",
-      "cities": "Available in Baghdad and Basra"
+      "activation": "Go live in 24-48 hours",
+      "cities": "Focused on Baghdad first, expanding city by city"
     }
   },
   "explore": {

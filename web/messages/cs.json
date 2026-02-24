@@ -37,120 +37,120 @@
     "menu": "Menu"
   },
   "home": {
-    "headline1": "Převeďte rezervace salonu",
-    "headline2": "na profesionální systém",
-    "headline3": "bez chaosu WhatsApp",
-    "subheadline": "Chytrý rezervační odkaz + pokročilý admin panel + kompletní správa personálu a služeb do 24 hodin.",
-    "sectionBeforeAfter": "Před a po CareChair",
-    "sectionShow": "Podívejte se na systém",
-    "sectionFeatures": "Funkce platformy",
-    "sectionPricing": "Flexibilní plány",
-    "sectionTestimonials": "Reference salónů",
-    "sectionFaq": "Často kladené dotazy",
-    "ctaMain": "Požádat o systém",
+    "headline1": "Naplňte kalendář salonu",
+    "headline2": "a snižte no-show",
+    "headline3": "během 7 dní",
+    "subheadline": "Online rezervace + automatické WhatsApp připomínky + chytrý admin panel. Rychlé spuštění a měřitelný dopad v rámci 14denního vedeného trialu.",
+    "sectionBeforeAfter": "Před vs Po CareChair",
+    "sectionShow": "Podívejte se, jak to funguje",
+    "sectionFeatures": "Funkce, které zvyšují tržby",
+    "sectionPricing": "Plány, které rostou s vámi",
+    "sectionTestimonials": "Co říkají majitelé salonů",
+    "sectionFaq": "FAQ",
+    "ctaMain": "Spustit zkušební verzi",
     "ctaExplore": "Prozkoumat salony",
-    "finalTitle": "Připraveni na organizované rezervace?",
-    "finalSubtitle": "Spustíme systém rychle, abyste mohli od prvního dne fungovat s jistotou.",
-    "tag1": "Funguje na více zařízeních",
-    "tag2": "Organizované plánování",
-    "tag3": "Zrušení kdykoliv",
-    "heroImageAlt": "Prémiový salon v Bagdádu",
+    "finalTitle": "Připraveni proměnit prázdné sloty v tržby?",
+    "finalSubtitle": "Začněte nyní a uvidíte první dopad během 7 dní, s plným 14denním vedeným trialem.",
+    "tag1": "Automatické WhatsApp připomínky",
+    "tag2": "Chytrý kalendář a plánování týmu",
+    "tag3": "Připraveno pro více jazyků a trhů",
+    "heroImageAlt": "Tým salonu obsluhující klientky v Bagdádu",
     "beforeTitle": "Před CareChair",
     "afterTitle": "Po CareChair",
     "before": {
-      "1": "Příliš mnoho hovorů",
-      "2": "Ztracené termíny",
-      "3": "Tlak na personál"
+      "1": "Rušení na poslední chvíli a no-show",
+      "2": "Ruční dohledávání přes hovory a WhatsApp",
+      "3": "Nejasné rozvrhy personálu a špičky"
     },
     "after": {
-      "1": "Jeden rezervační odkaz",
-      "2": "Přehledný rozvrh",
-      "3": "Rychlé potvrzení/odmítnutí"
+      "1": "Automatická potvrzení a připomínky",
+      "2": "Jasný živý kalendář pro každého zaměstnance",
+      "3": "Více potvrzených rezervací a vracejících se klientů"
     },
     "showcase": {
-      "adminTitle": "Admin panel",
-      "adminCaption": "Správa každodenních rezervací a stavů rychle a přehledně.",
-      "bookingTitle": "Rezervační stránka",
-      "bookingCaption": "Elegantní a rychlý rezervační tok z jakéhokoli zařízení.",
-      "exploreTitle": "Katalog",
-      "exploreCaption": "Profesionální prezentace salonů a služeb pro vyšší konverzi."
+      "adminTitle": "Dashboard pro majitele",
+      "adminCaption": "Sledujte no-show, potvrzené rezervace, návratnost klientů a týdenní tržby na jednom místě.",
+      "bookingTitle": "Rezervační stránka s vysokou konverzí",
+      "bookingCaption": "Rychlý mobilní rezervační tok, který klientky potvrzují do jedné minuty.",
+      "exploreTitle": "Silná prezentace v katalogu",
+      "exploreCaption": "Profesionální stránky salonu, které mění návštěvy na rezervace."
     },
     "features": {
       "link": {
-        "title": "Jeden rezervační odkaz",
-        "text": "Sdílejte na Instagramu a WhatsApp a přijímejte rezervace přímo."
+        "title": "Jedna rezervační URL všude",
+        "text": "Použijte stejný odkaz na Instagramu, WhatsAppu i Googlu pro přímé rezervace."
       },
       "workflow": {
-        "title": "Organizace personálu a služeb",
-        "text": "Jasné přiřazení služby ke správnému zaměstnanci."
+        "title": "Chytré párování služby a personálu",
+        "text": "Zobrazí se jen zaměstnanci, kteří danou službu skutečně poskytují."
       },
       "action": {
-        "title": "Okamžité akce rezervací",
-        "text": "Potvrzujte nebo odmítejte požadavky z jedné obrazovky."
+        "title": "Okamžité akce nad rezervací",
+        "text": "Potvrzení, přesun nebo zrušení z jedné přehledné pracovní plochy."
       },
       "hours": {
-        "title": "Kontrola otevírací doby",
-        "text": "Flexibilní týdenní rozvrh podle provozu salonu."
+        "title": "Reálná kontrola dostupnosti",
+        "text": "Blokujte nedostupné hodiny a zastavte rezervace mimo otevírací dobu."
       },
       "media": {
-        "title": "Profesionální prezentace",
-        "text": "Fotky a služby uspořádané pro vyšší důvěru klientek."
+        "title": "Prémiová prezentace salonu",
+        "text": "Skutečná galerie a vizuály služeb budují důvěru rychleji."
       },
       "scale": {
-        "title": "Připraveno na růst",
-        "text": "Od jedné pobočky až po síť poboček."
+        "title": "Provoz připravený na růst",
+        "text": "Standardizujte postupy od jedné pobočky po více poboček."
       }
     },
     "pricingBullets": {
-      "1": "Rezervační odkaz + dashboard + plánování personálu",
-      "2": "Fakturace podle země a měny",
-      "3": "7denní trial"
+      "1": "Rezervační stránka + dashboard + chytrý kalendář",
+      "2": "Automatické WhatsApp připomínky a potvrzení",
+      "3": "První dopad za 7 dní v rámci plného 14denního trialu"
     },
     "enterpriseBullets": {
-      "1": "Nasazení pro více zemí",
-      "2": "Pokročilý onboarding a migrace",
-      "3": "Vlastní workflow pro rostoucí řetězce"
+      "1": "Plány rolloutu pro více poboček a měst",
+      "2": "Praktický onboarding a pomoc s migrací",
+      "3": "Vlastní provozní workflow pro rostoucí týmy"
     },
     "testimonials": {
       "1": {
-        "quote": "Rezervace jsou přehledné a počet hovorů výrazně klesl.",
+        "quote": "Počet zmeškaných termínů se viditelně snížil už v prvním týdnu.",
         "name": "Majitelka salonu",
         "location": "Bagdád"
       },
       "2": {
-        "quote": "Nejlepší byla rychlost spuštění a organizace týmu od prvního dne.",
+        "quote": "Tým konečně pracuje z jednoho jasného kalendáře, ne z roztříštěných chatů.",
         "name": "Manažerka salonu",
         "location": "Basra"
       },
       "3": {
-        "quote": "Rezervační stránka působí prémiově a dělá skvělý první dojem.",
+        "quote": "Klientky rezervují rychleji a vracejí se častěji.",
         "name": "Majitelka beauty centra",
         "location": "Bagdád"
       }
     },
     "faq": {
       "1": {
-        "q": "Je to aplikace nebo systém?",
-        "a": "Je to webový systém fungující přes přímý odkaz na jakémkoli zařízení."
+        "q": "Jak rychle můžeme spustit provoz?",
+        "a": "Většina salonů je live do 24-48 hodin po potvrzení vstupních dat."
       },
       "2": {
-        "q": "Může běžet na více zařízeních současně?",
-        "a": "Ano, správa může běžet současně na mobilu, tabletu i notebooku."
+        "q": "Může tým používat systém na více zařízeních?",
+        "a": "Ano. Majitel, manažer i personál mohou pracovat na mobilu, tabletu i desktopu."
       },
       "3": {
-        "q": "Jak přidám rezervační odkaz na Instagram?",
-        "a": "Dodáme hotový odkaz, který vložíte do bio na Instagramu nebo WhatsAppu."
+        "q": "Pomůže to skutečně snížit no-show?",
+        "a": "Ano. Automatické připomínky a přesnější dostupnost obvykle no-show rychle snižují."
       },
       "4": {
-        "q": "Jak probíhá potvrzení rezervace?",
-        "a": "Požadavky se ihned zobrazí v administraci, kde je potvrdíte nebo odmítnete."
+        "q": "Jak dlouhý je trial?",
+        "a": "Máte 14denní vedený trial, první signály výkonu obvykle uvidíte během 7 dní."
       }
     },
     "trust": {
-      "activeCenters": "+{{count}} aktivních center",
-      "monthlyBookings": "+{{count}} měsíčních rezervací",
-      "activation": "Aktivace do 24 hodin",
-      "cities": "Dostupné v Bagdádu a Basře"
+      "activeCenters": "+{{count}} aktivních salonů",
+      "monthlyBookings": "+{{count}} rezervací měsíčně",
+      "activation": "Spuštění do 24-48 hodin",
+      "cities": "Nejprve Bagdád, pak expanze město po městě"
     }
   },
   "explore": {

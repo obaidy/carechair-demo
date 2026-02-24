@@ -22,7 +22,8 @@
     "show": "إظهار",
     "hide": "إخفاء",
     "delete": "حذف",
-    "actions": "الإجراءات"
+    "actions": "الإجراءات",
+    "add": "Add"
   },
   "errors": {
     "supabaseConfigMissing": "إعدادات Supabase غير مكتملة."
@@ -36,120 +37,120 @@
     "menu": "القائمة"
   },
   "home": {
-    "headline1": "حول حجوزات مركزك",
-    "headline2": "إلى نظام احترافي",
-    "headline3": "بدون فوضى واتساب",
-    "subheadline": "رابط حجز ذكي + لوحة إدارة متقدمة + تنظيم كامل للموظفين والخدمات خلال 24 ساعة.",
+    "headline1": "املأ جدول صالونك",
+    "headline2": "وقلّل الإلغاءات",
+    "headline3": "خلال 7 أيام",
+    "subheadline": "حجز أونلاين + تذكيرات واتساب تلقائية + لوحة إدارة ذكية. إطلاق سريع ونتيجة قابلة للقياس ضمن تجربة موجهة لمدة 14 يوم.",
     "sectionBeforeAfter": "قبل وبعد CareChair",
-    "sectionShow": "شوف النظام",
-    "sectionFeatures": "مميزات النظام",
-    "sectionPricing": "الخطط المرنة",
-    "sectionTestimonials": "آراء المراكز",
+    "sectionShow": "شاهد النظام عملياً",
+    "sectionFeatures": "ميزات تزيد الإيراد",
+    "sectionPricing": "خطط تنمو مع صالونك",
+    "sectionTestimonials": "آراء أصحاب الصالونات",
     "sectionFaq": "الأسئلة الشائعة",
-    "ctaMain": "اطلب نسخة لمركزك",
-    "ctaExplore": "استعرض المراكز",
-    "finalTitle": "جاهز نخلي مركزك يستقبل حجوزات مرتبة؟",
-    "finalSubtitle": "نجهز النظام بسرعة حتى تبدأ التشغيل بثقة من أول يوم.",
-    "tag1": "يفتح على أكثر من جهاز",
-    "tag2": "ترتيب المواعيد",
-    "tag3": "إلغاء بأي وقت",
-    "heroImageAlt": "صالون فاخر في بغداد",
+    "ctaMain": "ابدأ التجربة المجانية",
+    "ctaExplore": "استعرض الصالونات",
+    "finalTitle": "جاهز تحول الأوقات الفارغة إلى إيراد؟",
+    "finalSubtitle": "ابدأ الآن وشاهد مؤشر نتيجة خلال 7 أيام، مع تجربة موجهة كاملة لمدة 14 يوم.",
+    "tag1": "تذكيرات واتساب تلقائية",
+    "tag2": "تقويم ذكي وتنظيم الموظفين",
+    "tag3": "جاهز للعربي وأسواق متعددة",
+    "heroImageAlt": "فريق صالون يخدم العميلات في بغداد",
     "beforeTitle": "قبل CareChair",
     "afterTitle": "بعد CareChair",
     "before": {
-      "1": "مكالمات كثيرة",
-      "2": "ضياع مواعيد",
-      "3": "ضغط على الموظفين"
+      "1": "إلغاءات وغياب في آخر لحظة",
+      "2": "متابعة يدوية عبر اتصال وواتساب",
+      "3": "عدم وضوح جدول الموظفين وأوقات الذروة"
     },
     "after": {
-      "1": "رابط حجز واحد",
-      "2": "جدول واضح",
-      "3": "قبول ورفض فوري"
+      "1": "تأكيد وتذكير تلقائي قبل الموعد",
+      "2": "تقويم مباشر وواضح لكل موظف",
+      "3": "حجوزات مؤكدة أكثر وزيارات متكررة"
     },
     "showcase": {
-      "adminTitle": "لوحة الإدارة",
-      "adminCaption": "إدارة الحجوزات اليومية والقبول والرفض بحركة سريعة وواضحة.",
-      "bookingTitle": "صفحة الحجز",
-      "bookingCaption": "تجربة حجز أنيقة وسريعة للعميلة من أي جهاز خلال ثواني.",
-      "exploreTitle": "الاستكشاف",
-      "exploreCaption": "عرض المراكز والخدمات بشكل محترف يدعم التحويل للحجز."
+      "adminTitle": "لوحة صاحب الصالون",
+      "adminCaption": "تابع نسبة الغياب، الحجوزات المؤكدة، العملاء العائدين، وإيراد الأسبوع من مكان واحد.",
+      "bookingTitle": "صفحة حجز عالية التحويل",
+      "bookingCaption": "رحلة حجز سريعة على الجوال تساعد العميلة تؤكد الموعد خلال أقل من دقيقة.",
+      "exploreTitle": "حضور قوي في السوق",
+      "exploreCaption": "صفحات صالون احترافية تحول الزيارات إلى حجوزات."
     },
     "features": {
       "link": {
-        "title": "رابط حجز واحد",
-        "text": "تنشرينه بالإنستغرام والواتساب وتبدين تستقبلين حجوزات مباشرة."
+        "title": "رابط حجز واحد بكل مكان",
+        "text": "استخدم نفس الرابط على إنستغرام وواتساب وجوجل لاستقبال حجوزات مباشرة."
       },
       "workflow": {
-        "title": "تنظيم الموظفين والخدمات",
-        "text": "ربط واضح بين كل خدمة والموظف المناسب بدون تعارض."
+        "title": "مطابقة ذكية بين الخدمة والموظف",
+        "text": "عرض الموظفين المناسبين فقط لكل خدمة مختارة."
       },
       "action": {
-        "title": "إدارة فورية للحجوزات",
-        "text": "قبول أو رفض الطلبات من لوحة واحدة مع حالة واضحة."
+        "title": "إجراءات فورية على الحجز",
+        "text": "تأكيد أو نقل أو إلغاء الحجز من واجهة واحدة واضحة."
       },
       "hours": {
-        "title": "ضبط ساعات العمل",
-        "text": "دوام أسبوعي مرن لكل مركز حسب احتياج التشغيل."
+        "title": "تحكم فعلي بالتوفر",
+        "text": "منع الحجز خارج ساعات العمل وإغلاق الأوقات غير المتاحة مسبقاً."
       },
       "media": {
-        "title": "واجهة مركز احترافية",
-        "text": "صور وخدمات مرتبة تعزز ثقة العميلة قبل الحجز."
+        "title": "عرض احترافي للصالون",
+        "text": "اعرض معرضك الحقيقي وصور الخدمات لتعزيز الثقة بسرعة."
       },
       "scale": {
-        "title": "جاهز للتوسع",
-        "text": "من فرع واحد إلى عدة فروع بنفس جودة الإدارة."
+        "title": "تشغيل جاهز للنمو",
+        "text": "ثبّت نفس طريقة العمل من فرع واحد إلى عدة فروع بثقة."
       }
     },
     "pricingBullets": {
-      "1": "رابط الحجز + لوحة الإدارة + تنظيم الموظفين",
-      "2": "فوترة حسب الدولة والعملة",
-      "3": "فترة تجريبية 7 أيام"
+      "1": "صفحة حجز + لوحة إدارة + تقويم ذكي",
+      "2": "تذكيرات وتأكيدات واتساب تلقائية",
+      "3": "مؤشر نتيجة خلال 7 أيام ضمن تجربة 14 يوم"
     },
     "enterpriseBullets": {
-      "1": "خطة تشغيل متعددة الدول",
-      "2": "دعم متقدم للإطلاق ونقل البيانات",
-      "3": "تخصيصات تشغيل للمراكز المتوسعة"
+      "1": "خطة تشغيل لعدة فروع ومدن",
+      "2": "دعم مباشر للإعداد ونقل البيانات",
+      "3": "تخصيصات تشغيل للفرق المتوسعة"
     },
     "testimonials": {
       "1": {
-        "quote": "الحجوزات صارت مرتبة بوضوح وقلّت المكالمات بشكل ملحوظ.",
-        "name": "صاحبة مركز",
+        "quote": "انخفضت المواعيد الضائعة بشكل واضح من أول أسبوع.",
+        "name": "صاحبة صالون",
         "location": "بغداد"
       },
       "2": {
-        "quote": "أقوى نقطة كانت سرعة تشغيل النظام وتنظيم فريق العمل من أول يوم.",
+        "quote": "فريقنا صار يشتغل من تقويم واحد واضح بدل المحادثات المتفرقة.",
         "name": "مديرة صالون",
         "location": "البصرة"
       },
       "3": {
-        "quote": "واجهة الحجز نظيفة وتعطي انطباع قوي للعميلة قبل ما تتواصل.",
-        "name": "صاحبة مركز",
+        "quote": "الحجز صار أسرع، وزادت الزيارات المتكررة من العميلات.",
+        "name": "صاحبة مركز تجميل",
         "location": "بغداد"
       }
     },
     "faq": {
       "1": {
-        "q": "برنامج لو تطبيق؟",
-        "a": "هو نظام ويب يشتغل من رابط مباشر على أي جهاز بدون تثبيت تطبيق."
+        "q": "كم يحتاج وقت حتى نبدأ؟",
+        "a": "غالباً نطلق النظام خلال 24-48 ساعة بعد استلام بيانات الإعداد."
       },
       "2": {
-        "q": "ينفتح بأكثر من جهاز؟",
-        "a": "نعم، الإدارة تقدر تستخدمه من الجوال والآيباد واللابتوب بنفس الوقت."
+        "q": "هل يشتغل على أكثر من جهاز؟",
+        "a": "نعم. المالك والمدير والموظفون يقدرون يستخدمونه من الجوال والتابلت والكمبيوتر."
       },
       "3": {
-        "q": "شلون أضيف الرابط بالإنستغرام؟",
-        "a": "نعطيك رابط الحجز الجاهز وتحطيه مباشرة ببايو الإنستغرام أو الواتساب."
+        "q": "هل فعلاً يقلل الـ no-show؟",
+        "a": "نعم. التذكيرات التلقائية ووضوح التوفر تقلل الغياب غالباً بشكل سريع."
       },
       "4": {
-        "q": "شلون يتم تأكيد الحجز؟",
-        "a": "الحجز يوصل بلوحة الإدارة فوراً وتقدرين تقبلين أو ترفضين خلال ثواني."
+        "q": "كم مدة التجربة؟",
+        "a": "التجربة الموجهة 14 يوم، وتظهر مؤشرات أولية غالباً خلال 7 أيام."
       }
     },
     "trust": {
-      "activeCenters": "+{{count}} مركز نشط",
+      "activeCenters": "+{{count}} صالون نشط",
       "monthlyBookings": "+{{count}} حجز شهري",
-      "activation": "تفعيل خلال 24 ساعة",
-      "cities": "متوفر في بغداد والبصرة"
+      "activation": "إطلاق خلال 24-48 ساعة",
+      "cities": "تركيز أولاً على بغداد ثم التوسع مدينة بعد مدينة"
     }
   },
   "explore": {
@@ -634,7 +635,10 @@
       "sendFailed": "تعذر إرسال الحجز: {{message}}"
     },
     "status": {
-      "no_show": "لم تحضر"
+      "no_show": "لم تحضر",
+      "cancelled": "Cancelled",
+      "confirmed": "Confirmed",
+      "pending": "Pending"
     }
   },
   "admin": {
@@ -667,13 +671,94 @@
     "settings": {
       "assign": "ربط الخدمات بالموظفين",
       "media": "الصور",
-      "salon": "إعدادات المركز"
+      "salon": "إعدادات المركز",
+      "bookingMode": "Booking mode",
+      "bookingModeAuto": "Auto assign by availability",
+      "bookingModeChoose": "Customer chooses employee",
+      "defaultLanguage": "Default language",
+      "noServicesToAssign": "No services to assign.",
+      "salonSubtitle": "Control salon visibility and general status.",
+      "showInExplore": "Show in explore page"
     },
     "messages": {
-      "unlocked": "تم فتح لوحة الإدارة."
+      "unlocked": "تم فتح لوحة الإدارة.",
+      "bookingAccepted": "Booking accepted.",
+      "bookingLinkCopied": "Booking link copied.",
+      "bookingRejected": "Booking rejected.",
+      "coverUploaded": "Cover image uploaded.",
+      "csvDownloaded": "CSV downloaded.",
+      "employeeAdded": "Employee added.",
+      "employeeDeleted": "Employee deleted.",
+      "employeeHidden": "Employee is now hidden.",
+      "employeeScheduleSaved": "Employee schedule saved.",
+      "employeeShown": "Employee is now visible.",
+      "employeeUpdated": "Employee updated.",
+      "galleryImageDeleted": "Image removed from gallery.",
+      "galleryUploaded": "Gallery images uploaded.",
+      "logoUploaded": "Salon logo uploaded.",
+      "salonMediaSaved": "Salon media saved.",
+      "salonSettingsSaved": "Salon visibility settings saved.",
+      "savedWhatsappOff": "Saved ✅ (automatic WhatsApp notification is currently disabled)",
+      "serviceAdded": "Service added.",
+      "serviceAssigneesSaved": "Assigned employees saved for this service.",
+      "serviceDeleted": "Service deleted.",
+      "serviceHidden": "Service is now hidden.",
+      "serviceImageUploaded": "Service image uploaded.",
+      "serviceShown": "Service is now visible.",
+      "serviceUpdated": "Service updated.",
+      "staffAssignmentsSaved": "Service assignments saved for employee.",
+      "staffImageUploaded": "Employee image uploaded.",
+      "timeOffAdded": "Time off added.",
+      "timeOffDeleted": "Time off deleted.",
+      "workingHoursSaved": "Working hours saved."
     },
     "errors": {
-      "invalidPasscode": "رمز الإدارة غير صحيح."
+      "invalidPasscode": "رمز الإدارة غير صحيح.",
+      "accountLockedForEdits": "Account is not active for edits right now.",
+      "addEmployeeFailed": "Failed to add employee: {{message}}",
+      "addServiceFailed": "Failed to add service: {{message}}",
+      "addTimeOffFailed": "Failed to add time off: {{message}}",
+      "closeAfterOpen": "Closing time must be after opening time ({{day}}).",
+      "copyLinkFailed": "Failed to copy link: {{message}}",
+      "coverUploadFailed": "Failed to upload cover image after compression: {{message}}",
+      "deleteFailed": "Delete failed: {{message}}",
+      "deleteImageFailed": "Failed to delete image: {{message}}",
+      "deleteTimeOffFailed": "Failed to delete time off: {{message}}",
+      "galleryMaxReached": "You reached the maximum gallery limit (8 images).",
+      "galleryUploadFailed": "Failed to compress/upload gallery images: {{message}}",
+      "imageCompressionFailed": "Failed to compress image before upload.",
+      "invalidBreakPeriod": "Invalid break period ({{day}}).",
+      "invalidDuration": "Invalid duration.",
+      "invalidImageType": "File type must be JPG, PNG, or WEBP.",
+      "invalidPrice": "Invalid price.",
+      "invalidSort": "Invalid sort order.",
+      "loadAdminDataFailed": "Failed to load admin data: {{message}}",
+      "loadSalonFailed": "Failed to load salon: {{message}}",
+      "logoUploadFailed": "Failed to upload logo after compression: {{message}}",
+      "mediaBucketMissing": "Media bucket was not found. Run storage migration or create bucket carechair-media.",
+      "noImageUploaded": "No image was uploaded.",
+      "openCheckoutFailed": "Failed to open subscription checkout: {{message}}",
+      "pickImageFirst": "Select an image first.",
+      "saveAssignmentsFailed": "Failed to save assignments: {{message}}",
+      "saveEmployeeScheduleFailed": "Failed to save employee schedule: {{message}}",
+      "saveMediaFailed": "Failed to save media: {{message}}",
+      "saveServiceAssignmentsFailed": "Failed to save service assignments: {{message}}",
+      "saveSettingsFailed": "Failed to save settings: {{message}}",
+      "saveWorkingHoursFailed": "Failed to save working hours: {{message}}",
+      "selectValidTimeOffPeriod": "Choose a valid time-off period.",
+      "serviceImageUploadFailed": "Failed to compress/upload service image: {{message}}",
+      "staffImageUploadFailed": "Failed to compress/upload employee image: {{message}}",
+      "supabaseIncomplete": "Supabase configuration is incomplete.",
+      "toggleEmployeeFailed": "Failed to update employee: {{message}}",
+      "toggleServiceFailed": "Failed to update service: {{message}}",
+      "updateBookingStatusFailed": "Failed to update booking status: {{message}}",
+      "updateEmployeeFailed": "Failed to update employee: {{message}}",
+      "updateServiceFailed": "Failed to update service: {{message}}",
+      "validDurationNumber": "Duration must be a valid number.",
+      "validEmployeeName": "Enter a valid employee name.",
+      "validPriceNumber": "Price must be a valid number.",
+      "validServiceName": "Enter a valid service name.",
+      "validSortNumber": "Sort order must be a number."
     },
     "common": {
       "sortOrder": "الترتيب",
@@ -681,7 +766,16 @@
       "hidden": "مخفي",
       "selectAll": "اختيار الكل",
       "clearAll": "مسح الكل",
-      "saving": "جاري الحفظ..."
+      "saving": "جاري الحفظ...",
+      "adding": "Adding...",
+      "confirmDelete": "Yes, delete",
+      "customer": "Customer",
+      "noData": "No data.",
+      "noNote": "No note",
+      "select": "Select",
+      "unknown": "Unknown",
+      "unknownService": "Unknown service",
+      "unknownStaff": "Unassigned"
     },
     "services": {
       "title": "إدارة الخدمات",
@@ -701,7 +795,152 @@
       "assigned": "مُعيّنة",
       "durationPlaceholder": "المدة: 45",
       "pricePlaceholder": "السعر: 20000",
-      "sortPlaceholder": "الترتيب: 10"
+      "sortPlaceholder": "الترتيب: 10",
+      "deleteService": "Delete service",
+      "deleteServiceConfirm": "Service {{name}} and all assignments will be deleted. Are you sure?"
+    },
+    "analytics": {
+      "bookings": "Bookings",
+      "employeeName": "Employee name",
+      "employeePerformance": "Employee performance",
+      "last30Days": "Last 30 days",
+      "noConfirmedRevenueData": "No confirmed revenue data.",
+      "periodTitle": "Analytics period",
+      "rating": "Rating",
+      "revenue": "Revenue",
+      "revenueByPeriod": "Revenue by period",
+      "revenueChart": "Revenue chart",
+      "selectPeriod": "Select period",
+      "servicesRevenueDistribution": "Revenue split by services",
+      "utilization": "Utilization %"
+    },
+    "billing": {
+      "accountInactive": "Your account is not active",
+      "contactAdminSetup": "Contact admin to get manual setup payment link.",
+      "countryCurrency": "Country / currency",
+      "disabled": "Disabled",
+      "ends": "Ends {{date}}",
+      "monthlySubscription": "Monthly subscription",
+      "openSetupLink": "Open setup payment link",
+      "paid": "Paid",
+      "plan": "Plan",
+      "running": "Running",
+      "setupFee": "Setup fee",
+      "setupViaAdmin": "Setup fee is paid via admin payment link",
+      "subscriptionEnds": "Subscription ends",
+      "title": "Billing & activation",
+      "trial": "Trial period",
+      "unpaid": "Unpaid"
+    },
+    "bookings": {
+      "accept": "Accept",
+      "accepting": "Accepting...",
+      "bookingsCount": "{{count}} bookings",
+      "employee": "Employee",
+      "loadMore": "Load more",
+      "noFilteredBookings": "No bookings match current filters.",
+      "reject": "Reject",
+      "rejecting": "Rejecting...",
+      "service": "Service",
+      "time": "Time"
+    },
+    "checklist": {
+      "assign": "Assign services to employees",
+      "hours": "Set working hours",
+      "media": "Add salon photos (optional)",
+      "services": "Add services",
+      "staff": "Add employees"
+    },
+    "clients": {
+      "bookings": "Bookings",
+      "count": "{{count}} clients",
+      "empty": "No clients yet.",
+      "lastVisit": "Last visit",
+      "name": "Name",
+      "phone": "Phone",
+      "revenue": "Revenue",
+      "title": "Clients"
+    },
+    "commissionsComingSoon": "This section is phase-ready. Database foundation is prepared for staff commissions per service/booking.",
+    "employees": {
+      "deleteEmployee": "Delete employee",
+      "deleteEmployeeConfirm": "{{name}} and all assignments will be deleted. Are you sure?",
+      "name": "Employee name",
+      "noEmployees": "No employees.",
+      "photoUrlOptional": "Photo URL (optional)",
+      "title": "Employees management"
+    },
+    "expensesComingSoon": "This section is phase-ready. Database foundation is prepared for daily expenses and net-profit analysis.",
+    "filters": {
+      "all": "All",
+      "date": "Date",
+      "searchByNamePhone": "Search by name or phone",
+      "searchPlaceholder": "Example: 07xxxxxxxxx",
+      "status": "Status",
+      "thisWeek": "This week",
+      "today": "Today"
+    },
+    "kpis": {
+      "activeEmployees": "Active employees",
+      "cancelled": "Cancelled",
+      "confirmed": "Confirmed",
+      "monthRevenue": "This month revenue",
+      "pending": "Pending confirmation",
+      "todayBookings": "Total bookings today",
+      "todayRequests": "Today's requests",
+      "todayRevenue": "Today revenue"
+    },
+    "media": {
+      "compressingImage": "Compressing image...",
+      "cover": "Cover image",
+      "coverAlt": "Salon cover",
+      "coverUrlOptional": "Cover image URL (optional)",
+      "galleryImageAlt": "Gallery image",
+      "galleryMax": "Gallery (max 8)",
+      "galleryUrlsLineByLine": "Gallery URLs (one URL per line)",
+      "logo": "Salon logo",
+      "logoAlt": "Salon logo",
+      "logoUrlOptional": "Salon logo URL (optional)",
+      "noUploadedImages": "No uploaded images yet.",
+      "saveImages": "Save images",
+      "subtitle": "Upload salon media. If empty, default images are used automatically.",
+      "uploadGalleryImages": "Upload gallery images",
+      "uploadImage": "Upload image",
+      "uploadOrReplaceCover": "Upload/replace cover",
+      "uploadOrReplaceLogo": "Upload/replace logo",
+      "uploadingCover": "Uploading cover...",
+      "uploadingImage": "Uploading image...",
+      "uploadingImages": "Uploading images...",
+      "uploadingLogo": "Uploading logo..."
+    },
+    "pricingMini": {
+      "cancel": "Cancel anytime. Access remains active until end of paid period.",
+      "monthly": "Monthly subscription: $30–$50",
+      "setup": "Setup fee: $300–$500 (non-refundable)",
+      "title": "CareChair pricing"
+    },
+    "quickStartTitle": "Quick setup checklist",
+    "reports": {
+      "revenueTitle": "Revenue reports"
+    },
+    "schedules": {
+      "addTimeOff": "Add time off",
+      "dayOff": "Day off",
+      "noTimeOff": "No time off records.",
+      "save": "Save schedule",
+      "selectEmployee": "Select employee",
+      "timeOffReasonOptional": "Time off reason (optional)",
+      "timeOffTitle": "Time off & exceptions",
+      "title": "Employee schedules"
+    },
+    "share": {
+      "bookingLinkMessage": "This is your salon booking link:",
+      "copyBookingLink": "Copy booking link",
+      "copying": "Copying...",
+      "directBookingLink": "Direct booking link",
+      "shareWhatsapp": "Share on WhatsApp",
+      "title": "Share booking link",
+      "whatsappAutoOff": "Automatic WhatsApp notifications are currently disabled"
     }
   },
   "calendar": {
