@@ -1,3 +1,0 @@
--- Placeholder migration to reconcile Supabase migration history.
--- Remote already has version 999 recorded.
--- Legacy cutover SQL is kept in supabase/manual/ and must be run manually only.

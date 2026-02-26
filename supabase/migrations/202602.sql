@@ -1,3 +1,0 @@
--- Placeholder migration to reconcile Supabase migration history.
--- Remote already has version 202602 recorded.
--- This file intentionally contains no SQL statements.
