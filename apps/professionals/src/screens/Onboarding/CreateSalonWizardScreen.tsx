@@ -68,7 +68,15 @@ export function CreateSalonWizardScreen({navigation}: any) {
               control={control}
               name="name"
               render={({field: {value, onChange}, fieldState: {error}}) => (
-                <Input label={isRTL ? 'اسم الصالون' : 'Salon name'} value={value} onChangeText={onChange} error={error ? 'Required' : undefined} />
+                <Input
+                  label={isRTL ? 'اسم الصالون' : 'Salon name'}
+                  value={value}
+                  onChangeText={onChange}
+                  error={error ? 'Required' : undefined}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={textDir(isRTL)}
+                />
               )}
             />
 

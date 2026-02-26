@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {ScrollView, Switch, Text, View} from 'react-native';
+import {ScrollView, Share, Switch, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import {Controller, useForm} from 'react-hook-form';
@@ -14,6 +14,7 @@ import {useUiStore} from '../state/uiStore';
 import {useReminders, useRequestActivation, useServices, useStaff, useUpdateReminder, useUpsertService} from '../api/hooks';
 import {useSignOut} from '../api/authHooks';
 import type {UpsertServiceInput} from '../types/models';
+import {createInvite, type CreateInviteResult} from '../api/invites';
 
 const activationSchema = z.object({
   locationAddress: z.string().min(4),
@@ -55,6 +56,10 @@ export function MoreScreen() {
   const signOut = useSignOut();
 
   const [serviceEditorOpen, setServiceEditorOpen] = useState(false);
+  const [inviteRole, setInviteRole] = useState<'MANAGER' | 'STAFF'>('STAFF');
+  const [inviteData, setInviteData] = useState<CreateInviteResult | null>(null);
+  const [inviteSaving, setInviteSaving] = useState(false);
+  const [inviteError, setInviteError] = useState('');
 
   const activationForm = useForm<ActivationValues>({
     resolver: zodResolver(activationSchema),
@@ -78,6 +83,8 @@ export function MoreScreen() {
   });
 
   const isActive = context?.salon?.status === 'ACTIVE';
+  const currentMembership = memberships.find((membership) => membership.salonId === context?.salon?.id && membership.status === 'ACTIVE');
+  const canCreateInvite = currentMembership?.role === 'OWNER' || currentMembership?.role === 'MANAGER';
 
   async function onRequestActivation(values: ActivationValues) {
     const salon = await requestActivation.mutateAsync({
@@ -101,6 +108,33 @@ export function MoreScreen() {
     await upsertService.mutateAsync(payload);
     setServiceEditorOpen(false);
     serviceForm.reset({name: '', durationMin: '45', price: '20', category: '', assignedStaffIds: []});
+  }
+
+  async function onCreateInvite() {
+    if (!context?.salon?.id || !canCreateInvite) return;
+    setInviteError('');
+    setInviteSaving(true);
+    try {
+      const data = await createInvite({
+        salonId: context.salon.id,
+        role: inviteRole,
+        maxUses: 1,
+        expiresInHours: 168
+      });
+      setInviteData(data);
+    } catch (error: any) {
+      setInviteError(String(error?.message || (isRTL ? 'فشل إنشاء الدعوة.' : 'Failed to create invite.')));
+    } finally {
+      setInviteSaving(false);
+    }
+  }
+
+  async function onShareInvite() {
+    if (!inviteData) return;
+    const message = isRTL
+      ? `انضم إلى ${context?.salon?.name || 'CareChair'} عبر كود الدعوة: ${inviteData.code}\n${inviteData.webLink || inviteData.inviteLink}`
+      : `Join ${context?.salon?.name || 'CareChair'} with invite code: ${inviteData.code}\n${inviteData.webLink || inviteData.inviteLink}`;
+    await Share.share({message});
   }
 
   return (
@@ -179,6 +213,41 @@ export function MoreScreen() {
               ? 'هيكل أولي للصلاحيات: مالك / مدير / موظفة. سيتم ربط صلاحيات تفصيلية لاحقاً.'
               : 'Role scaffold ready: Owner / Manager / Staff. Fine-grained permissions can be added next.'}
           </Text>
+          {canCreateInvite ? (
+            <View style={{gap: spacing.sm}}>
+              <Text style={[typography.bodySm, {color: colors.text}, textDir(isRTL)]}>{t('teamInvites')}</Text>
+              <View style={{flexDirection: isRTL ? 'row-reverse' : 'row', gap: spacing.xs}}>
+                <Chip
+                  label={t('inviteRoleStaff')}
+                  active={inviteRole === 'STAFF'}
+                  onPress={() => setInviteRole('STAFF')}
+                />
+                <Chip
+                  label={t('inviteRoleManager')}
+                  active={inviteRole === 'MANAGER'}
+                  onPress={() => setInviteRole('MANAGER')}
+                />
+              </View>
+              <Button
+                title={t('generateInvite')}
+                onPress={onCreateInvite}
+                loading={inviteSaving}
+                disabled={!context?.salon?.id || inviteSaving}
+              />
+              {inviteError ? <Text style={[typography.bodySm, {color: colors.danger}, textDir(isRTL)]}>{inviteError}</Text> : null}
+              {inviteData ? (
+                <Card style={{gap: spacing.xs, backgroundColor: colors.surfaceSoft}}>
+                  <Text style={[typography.bodySm, {color: colors.text}, textDir(isRTL)]}>
+                    {t('inviteCode')}: {inviteData.code}
+                  </Text>
+                  <Text style={[typography.bodySm, {color: colors.primary}, textDir(isRTL)]}>
+                    {t('inviteLink')}: {inviteData.webLink || inviteData.inviteLink}
+                  </Text>
+                  <Button title={t('shareInvite')} variant="secondary" onPress={onShareInvite} />
+                </Card>
+              ) : null}
+            </View>
+          ) : null}
         </Card>
 
         <Card style={{gap: spacing.sm}}>
