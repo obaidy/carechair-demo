@@ -8,7 +8,9 @@ import {Button, Card, Input} from '../../components';
 import {useTheme} from '../../theme/provider';
 import {useI18n} from '../../i18n/provider';
 import {textDir} from '../../utils/layout';
-import {createSalonDraftV2} from '../../api/invites';
+import {createSalonDraftV2, getOwnerContextBySalonIdV2, listActiveMembershipsV2} from '../../api/invites';
+import {persistActiveSalonId} from '../../auth/session';
+import {useAuthStore} from '../../state/authStore';
 
 const schema = z.object({
   name: z.string().min(2),
@@ -26,6 +28,9 @@ export function CreateSalonWizardScreen({navigation}: any) {
   const {isRTL} = useI18n();
   const [submitError, setSubmitError] = useState('');
   const [saving, setSaving] = useState(false);
+  const setMemberships = useAuthStore((state) => state.setMemberships);
+  const setActiveSalonId = useAuthStore((state) => state.setActiveSalonId);
+  const setContext = useAuthStore((state) => state.setContext);
 
   const {control, handleSubmit} = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -44,6 +49,12 @@ export function CreateSalonWizardScreen({navigation}: any) {
     setSaving(true);
     try {
       const salon = await createSalonDraftV2(values);
+      await persistActiveSalonId(salon.id);
+      setActiveSalonId(salon.id);
+      const memberships = await listActiveMembershipsV2();
+      setMemberships(memberships);
+      const context = await getOwnerContextBySalonIdV2(salon.id);
+      setContext(context);
       navigation.navigate('ActivationRequest', {salonId: salon.id});
     } catch (error: any) {
       setSubmitError(String(error?.message || (isRTL ? 'فشل إنشاء الصالون.' : 'Failed to create salon.')));
