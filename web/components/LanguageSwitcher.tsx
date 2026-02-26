@@ -1,7 +1,7 @@
 'use client';
 
 import {useLocale} from 'next-intl';
-import {usePathname, useRouter, useSearchParams} from 'next/navigation';
+import {usePathname, useSearchParams} from 'next/navigation';
 import {SUPPORTED_LOCALES} from '@/lib/i18n';
 import {useTx} from '@/lib/messages-client';
 
@@ -36,16 +36,22 @@ export default function LanguageSwitcher({className = '', onLanguageChange}: Lan
   const t = useTx();
   const pathname = usePathname();
   const search = useSearchParams();
-  const router = useRouter();
 
   function setLanguage(nextLocale: string) {
     if (nextLocale === locale) return;
 
     const searchText = search.toString().trim();
     const nextPath = replaceLocale(pathname, nextLocale);
-    router.replace(searchText ? `${nextPath}?${searchText}` : nextPath);
+    const target = searchText ? `${nextPath}?${searchText}` : nextPath;
     document.cookie = `cc_locale=${nextLocale}; path=/; max-age=31536000; samesite=lax`;
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('lang', nextLocale);
+      document.documentElement.setAttribute('dir', nextLocale === 'ar' ? 'rtl' : 'ltr');
+    }
     onLanguageChange?.(nextLocale);
+    if (typeof window !== 'undefined') {
+      window.location.assign(target);
+    }
   }
 
   return (

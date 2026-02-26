@@ -9,7 +9,6 @@ import {formatSalonOperationalCurrency} from '@/lib/format';
 import {getInitials, getSalonMedia} from '@/lib/media';
 import {isValidE164WithoutPlus, normalizeIraqiPhone} from '@/lib/phone';
 import PageShell from '@/components/PageShell';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
 import {normalizeSlug} from '@/lib/slug';
 
 type Props = {
@@ -93,24 +92,7 @@ export default async function ExplorePage({params, searchParams}: Props) {
   const hasPlatformWhatsapp = isValidE164WithoutPlus(platformWhatsapp);
 
   return (
-    <PageShell
-      title={tx(messages, 'common.explore', 'Explore')}
-      subtitle={tx(messages, 'explore.subtitle', 'Find salons by area and services')}
-      mobileMenuContent={
-        <div className="platform-mobile-drawer-links">
-          <Link className="platform-mobile-link is-active" href="/explore">
-            {tx(messages, 'common.explore', 'Explore')}
-          </Link>
-          <Link className="platform-mobile-link" href="/#pricing">
-            {tx(messages, 'nav.pricing', 'Pricing')}
-          </Link>
-          <Link className="platform-mobile-link" href="/sa">
-            {tx(messages, 'nav.superadmin', 'Super Admin')}
-          </Link>
-          <LanguageSwitcher className="platform-mobile-lang" />
-        </div>
-      }
-    >
+    <PageShell title={tx(messages, 'common.explore', 'Explore')} subtitle={tx(messages, 'explore.subtitle', 'Find salons by area and services')}>
       <div className="cc-section">
       <Card className="explore-social-proof">
         <b>{socialProofText}</b>
