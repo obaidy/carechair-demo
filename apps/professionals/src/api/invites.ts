@@ -98,18 +98,30 @@ function toDbSalonStatus(status: SalonStatus) {
 
 async function readAuthUser() {
   const client = assertClient();
+  const cached = useAuthStore.getState().session;
+
+  const fromSession = await client.auth.getSession();
+  if (!fromSession.error && fromSession.data.session?.access_token) {
+    const bySession = await client.auth.getUser(fromSession.data.session.access_token);
+    if (!bySession.error && bySession.data.user) return bySession.data.user;
+  }
+
+  // Force SDK re-hydration from the latest verified OTP tokens when available.
+  if (cached?.accessToken && cached?.refreshToken) {
+    const restored = await client.auth.setSession({
+      access_token: cached.accessToken,
+      refresh_token: cached.refreshToken
+    });
+    if (!restored.error && restored.data.session?.access_token) {
+      const byRestored = await client.auth.getUser(restored.data.session.access_token);
+      if (!byRestored.error && byRestored.data.user) return byRestored.data.user;
+    }
+  }
+
   const first = await client.auth.getUser();
   if (!first.error && first.data.user) return first.data.user;
 
-  const fromSession = await client.auth.getSession();
-  const currentSession = fromSession.data.session;
-  if (currentSession?.access_token) {
-    const byToken = await client.auth.getUser(currentSession.access_token);
-    if (!byToken.error && byToken.data.user) return byToken.data.user;
-  }
-
   const message = String(first.error?.message || '').toLowerCase();
-  const cached = useAuthStore.getState().session;
 
   // Expo hot reloads can lose in-memory session. Restore from cached tokens.
   if (message.includes('session') && cached?.accessToken && cached?.refreshToken) {
