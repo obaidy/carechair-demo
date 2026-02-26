@@ -1,11 +1,11 @@
 'use client';
 
 import {useMemo, useState} from 'react';
-import {supabase} from '@/lib/supabase';
 
 type Props = {
   salonId: string;
   locale: string;
+  salonStatus?: string | null;
   defaultValues: {
     whatsapp?: string | null;
     city?: string | null;
@@ -19,7 +19,16 @@ type Props = {
   };
 };
 
-export default function ActivationRequestCard({salonId, defaultValues}: Props) {
+function normalizeStatus(value: unknown) {
+  const key = String(value || '').trim().toLowerCase();
+  if (key === 'active' || key === 'trialing' || key === 'past_due') return 'active';
+  if (key === 'suspended') return 'suspended';
+  if (key === 'pending_review' || key === 'pending_approval') return 'pending';
+  return 'draft';
+}
+
+export default function ActivationRequestCard({salonId, salonStatus, defaultValues}: Props) {
+  const status = normalizeStatus(salonStatus);
   const [addressMode, setAddressMode] = useState<'MANUAL' | 'LOCATION'>(
     String(defaultValues.address_mode || '').toUpperCase() === 'LOCATION' ? 'LOCATION' : 'MANUAL'
   );
@@ -50,20 +59,25 @@ export default function ActivationRequestCard({salonId, defaultValues}: Props) {
   );
 
   async function submit() {
-    if (!supabase) {
-      setMessage('Supabase client is missing.');
-      return;
-    }
+    if (status === 'active') return;
+    if (status === 'suspended') return;
     setBusy(true);
     setMessage('');
     try {
-      const {data, error} = await supabase.functions.invoke('request-activation', {
-        body: {
-          salon_id: salonId,
-          submitted_data: submittedData
-        }
+      const res = await fetch('/api/dashboard/request-activation', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(submittedData)
       });
-      if (error || !data?.ok) throw error || new Error(String(data?.error || 'Failed to submit request'));
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        const code = String(data?.error || 'REQUEST_FAILED');
+        if (code === 'ALREADY_ACTIVE') throw new Error('This salon is already active.');
+        if (code === 'SALON_SUSPENDED') throw new Error('This salon is suspended. Contact support.');
+        if (code === 'AUTH_SESSION_MISSING') throw new Error('Auth session missing. Please sign in again with OTP.');
+        if (code === 'RATE_LIMITED') throw new Error('Too many requests today. Please try tomorrow.');
+        throw new Error(code);
+      }
       setMessage('Activation request submitted.');
       window.location.reload();
     } catch (error: any) {
@@ -76,7 +90,15 @@ export default function ActivationRequestCard({salonId, defaultValues}: Props) {
   return (
     <section className="panel settings-list" id="activation">
       <h2>Request Activation</h2>
-      <p className="muted">Submit verification details for super admin review.</p>
+      <p className="muted">
+        {status === 'active'
+          ? 'Your salon is already active.'
+          : status === 'pending'
+            ? 'Your activation is under review. You can resubmit details if needed.'
+            : status === 'suspended'
+              ? 'Your salon is suspended. Contact support.'
+              : 'Submit verification details for super admin review.'}
+      </p>
 
       <div className="row-actions" style={{marginBottom: 8}}>
         <button type="button" className={`btn ${addressMode === 'MANUAL' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setAddressMode('MANUAL')}>
@@ -139,7 +161,12 @@ export default function ActivationRequestCard({salonId, defaultValues}: Props) {
       </div>
 
       <div className="row-actions">
-        <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void submit()}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={busy || status === 'active' || status === 'suspended'}
+          onClick={() => void submit()}
+        >
           {busy ? 'Submitting...' : 'Request Activation'}
         </button>
       </div>

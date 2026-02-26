@@ -98,6 +98,7 @@ export default async function SettingsPage({params}: Props) {
       <ActivationRequestCard
         salonId={String(salon.id)}
         locale={locale}
+        salonStatus={String((salon as Record<string, unknown>).status || '')}
         defaultValues={{
           whatsapp: salon.whatsapp || null,
           city: String((salon as Record<string, unknown>).city || '') || null,

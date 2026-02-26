@@ -47,7 +47,7 @@ function toSalonStatus(value: unknown): Salon['status'] {
   const normalized = String(value || '')
     .trim()
     .toLowerCase();
-  if (normalized === 'active') return 'ACTIVE';
+  if (normalized === 'active' || normalized === 'trialing' || normalized === 'past_due') return 'ACTIVE';
   if (normalized === 'suspended') return 'SUSPENDED';
   if (normalized === 'pending_review' || normalized === 'pending_approval') return 'PENDING_REVIEW';
   return 'DRAFT';
@@ -112,6 +112,13 @@ async function readAuthUser() {
   const client = assertSupabase();
   const first = await client.auth.getUser();
   if (!first.error && first.data.user) return first.data.user;
+
+  const fromSession = await client.auth.getSession();
+  const currentSession = fromSession.data.session;
+  if (currentSession?.access_token) {
+    const byToken = await client.auth.getUser(currentSession.access_token);
+    if (!byToken.error && byToken.data.user) return byToken.data.user;
+  }
 
   const message = String(first.error?.message || '').toLowerCase();
   const cached = useAuthStore.getState().session;

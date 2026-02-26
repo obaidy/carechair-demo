@@ -199,7 +199,7 @@ async function getPublicSalonsBase(): Promise<SalonRow[]> {
     .select(SALON_SELECT)
     .eq('is_public', true)
     .eq('is_active', true)
-    .eq('status', 'active')
+    .in('status', ['active', 'trialing'])
     .order('created_at', {ascending: false});
 
   if (!withPublicAndActive.error) {

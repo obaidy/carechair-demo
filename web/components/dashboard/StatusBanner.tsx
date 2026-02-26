@@ -12,7 +12,7 @@ type Props = {
 
 function normalizeStatus(value: unknown) {
   const key = String(value || '').trim().toLowerCase();
-  if (key === 'active') return 'active';
+  if (key === 'active' || key === 'trialing' || key === 'past_due') return 'active';
   if (key === 'suspended') return 'suspended';
   if (key === 'pending_review' || key === 'pending_approval') return 'pending';
   return 'draft';

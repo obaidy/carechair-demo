@@ -1,6 +1,7 @@
 import type {OwnerContext, Salon, SalonStatus, UserProfile, UserRole} from '../types/models';
 import type {RequestActivationInput} from '../types/models';
 import {supabase} from './supabase/client';
+import {useAuthStore} from '../state/authStore';
 
 export type MembershipStatus = 'ACTIVE' | 'REMOVED';
 
@@ -82,7 +83,7 @@ function toSalonStatus(input: unknown): SalonStatus {
   const value = String(input || '')
     .trim()
     .toLowerCase();
-  if (value === 'active') return 'ACTIVE';
+  if (value === 'active' || value === 'trialing' || value === 'past_due') return 'ACTIVE';
   if (value === 'suspended') return 'SUSPENDED';
   if (value === 'pending_review' || value === 'pending_approval') return 'PENDING_REVIEW';
   return 'DRAFT';
@@ -97,9 +98,33 @@ function toDbSalonStatus(status: SalonStatus) {
 
 async function readAuthUser() {
   const client = assertClient();
-  const result = await client.auth.getUser();
-  if (result.error || !result.data.user) throw result.error || new Error('UNAUTHORIZED');
-  return result.data.user;
+  const first = await client.auth.getUser();
+  if (!first.error && first.data.user) return first.data.user;
+
+  const fromSession = await client.auth.getSession();
+  const currentSession = fromSession.data.session;
+  if (currentSession?.access_token) {
+    const byToken = await client.auth.getUser(currentSession.access_token);
+    if (!byToken.error && byToken.data.user) return byToken.data.user;
+  }
+
+  const message = String(first.error?.message || '').toLowerCase();
+  const cached = useAuthStore.getState().session;
+
+  // Expo hot reloads can lose in-memory session. Restore from cached tokens.
+  if (message.includes('session') && cached?.accessToken && cached?.refreshToken) {
+    const restored = await client.auth.setSession({
+      access_token: cached.accessToken,
+      refresh_token: cached.refreshToken
+    });
+    if (!restored.error) {
+      const second = await client.auth.getUser();
+      if (!second.error && second.data.user) return second.data.user;
+      throw second.error || new Error('UNAUTHORIZED');
+    }
+  }
+
+  throw first.error || new Error('UNAUTHORIZED');
 }
 
 function missingColumn(error: unknown, column: string) {
