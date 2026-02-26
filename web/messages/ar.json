@@ -403,7 +403,9 @@
       "deleted": "تم حذف الصالون.",
       "inviteCreated": "تم إنشاء الدعوة بنجاح.",
       "inviteRevoked": "تم إلغاء الدعوة.",
-      "inviteCopied": "تم نسخ رابط الدعوة."
+      "inviteCopied": "تم نسخ رابط الدعوة.",
+      "approvalWhatsappSent": "تم إرسال رسالة واتساب بالموافقة.",
+      "rejectionWhatsappSent": "تم إرسال رسالة واتساب بالرفض."
     },
     "errors": {
       "codeMissing": "رمز السوبر أدمن غير مضبوط. تأكد من VITE_SUPERADMIN_CODE ثم أعد تشغيل dev.",
@@ -428,7 +430,8 @@
       "inviteCreateFailed": "تعذر إنشاء الدعوة: {{message}}",
       "inviteRevokeFailed": "تعذر إلغاء الدعوة: {{message}}",
       "inviteCopyFailed": "تعذر نسخ رابط الدعوة.",
-      "inviteCountryRequired": "اختر دولة للدعوة."
+      "inviteCountryRequired": "اختر دولة للدعوة.",
+      "statusWhatsappFailed": "تم حفظ الحالة لكن إرسال إشعار واتساب فشل: {{message}}"
     },
     "approvals": "الموافقات",
     "invites": "الدعوات",

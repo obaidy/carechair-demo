@@ -403,7 +403,9 @@
       "deleted": "Салон удалён.",
       "inviteCreated": "Приглашение успешно создано.",
       "inviteRevoked": "Приглашение отозвано.",
-      "inviteCopied": "Ссылка приглашения скопирована."
+      "inviteCopied": "Ссылка приглашения скопирована.",
+      "approvalWhatsappSent": "WhatsApp-уведомление об одобрении отправлено.",
+      "rejectionWhatsappSent": "WhatsApp-уведомление об отклонении отправлено."
     },
     "errors": {
       "codeMissing": "Код суперадмина не задан. Укажите VITE_SUPERADMIN_CODE и перезапустите dev.",
@@ -428,7 +430,8 @@
       "inviteCreateFailed": "Не удалось создать приглашение: {{message}}",
       "inviteRevokeFailed": "Не удалось отозвать приглашение: {{message}}",
       "inviteCopyFailed": "Не удалось скопировать ссылку приглашения.",
-      "inviteCountryRequired": "Выберите страну для приглашения."
+      "inviteCountryRequired": "Выберите страну для приглашения.",
+      "statusWhatsappFailed": "Статус сохранён, но отправка WhatsApp-уведомления не удалась: {{message}}"
     },
     "approvals": "Одобрения",
     "invites": "Приглашения",

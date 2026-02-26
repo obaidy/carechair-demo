@@ -403,7 +403,9 @@
       "deleted": "Salon byl smazán.",
       "inviteCreated": "Pozvánka byla úspěšně vytvořena.",
       "inviteRevoked": "Pozvánka byla zneplatněna.",
-      "inviteCopied": "Odkaz pozvánky byl zkopírován."
+      "inviteCopied": "Odkaz pozvánky byl zkopírován.",
+      "approvalWhatsappSent": "WhatsApp zpráva o schválení byla odeslána.",
+      "rejectionWhatsappSent": "WhatsApp zpráva o zamítnutí byla odeslána."
     },
     "errors": {
       "codeMissing": "Kód super admina není nastaven. Nastavte VITE_SUPERADMIN_CODE a restartujte dev.",
@@ -428,7 +430,8 @@
       "inviteCreateFailed": "Nepodařilo se vytvořit pozvánku: {{message}}",
       "inviteRevokeFailed": "Nepodařilo se zneplatnit pozvánku: {{message}}",
       "inviteCopyFailed": "Nepodařilo se zkopírovat odkaz pozvánky.",
-      "inviteCountryRequired": "Vyberte zemi pro pozvánku."
+      "inviteCountryRequired": "Vyberte zemi pro pozvánku.",
+      "statusWhatsappFailed": "Stav byl uložen, ale odeslání WhatsApp oznámení selhalo: {{message}}"
     },
     "approvals": "Schválení",
     "invites": "Pozvánky",

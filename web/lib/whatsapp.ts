@@ -1,7 +1,20 @@
 import {supabase} from '@/lib/supabase';
 import {isValidE164WithoutPlus, normalizeIraqiPhone} from '@/lib/utils';
 
-const ALLOWED_TEMPLATES = new Set(['booking_created', 'booking_confirmed', 'booking_cancelled']);
+export type WhatsappTemplateName =
+  | 'booking_created'
+  | 'booking_confirmed'
+  | 'booking_cancelled'
+  | 'salon_approved'
+  | 'salon_rejected';
+
+const ALLOWED_TEMPLATES = new Set<WhatsappTemplateName>([
+  'booking_created',
+  'booking_confirmed',
+  'booking_cancelled',
+  'salon_approved',
+  'salon_rejected'
+]);
 
 export function formatWhatsappAppointment(value: string, timezone = 'Asia/Baghdad') {
   const d = new Date(value);
@@ -21,7 +34,17 @@ export function formatWhatsappAppointment(value: string, timezone = 'Asia/Baghda
   }
 }
 
-export async function sendWhatsappTemplate({to, template, params = []}: {to: string; template: string; params?: unknown[]}) {
+export async function sendWhatsappTemplate({
+  to,
+  template,
+  params = [],
+  templateLang
+}: {
+  to: string;
+  template: WhatsappTemplateName;
+  params?: unknown[];
+  templateLang?: string;
+}) {
   if (!supabase) throw new Error('Supabase client is not initialized.');
   if (!ALLOWED_TEMPLATES.has(template)) throw new Error('Unsupported WhatsApp template.');
 
@@ -36,7 +59,8 @@ export async function sendWhatsappTemplate({to, template, params = []}: {to: str
     body: {
       to: normalizedTo,
       template,
-      params: normalizedParams
+      params: normalizedParams,
+      template_lang: templateLang
     }
   });
 

@@ -403,7 +403,9 @@
       "deleted": "Salon deleted.",
       "inviteCreated": "Invite created successfully.",
       "inviteRevoked": "Invite revoked.",
-      "inviteCopied": "Invite link copied."
+      "inviteCopied": "Invite link copied.",
+      "approvalWhatsappSent": "Approval WhatsApp message sent.",
+      "rejectionWhatsappSent": "Rejection WhatsApp message sent."
     },
     "errors": {
       "codeMissing": "Super admin code is not set. Configure VITE_SUPERADMIN_CODE then restart dev.",
@@ -428,7 +430,8 @@
       "inviteCreateFailed": "Failed to create invite: {{message}}",
       "inviteRevokeFailed": "Failed to revoke invite: {{message}}",
       "inviteCopyFailed": "Failed to copy invite link.",
-      "inviteCountryRequired": "Please select country for invite."
+      "inviteCountryRequired": "Please select country for invite.",
+      "statusWhatsappFailed": "Status was saved, but WhatsApp notification failed: {{message}}"
     },
     "approvals": "Approvals",
     "invites": "Invites",

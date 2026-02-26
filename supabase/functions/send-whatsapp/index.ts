@@ -1,10 +1,16 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
-type TemplateName = "booking_created" | "booking_confirmed" | "booking_cancelled";
+type TemplateName =
+  | "booking_created"
+  | "booking_confirmed"
+  | "booking_cancelled"
+  | "salon_approved"
+  | "salon_rejected";
 
 type SendWhatsappRequest = {
   to: string;
   template: TemplateName;
+  template_lang?: string;
   params?: string[];
   data?: Record<string, unknown>;
 };
@@ -19,6 +25,8 @@ const ALLOWED_TEMPLATES = new Set<TemplateName>([
   "booking_created",
   "booking_confirmed",
   "booking_cancelled",
+  "salon_approved",
+  "salon_rejected",
 ]);
 
 // Deploy:
@@ -62,7 +70,20 @@ function toParamsFromLegacyData(template: TemplateName, data: Record<string, unk
       asText(data.customer_phone),
     ];
   }
+  if (template === "salon_approved") {
+    return [asText(data.salon_name, "CareChair"), asText(data.dashboard_url, "-")];
+  }
+  if (template === "salon_rejected") {
+    return [asText(data.salon_name, "CareChair"), asText(data.reason, "-")];
+  }
   return [asText(data.service), appointment];
+}
+
+function normalizeTemplateLanguage(value: unknown, fallback: string) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return fallback;
+  if (!/^[a-z]{2}(?:[_-][A-Za-z]{2})?$/.test(raw)) return fallback;
+  return raw.replace("-", "_");
 }
 
 async function parseJsonSafe(res: Response) {
@@ -104,6 +125,7 @@ serve(async (req) => {
 
   const to = normalizePhone(body?.to);
   const template = body?.template;
+  const templateLang = normalizeTemplateLanguage(body?.template_lang, WHATSAPP_TEMPLATE_LANG);
   const params = normalizeParams(body?.params);
 
   if (!to) {
@@ -125,7 +147,7 @@ serve(async (req) => {
     template: {
       name: template,
       language: {
-        code: WHATSAPP_TEMPLATE_LANG,
+        code: templateLang,
       },
       components: [
         {

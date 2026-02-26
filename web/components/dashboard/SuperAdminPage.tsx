@@ -12,9 +12,10 @@ import {Badge, Button, Card, ConfirmModal, SelectInput, TextInput} from "@/compo
 import {useSuperAdminSession} from "@/components/dashboard/SuperAdminSessionContext";
 import {useTx} from "@/lib/messages-client";
 import {supabase} from "@/lib/supabase";
-import {DEFAULT_HOURS, DEFAULT_SERVICES, DEFAULT_STAFF} from "@/lib/utils";
+import {DEFAULT_HOURS, DEFAULT_SERVICES, DEFAULT_STAFF, isValidE164WithoutPlus, normalizeIraqiPhone} from "@/lib/utils";
 import {computeIsActiveFromBilling, deriveSalonAccess, formatBillingDate, getTrialRemainingLabel} from "@/lib/billing";
 import {normalizeSlug} from "@/lib/slug";
+import {sendWhatsappTemplate} from "@/lib/whatsapp";
 import {useToast} from "@/lib/useToast";
 
 const SUPER_ADMIN_CODE = String(
@@ -128,6 +129,14 @@ function billingStatusFromSalonStatus(status) {
   if (key === "suspended") return "suspended";
   if (key === "rejected") return "canceled";
   return "inactive";
+}
+
+function normalizeTemplateLanguage(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (raw.startsWith("ar")) return "ar";
+  if (raw.startsWith("cs")) return "cs";
+  if (raw.startsWith("ru")) return "ru";
+  return "en";
 }
 
 function addDaysIso(days) {
@@ -685,6 +694,47 @@ export default function SuperAdminPage() {
     }
   }
 
+  async function notifySalonStatusDecision(row, decision) {
+    const targetPhone = normalizeIraqiPhone(String(row?.whatsapp || ""));
+    if (!isValidE164WithoutPlus(targetPhone)) return;
+
+    const localeCode = normalizeTemplateLanguage(row?.language_default || locale);
+    const dashboardPath = String(row?.slug || "").trim()
+      ? `${window.location.origin}/${localeCode}/s/${encodeURIComponent(String(row.slug))}/admin`
+      : `${window.location.origin}/${localeCode}/login`;
+
+    try {
+      if (decision === "approved") {
+        await sendWhatsappTemplate({
+          to: targetPhone,
+          template: "salon_approved",
+          templateLang: localeCode,
+          params: [String(row?.name || "CareChair"), dashboardPath],
+        });
+        showToast("success", t("superadmin.messages.approvalWhatsappSent", "Approval WhatsApp message sent."));
+        return;
+      }
+
+      if (decision === "rejected") {
+        await sendWhatsappTemplate({
+          to: targetPhone,
+          template: "salon_rejected",
+          templateLang: localeCode,
+          params: [String(row?.name || "CareChair"), t("billingAccess.lockMessages.rejected", "This salon was rejected. Contact support.")],
+        });
+        showToast("success", t("superadmin.messages.rejectionWhatsappSent", "Rejection WhatsApp message sent."));
+      }
+    } catch (err) {
+      console.error("Failed to send salon status WhatsApp notification:", err);
+      showToast(
+        "error",
+        t("superadmin.errors.statusWhatsappFailed", "Status was saved, but WhatsApp notification failed: {{message}}", {
+          message: err?.message || err,
+        })
+      );
+    }
+  }
+
   function startEditSalon(row) {
     setEditingPasscodeSalonId("");
     setNewPasscode("");
@@ -984,7 +1034,7 @@ export default function SuperAdminPage() {
     const nowIso = new Date().toISOString();
 
     if (requiresManualBilling) {
-      await patchSalon(
+      const updated = await patchSalon(
         row,
         {
           status: "active",
@@ -1002,12 +1052,13 @@ export default function SuperAdminPage() {
         approved_at: nowIso,
         country_code: countryCode,
       });
+      if (updated) await notifySalonStatusDecision({ ...row, ...updated }, "approved");
       return;
     }
 
     if (isIraq) {
       const trialEnd = addDaysIso(7);
-      await patchSalon(
+      const updated = await patchSalon(
         row,
         {
           status: "trialing",
@@ -1021,10 +1072,11 @@ export default function SuperAdminPage() {
         t("superadmin.messages.approvedTrialing")
       );
       await logAdminAction(row.id, "approve_salon", { mode: "iq_trial", approved_at: nowIso, trial_days: 7 });
+      if (updated) await notifySalonStatusDecision({ ...row, ...updated }, "approved");
       return;
     }
 
-    await patchSalon(
+    const updated = await patchSalon(
       row,
       {
         status: "pending_billing",
@@ -1036,10 +1088,11 @@ export default function SuperAdminPage() {
       t("superadmin.messages.approvedPendingBilling")
     );
     await logAdminAction(row.id, "approve_salon", { mode: "pending_billing", approved_at: nowIso });
+    if (updated) await notifySalonStatusDecision({ ...row, ...updated }, "approved");
   }
 
   async function rejectSalon(row) {
-    await patchSalon(
+    const updated = await patchSalon(
       row,
       {
         status: "rejected",
@@ -1050,6 +1103,7 @@ export default function SuperAdminPage() {
       t("superadmin.messages.rejected")
     );
     await logAdminAction(row.id, "reject_salon", { rejected_at: new Date().toISOString() });
+    if (updated) await notifySalonStatusDecision({ ...row, ...updated }, "rejected");
   }
 
   async function extendTrial(row, days) {
