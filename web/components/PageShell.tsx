@@ -30,6 +30,7 @@ export default function PageShell({
 }: PageShellProps) {
   const pathname = usePathname();
   const search = useSearchParams();
+  const searchKey = search?.toString() || '';
   const locale = useLocale();
   const t = useTx();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -38,7 +39,7 @@ export default function PageShell({
 
   useEffect(() => {
     setMenuOpen(false);
-  }, [pathname, search]);
+  }, [pathname, searchKey]);
 
   return (
     <div className="platform-page" dir={locale === 'ar' ? 'rtl' : 'ltr'}>

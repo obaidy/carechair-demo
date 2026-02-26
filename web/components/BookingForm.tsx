@@ -382,7 +382,16 @@ export default function BookingForm({
 
   useEffect(() => {
     if (!success) return;
-    window.scrollTo({top: 0, left: 0, behavior: 'smooth'});
+    const jumpTo = () => {
+      const target = document.getElementById('booking-form');
+      if (target) {
+        target.scrollIntoView({behavior: 'smooth', block: 'start'});
+        return;
+      }
+      window.scrollTo({top: 0, left: 0, behavior: 'smooth'});
+    };
+    const raf = window.requestAnimationFrame(jumpTo);
+    return () => window.cancelAnimationFrame(raf);
   }, [success]);
 
   async function verifySlotStillAvailable(targetStaffId: string, selectedSlot: Slot) {

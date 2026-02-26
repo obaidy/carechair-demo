@@ -4095,6 +4095,31 @@ select:disabled {
   display: none;
 }
 
+.platform-mobile-drawer-links {
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.platform-mobile-link,
+.platform-mobile-extra .ui-btn,
+.platform-mobile-extra .ghost-link,
+.platform-mobile-extra .submit-main,
+.platform-mobile-extra .primary-link {
+  min-height: 44px;
+  border-radius: 12px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--primary-700);
+  font-weight: 700;
+  font-size: 14px;
+  padding-inline: 12px;
+}
+
 .platform-page .ghost-link.is-active {
   border-color: var(--primary-400);
   background: var(--surface-2);
@@ -4763,6 +4788,47 @@ select:disabled {
   .explore-grid,
   .kpi-grid {
     grid-template-columns: 1fr;
+  }
+
+  .explore-hero {
+    padding: 14px;
+  }
+
+  .explore-hero h2 {
+    font-size: clamp(20px, 6vw, 24px);
+  }
+
+  .explore-head {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .explore-head-main {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .explore-head h3 {
+    overflow-wrap: anywhere;
+  }
+
+  .area-badge {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .explore-card .row-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .explore-card .row-actions .ui-btn {
+    width: 100%;
+  }
+
+  .grid.three > .ui-btn {
+    width: 100%;
   }
 
   .superadmin-main-tabs {

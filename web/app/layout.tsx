@@ -1,5 +1,6 @@
 import {cookies} from 'next/headers';
 import {Cairo, IBM_Plex_Sans_Arabic, Noto_Sans_Arabic} from 'next/font/google';
+import type {Viewport} from 'next';
 import {DEFAULT_LOCALE, getLocaleCookieName, isSupportedLocale, localeToDir, type Locale} from '@/lib/i18n';
 import './globals.css';
 
@@ -27,6 +28,12 @@ export const metadata = {
     shortcut: '/favicon.png',
     apple: '/apple-touch-icon.png'
   }
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover'
 };
 
 export default async function RootLayout({children}: {children: React.ReactNode}) {
