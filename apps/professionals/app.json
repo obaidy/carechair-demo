@@ -2,6 +2,7 @@
   "expo": {
     "name": "CareChair Professionals",
     "slug": "carechair-professionals",
+    "scheme": "carechair",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -25,6 +26,9 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }
