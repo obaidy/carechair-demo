@@ -28,6 +28,37 @@
   "errors": {
     "supabaseConfigMissing": "Nastavení Supabase chybí."
   },
+  "auth": {
+    "pro": {
+      "title": "CareChair Professionals (beta)",
+      "subtitle": "Přihlaste se přes OTP (primárně WhatsApp) nebo e-mail pro otevření dashboardu."
+    },
+    "phone": {
+      "tab": "OTP přes telefon",
+      "label": "Telefonní číslo",
+      "invalid": "Zadejte platné telefonní číslo.",
+      "code": "Ověřovací kód",
+      "codeRequired": "Zadejte ověřovací kód.",
+      "send": "Odeslat kód",
+      "verify": "Ověřit a přihlásit",
+      "sentWhatsapp": "Ověřovací kód byl odeslán na WhatsApp. Pro pokračování ho zadejte.",
+      "sentSmsFallback": "WhatsApp je momentálně nedostupný, kód jsme proto poslali přes SMS."
+    },
+    "email": {
+      "tab": "E-mail",
+      "label": "E-mail",
+      "password": "Heslo",
+      "required": "E-mail a heslo jsou povinné."
+    },
+    "role": {
+      "label": "Typ přístupu",
+      "salon": "Salon dashboard",
+      "superadmin": "Superadmin"
+    },
+    "errors": {
+      "noSession": "Autentizace nevrátila aktivní relaci."
+    }
+  },
   "nav": {
     "centers": "Pro salony",
     "features": "Funkce",

@@ -19,7 +19,11 @@ function toE164WithPlus(input: string) {
 
 export default function IdentityLoginCard({locale, nextPath, defaultRole}: Props) {
   const tx = useTx();
-  const t = (key: string, fallback: string) => tx(key, fallback);
+  const t = (
+    key: string,
+    fallback: string,
+    vars?: Record<string, string | number | boolean | null | undefined>
+  ) => tx(key, fallback, vars);
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
 
   const [method, setMethod] = useState<'phone' | 'email'>('phone');
@@ -69,13 +73,45 @@ export default function IdentityLoginCard({locale, nextPath, defaultRole}: Props
     setError('');
     setInfo('');
     try {
-      const {error: otpError} = await supabase.auth.signInWithOtp({
+      const shouldCreateUser = role === 'salon_admin';
+
+      const {error: waError} = await supabase.auth.signInWithOtp({
         phone: phoneWithPlus,
-        options: {shouldCreateUser: role === 'salon_admin'}
+        options: {
+          shouldCreateUser,
+          channel: 'whatsapp'
+        }
       });
-      if (otpError) throw otpError;
+
+      if (!waError) {
+        setOtpSent(true);
+        setInfo(
+          t(
+            'auth.phone.sentWhatsapp',
+            'Verification code sent to WhatsApp. Enter the code to continue.'
+          )
+        );
+        return;
+      }
+
+      const {error: smsError} = await supabase.auth.signInWithOtp({
+        phone: phoneWithPlus,
+        options: {
+          shouldCreateUser,
+          channel: 'sms'
+        }
+      });
+      if (smsError) {
+        throw smsError;
+      }
+
       setOtpSent(true);
-      setInfo(t('auth.phone.sent', 'Verification code sent. Enter the code to continue.'));
+      setInfo(
+        t(
+          'auth.phone.sentSmsFallback',
+          'WhatsApp is unavailable right now, so we sent the code by SMS.'
+        )
+      );
     } catch (err) {
       setError(String((err as Error)?.message || t('common.error', 'Error')));
     } finally {

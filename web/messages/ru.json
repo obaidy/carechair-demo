@@ -28,6 +28,37 @@
   "errors": {
     "supabaseConfigMissing": "Настройки Supabase не заполнены."
   },
+  "auth": {
+    "pro": {
+      "title": "CareChair Professionals (бета)",
+      "subtitle": "Войдите через OTP (сначала WhatsApp) или e-mail, чтобы открыть панель управления."
+    },
+    "phone": {
+      "tab": "OTP по телефону",
+      "label": "Номер телефона",
+      "invalid": "Введите корректный номер телефона.",
+      "code": "Код подтверждения",
+      "codeRequired": "Введите код подтверждения.",
+      "send": "Отправить код",
+      "verify": "Подтвердить и войти",
+      "sentWhatsapp": "Код подтверждения отправлен в WhatsApp. Введите его для продолжения.",
+      "sentSmsFallback": "WhatsApp сейчас недоступен, поэтому код отправлен по SMS."
+    },
+    "email": {
+      "tab": "E-mail",
+      "label": "E-mail",
+      "password": "Пароль",
+      "required": "Требуются e-mail и пароль."
+    },
+    "role": {
+      "label": "Роль доступа",
+      "salon": "Панель салона",
+      "superadmin": "Суперадмин"
+    },
+    "errors": {
+      "noSession": "Аутентификация не вернула активную сессию."
+    }
+  },
   "nav": {
     "centers": "Для салонов",
     "features": "Возможности",

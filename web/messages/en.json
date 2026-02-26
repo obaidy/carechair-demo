@@ -28,6 +28,37 @@
   "errors": {
     "supabaseConfigMissing": "Supabase configuration is missing."
   },
+  "auth": {
+    "pro": {
+      "title": "CareChair Professionals (beta)",
+      "subtitle": "Sign in with WhatsApp-first OTP or email to open your dashboard session."
+    },
+    "phone": {
+      "tab": "Phone OTP",
+      "label": "Phone number",
+      "invalid": "Enter a valid phone number.",
+      "code": "Verification code",
+      "codeRequired": "Enter verification code.",
+      "send": "Send code",
+      "verify": "Verify and login",
+      "sentWhatsapp": "Verification code sent to WhatsApp. Enter the code to continue.",
+      "sentSmsFallback": "WhatsApp is unavailable right now, so we sent the code by SMS."
+    },
+    "email": {
+      "tab": "Email",
+      "label": "Email",
+      "password": "Password",
+      "required": "Email and password are required."
+    },
+    "role": {
+      "label": "Access role",
+      "salon": "Salon dashboard",
+      "superadmin": "Superadmin"
+    },
+    "errors": {
+      "noSession": "No active session returned by auth."
+    }
+  },
   "nav": {
     "centers": "For Salons",
     "features": "Features",
