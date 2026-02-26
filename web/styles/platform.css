@@ -4733,11 +4733,15 @@ select:disabled {
 .platform-page,
 .platform-header,
 .platform-main,
+.platform-main > *,
+.cc-section,
+.cc-section > *,
 .admin-layout,
 .admin-content,
 .explore-grid,
 .explore-card,
 .explore-card-body,
+.ui-card,
 .site-footer,
 .site-footer-inner,
 .site-footer-bottom {
@@ -4779,6 +4783,9 @@ select:disabled {
     -webkit-overflow-scrolling: touch;
     gap: 8px;
     padding-bottom: 4px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .category-chip {
@@ -4796,10 +4803,20 @@ select:disabled {
 
   .explore-hero h2 {
     font-size: clamp(20px, 6vw, 24px);
+    white-space: normal;
+    word-break: break-word;
     overflow-wrap: anywhere;
   }
 
   .explore-hero p {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .explore-social-proof b {
+    white-space: normal;
+    word-break: break-word;
     overflow-wrap: anywhere;
   }
 
