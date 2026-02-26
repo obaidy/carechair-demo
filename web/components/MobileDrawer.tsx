@@ -20,7 +20,10 @@ export default function MobileDrawer({
   id,
   className = ''
 }: MobileDrawerProps) {
-  const direction = typeof document !== 'undefined' ? document.documentElement.getAttribute('dir') || 'ltr' : 'ltr';
+  const direction =
+    typeof document !== 'undefined'
+      ? document.querySelector('.locale-shell')?.getAttribute('dir') || document.documentElement.getAttribute('dir') || 'ltr'
+      : 'ltr';
 
   useEffect(() => {
     if (!open || typeof window === 'undefined') return undefined;

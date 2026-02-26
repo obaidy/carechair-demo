@@ -4796,6 +4796,11 @@ select:disabled {
 
   .explore-hero h2 {
     font-size: clamp(20px, 6vw, 24px);
+    overflow-wrap: anywhere;
+  }
+
+  .explore-hero p {
+    overflow-wrap: anywhere;
   }
 
   .explore-head {
@@ -4824,6 +4829,23 @@ select:disabled {
   }
 
   .explore-card .row-actions .ui-btn {
+    width: 100%;
+  }
+
+  .explore-card-body,
+  .mini-services,
+  .service-tag,
+  .starting-price {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .grid.three label,
+  .grid.three .field,
+  .grid.three .input,
+  .grid.three select,
+  .grid.three input {
+    min-width: 0;
     width: 100%;
   }
 

@@ -118,7 +118,10 @@ export default function BookingDrawer({
     };
   }, [open, mounted]);
 
-  const direction = typeof document !== 'undefined' ? document.documentElement.getAttribute('dir') || 'ltr' : 'ltr';
+  const direction =
+    typeof document !== 'undefined'
+      ? document.querySelector('.locale-shell')?.getAttribute('dir') || document.documentElement.getAttribute('dir') || 'ltr'
+      : 'ltr';
   const drawerSide = direction === 'rtl' ? 'right' : 'left';
 
   const selectedService = useMemo(

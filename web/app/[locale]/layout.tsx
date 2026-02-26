@@ -1,6 +1,7 @@
 import {NextIntlClientProvider} from 'next-intl';
 import {getMessages} from 'next-intl/server';
 import {notFound} from 'next/navigation';
+import LocaleDomSync from '@/components/LocaleDomSync';
 import RouteScrollManager from '@/components/RouteScrollManager';
 import {isSupportedLocale, localeToDir, SUPPORTED_LOCALES} from '@/lib/i18n';
 
@@ -23,6 +24,7 @@ export default async function LocaleLayout({
   return (
     <div className="locale-shell" lang={locale} dir={localeToDir(locale)}>
       <NextIntlClientProvider locale={locale} messages={messages}>
+        <LocaleDomSync />
         <RouteScrollManager />
         {children}
       </NextIntlClientProvider>
