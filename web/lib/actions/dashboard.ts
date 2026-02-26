@@ -16,6 +16,13 @@ async function requireSalonAdminSession() {
   if (!session || session.role !== 'salon_admin' || !session.salonId) {
     return null;
   }
+
+  const supabase = createServerSupabaseClient();
+  if (!supabase) return null;
+  const salonRes = await supabase.from('salons').select('status').eq('id', session.salonId).maybeSingle();
+  if (salonRes.error) return null;
+  if (String(salonRes.data?.status || '').trim() === 'pending_approval') return null;
+
   return session;
 }
 
