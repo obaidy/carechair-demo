@@ -31,7 +31,7 @@ function AppInner() {
   useEffect(() => {
     // Helpful visibility in dev; remove in production if needed.
     // eslint-disable-next-line no-console
-    console.log(`[CareChair Professionals] API mode: ${activeApiMode()}`);
+    console.log(`[CareChair Professionals] API mode: ${activeApiMode()} | invitesV2: ${flags.USE_INVITES_V2 ? 'on' : 'off'}`);
   }, []);
 
   useEffect(() => {
