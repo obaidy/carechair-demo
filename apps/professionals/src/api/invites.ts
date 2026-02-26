@@ -265,19 +265,6 @@ export async function createSalonDraftV2(input: CreateSalonDraftInput): Promise<
     throw insert.error || new Error('SALON_CREATE_FAILED');
   }
 
-  const salonId = String(insert.data.id);
-  const memberInsert = await client.from('salon_members').upsert(
-    {
-      salon_id: salonId,
-      user_id: user.id,
-      role: 'OWNER',
-      status: 'ACTIVE',
-      removed_at: null
-    },
-    {onConflict: 'salon_id,user_id'}
-  );
-  if (memberInsert.error) throw memberInsert.error;
-
   const context = mapSalonRowToContext(insert.data, user);
   return context.salon!;
 }
