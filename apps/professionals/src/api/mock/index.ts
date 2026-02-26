@@ -338,9 +338,11 @@ export const mockApi: CareChairApi = {
     requestActivation: async (input) => {
       await wait();
       const {salon} = assertSalonContext();
-      salon.locationAddress = input.locationAddress;
+      salon.locationAddress = input.addressText || salon.locationAddress;
+      salon.locationLabel = input.area || salon.locationLabel;
       salon.locationLat = input.locationLat;
       salon.locationLng = input.locationLng;
+      if (input.locationLabel) salon.locationLabel = input.locationLabel;
       salon.storefrontPhotoUrl = input.storefrontPhotoUrl;
       salon.status = 'PENDING_REVIEW';
       salon.updatedAt = nowIso();

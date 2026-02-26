@@ -17,9 +17,14 @@ import type {UpsertServiceInput} from '../types/models';
 import {createInvite, type CreateInviteResult} from '../api/invites';
 
 const activationSchema = z.object({
-  locationAddress: z.string().min(4),
+  city: z.string().optional(),
+  area: z.string().optional(),
+  addressMode: z.enum(['LOCATION', 'MANUAL']),
+  addressText: z.string().optional(),
   locationLat: z.string().optional(),
   locationLng: z.string().optional(),
+  locationAccuracyM: z.string().optional(),
+  locationLabel: z.string().optional(),
   storefrontPhotoUrl: z.string().optional()
 });
 
@@ -64,9 +69,14 @@ export function MoreScreen() {
   const activationForm = useForm<ActivationValues>({
     resolver: zodResolver(activationSchema),
     defaultValues: {
-      locationAddress: context?.salon?.locationAddress || '',
+      city: '',
+      area: context?.salon?.locationLabel || '',
+      addressMode: 'MANUAL',
+      addressText: context?.salon?.locationAddress || '',
       locationLat: context?.salon?.locationLat ? String(context.salon.locationLat) : '',
       locationLng: context?.salon?.locationLng ? String(context.salon.locationLng) : '',
+      locationAccuracyM: '',
+      locationLabel: '',
       storefrontPhotoUrl: context?.salon?.storefrontPhotoUrl || ''
     }
   });
@@ -88,9 +98,14 @@ export function MoreScreen() {
 
   async function onRequestActivation(values: ActivationValues) {
     const salon = await requestActivation.mutateAsync({
-      locationAddress: values.locationAddress,
+      city: values.city || undefined,
+      area: values.area || undefined,
+      addressMode: values.addressMode,
+      addressText: values.addressText || undefined,
       locationLat: values.locationLat ? Number(values.locationLat) : undefined,
       locationLng: values.locationLng ? Number(values.locationLng) : undefined,
+      locationAccuracyM: values.locationAccuracyM ? Number(values.locationAccuracyM) : undefined,
+      locationLabel: values.locationLabel || undefined,
       storefrontPhotoUrl: values.storefrontPhotoUrl
     });
     if (context) setContext({...context, salon});
@@ -186,9 +201,32 @@ export function MoreScreen() {
 
           <Controller
             control={activationForm.control}
-            name="locationAddress"
+            name="addressMode"
+            render={({field: {value, onChange}}) => (
+              <View style={{gap: spacing.xs}}>
+                <Text style={[typography.bodySm, {color: colors.text}, textDir(isRTL)]}>{isRTL ? 'نمط العنوان' : 'Address mode'}</Text>
+                <View style={{flexDirection: isRTL ? 'row-reverse' : 'row', gap: spacing.xs}}>
+                  <Chip label={isRTL ? 'يدوي' : 'Manual'} active={value === 'MANUAL'} onPress={() => onChange('MANUAL')} />
+                  <Chip label={isRTL ? 'موقع' : 'Location'} active={value === 'LOCATION'} onPress={() => onChange('LOCATION')} />
+                </View>
+              </View>
+            )}
+          />
+
+          <View style={{flexDirection: isRTL ? 'row-reverse' : 'row', gap: spacing.sm}}>
+            <View style={{flex: 1}}>
+              <Controller control={activationForm.control} name="city" render={({field: {value, onChange}}) => <Input label={isRTL ? 'المدينة' : 'City'} value={value || ''} onChangeText={onChange} />} />
+            </View>
+            <View style={{flex: 1}}>
+              <Controller control={activationForm.control} name="area" render={({field: {value, onChange}}) => <Input label={isRTL ? 'المنطقة' : 'Area'} value={value || ''} onChangeText={onChange} />} />
+            </View>
+          </View>
+
+          <Controller
+            control={activationForm.control}
+            name="addressText"
             render={({field: {value, onChange}, fieldState: {error}}) => (
-              <Input label={t('salonLocation')} value={value} onChangeText={onChange} error={error ? t('requiredField') : undefined} />
+              <Input label={t('salonLocation')} value={value || ''} onChangeText={onChange} error={error ? t('requiredField') : undefined} />
             )}
           />
 
@@ -198,6 +236,15 @@ export function MoreScreen() {
             </View>
             <View style={{flex: 1}}>
               <Controller control={activationForm.control} name="locationLng" render={({field: {value, onChange}}) => <Input label={t('locationLng')} value={value || ''} onChangeText={onChange} />} />
+            </View>
+          </View>
+
+          <View style={{flexDirection: isRTL ? 'row-reverse' : 'row', gap: spacing.sm}}>
+            <View style={{flex: 1}}>
+              <Controller control={activationForm.control} name="locationAccuracyM" render={({field: {value, onChange}}) => <Input label={isRTL ? 'دقة الموقع (م)' : 'Location accuracy (m)'} value={value || ''} onChangeText={onChange} />} />
+            </View>
+            <View style={{flex: 1}}>
+              <Controller control={activationForm.control} name="locationLabel" render={({field: {value, onChange}}) => <Input label={isRTL ? 'وصف الموقع' : 'Location label'} value={value || ''} onChangeText={onChange} />} />
             </View>
           </View>
 

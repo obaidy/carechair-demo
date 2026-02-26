@@ -247,36 +247,34 @@ export async function createSalonDraftV2(input: CreateSalonDraftInput): Promise<
 
 export async function requestSalonActivationV2(salonId: string, input: RequestActivationInput): Promise<Salon> {
   const client = assertClient();
-  const patch: Record<string, unknown> = {
-    status: toDbSalonStatus('PENDING_REVIEW'),
-    area: input.locationAddress,
-    address: input.locationAddress,
-    storefront_photo_url: input.storefrontPhotoUrl || null,
-    lat: input.locationLat || null,
-    lng: input.locationLng || null
+  const payload = {
+    salon_id: salonId,
+    submitted_data: {
+      whatsapp: null,
+      city: input.city || null,
+      area: input.area || null,
+      address_mode: input.addressMode,
+      address_text: input.addressText || null,
+      location_lat: input.locationLat ?? null,
+      location_lng: input.locationLng ?? null,
+      location_accuracy_m: input.locationAccuracyM ?? null,
+      location_label: input.locationLabel || null,
+      instagram: input.instagram || null,
+      photo_url: input.storefrontPhotoUrl || null
+    }
   };
 
-  let update = await client
-    .from('salons')
-    .update(patch as any)
-    .eq('id', salonId)
-    .select('id,name,slug,whatsapp,status,area,address,city,created_at,updated_at')
-    .single();
-
-  if (update.error && missingColumn(update.error, 'storefront_photo_url')) {
-    const {storefront_photo_url: _drop, ...fallback} = patch;
-    update = await client
-      .from('salons')
-      .update(fallback as any)
-      .eq('id', salonId)
-      .select('id,name,slug,whatsapp,status,area,address,city,created_at,updated_at')
-      .single();
-  }
-
-  if (update.error || !update.data) throw update.error || new Error('REQUEST_FAILED');
+  const req = await client.functions.invoke('request-activation', {body: payload});
+  if (req.error || !req.data?.ok) throw req.error || new Error(String(req.data?.error || 'REQUEST_FAILED'));
 
   const user = await getUserProfileFromAuth();
-  return mapSalonRowToContext(update.data, user).salon!;
+  const refreshed = await client
+    .from('salons')
+    .select('id,name,slug,whatsapp,status,area,address,city,created_at,updated_at')
+    .eq('id', salonId)
+    .single();
+  if (refreshed.error || !refreshed.data) throw refreshed.error || new Error('REQUEST_FAILED');
+  return mapSalonRowToContext(refreshed.data, user).salon!;
 }
 
 export async function createInvite(input: CreateInviteInput): Promise<CreateInviteResult> {

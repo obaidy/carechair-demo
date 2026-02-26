@@ -3,7 +3,7 @@ import {Pressable, ScrollView, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons} from '@expo/vector-icons';
 import {format} from 'date-fns';
-import {Card, Sheet, StatCard} from '../components';
+import {Button, Card, Sheet, StatCard} from '../components';
 import {useTheme} from '../theme/provider';
 import {useI18n} from '../i18n/provider';
 import {useDashboardSummary, useEvents} from '../api/hooks';
@@ -32,6 +32,7 @@ export function DashboardScreen({navigation}: any) {
           : t('statusDraft');
 
   const bannerText = status === 'PENDING_REVIEW' ? t('pendingReviewBanner') : status === 'SUSPENDED' ? t('suspendedBanner') : '';
+  const isActive = status === 'ACTIVE';
 
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: colors.background}}>
@@ -57,6 +58,17 @@ export function DashboardScreen({navigation}: any) {
             <Text style={[typography.bodySm, {fontWeight: '700', color: status === 'ACTIVE' ? colors.primary : colors.textMuted}]}>{statusLabel}</Text>
           </View>
           {bannerText ? <Text style={[typography.bodySm, {color: colors.textMuted}, textDir(isRTL)]}>{bannerText}</Text> : null}
+          {!isActive ? (
+            <Button
+              title={status === 'DRAFT' ? t('requestActivation') : isRTL ? 'تحديث بيانات التفعيل' : 'Update activation details'}
+              variant="secondary"
+              onPress={() => navigation.navigate('MoreTab')}
+            />
+          ) : context?.salon?.publicBookingUrl ? (
+            <Text style={[typography.bodySm, {color: colors.primary}, textDir(isRTL)]}>
+              {t('publishLink')}: {context.salon.publicBookingUrl}
+            </Text>
+          ) : null}
         </Card>
 
         <View style={{flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap'}}>

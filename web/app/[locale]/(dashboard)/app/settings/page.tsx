@@ -1,5 +1,6 @@
 import {redirect} from 'next/navigation';
-import {updateSalonSettingsAction, updateSalonVisibilityAction} from '@/lib/actions/dashboard';
+import {updateOwnerSalonProfileAction, updateSalonSettingsAction, updateSalonVisibilityAction} from '@/lib/actions/dashboard';
+import ActivationRequestCard from '@/components/dashboard/ActivationRequestCard';
 import {getSessionSalon} from '@/lib/data/dashboard';
 import {getMessages, tx} from '@/lib/messages';
 import type {Locale} from '@/lib/i18n';
@@ -22,6 +23,63 @@ export default async function SettingsPage({params}: Props) {
       </section>
 
       <section className="panel settings-list">
+        <h2>{tx(messages, 'admin.settings.salon', 'Salon profile')}</h2>
+        <form action={updateOwnerSalonProfileAction} className="settings-row">
+          <input type="hidden" name="path" value={`/${locale}/app/settings`} />
+          <label className="field">
+            <span>{tx(messages, 'admin.settings.name', 'Name')}</span>
+            <input className="input" name="name" defaultValue={String(salon.name || '')} required minLength={2} />
+          </label>
+          <label className="field">
+            <span>{tx(messages, 'admin.settings.category', 'Category')}</span>
+            <input className="input" name="category" defaultValue={String((salon as Record<string, unknown>).category || '')} />
+          </label>
+          <label className="field">
+            <span>{tx(messages, 'admin.settings.whatsapp', 'WhatsApp')}</span>
+            <input className="input" name="whatsapp" defaultValue={String(salon.whatsapp || '')} />
+          </label>
+          <label className="field">
+            <span>{tx(messages, 'explore.filters.area', 'Area')}</span>
+            <input className="input" name="area" defaultValue={String(salon.area || '')} />
+          </label>
+          <label className="field">
+            <span>{tx(messages, 'onboarding.fields.city', 'City')}</span>
+            <input className="input" name="city" defaultValue={String((salon as Record<string, unknown>).city || '')} />
+          </label>
+          <label className="field">
+            <span>Address mode</span>
+            <select className="input" name="addressMode" defaultValue={String((salon as Record<string, unknown>).address_mode || 'MANUAL')}>
+              <option value="MANUAL">MANUAL</option>
+              <option value="LOCATION">LOCATION</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>Address text</span>
+            <input className="input" name="addressText" defaultValue={String((salon as Record<string, unknown>).address_text || '')} />
+          </label>
+          <label className="field">
+            <span>Latitude</span>
+            <input className="input" name="locationLat" defaultValue={String((salon as Record<string, unknown>).location_lat || '')} />
+          </label>
+          <label className="field">
+            <span>Longitude</span>
+            <input className="input" name="locationLng" defaultValue={String((salon as Record<string, unknown>).location_lng || '')} />
+          </label>
+          <label className="field">
+            <span>Accuracy (m)</span>
+            <input className="input" name="locationAccuracyM" defaultValue={String((salon as Record<string, unknown>).location_accuracy_m || '')} />
+          </label>
+          <label className="field">
+            <span>Location label</span>
+            <input className="input" name="locationLabel" defaultValue={String((salon as Record<string, unknown>).location_label || '')} />
+          </label>
+          <div className="row-actions">
+            <button className="btn btn-secondary" type="submit">{tx(messages, 'common.save', 'Save')}</button>
+          </div>
+        </form>
+      </section>
+
+      <section className="panel settings-list">
         <h2>{tx(messages, 'dashboard.visibility', 'Visibility on explore')}</h2>
         <article className="settings-row">
           <div>
@@ -36,6 +94,22 @@ export default async function SettingsPage({params}: Props) {
           </form>
         </article>
       </section>
+
+      <ActivationRequestCard
+        salonId={String(salon.id)}
+        locale={locale}
+        defaultValues={{
+          whatsapp: salon.whatsapp || null,
+          city: String((salon as Record<string, unknown>).city || '') || null,
+          area: salon.area || null,
+          address_mode: String((salon as Record<string, unknown>).address_mode || 'MANUAL'),
+          address_text: String((salon as Record<string, unknown>).address_text || '') || null,
+          location_lat: Number((salon as Record<string, unknown>).location_lat || 0) || null,
+          location_lng: Number((salon as Record<string, unknown>).location_lng || 0) || null,
+          location_accuracy_m: Number((salon as Record<string, unknown>).location_accuracy_m || 0) || null,
+          location_label: String((salon as Record<string, unknown>).location_label || '') || null
+        }}
+      />
 
       <section className="panel settings-list">
         <h2>{tx(messages, 'admin.settings.salon', 'Salon settings')}</h2>

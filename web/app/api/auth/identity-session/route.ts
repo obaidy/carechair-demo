@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
         {status: 403}
       );
     }
-    await setSuperadminSession();
+    await setSuperadminSession({userId: String(user.id)});
     return NextResponse.json({ok: true, nextPath});
   }
 
@@ -224,6 +224,10 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  await setSalonAdminSession({salonId: salonIdentity.salonId, salonSlug: salonIdentity.salonSlug});
+  await setSalonAdminSession({
+    userId: String(user.id),
+    salonId: salonIdentity.salonId,
+    salonSlug: salonIdentity.salonSlug
+  });
   return NextResponse.json({ok: true, nextPath});
 }

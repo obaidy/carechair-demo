@@ -19,9 +19,6 @@ async function requireSalonAdminSession() {
 
   const supabase = createServerSupabaseClient();
   if (!supabase) return null;
-  const salonRes = await supabase.from('salons').select('status').eq('id', session.salonId).maybeSingle();
-  if (salonRes.error) return null;
-  if (String(salonRes.data?.status || '').trim() === 'pending_approval') return null;
 
   return session;
 }
@@ -453,6 +450,73 @@ export async function updateSalonSettingsAction(formData: FormData) {
     res = await supabase.from('salons').update(patch).eq('id', session.salonId);
   }
   if (res.error) return;
+
+  revalidatePath(parsed.data.path);
+}
+
+const ownerSalonProfileSchema = z.object({
+  name: z.string().trim().min(2),
+  category: z.string().trim().optional(),
+  whatsapp: z.string().trim().optional(),
+  city: z.string().trim().optional(),
+  area: z.string().trim().optional(),
+  addressMode: z.enum(['LOCATION', 'MANUAL']),
+  addressText: z.string().trim().optional(),
+  locationLat: z.string().trim().optional(),
+  locationLng: z.string().trim().optional(),
+  locationAccuracyM: z.string().trim().optional(),
+  locationLabel: z.string().trim().optional(),
+  path: z.string().min(1)
+});
+
+export async function updateOwnerSalonProfileAction(formData: FormData) {
+  const parsed = ownerSalonProfileSchema.safeParse({
+    name: formData.get('name'),
+    category: formData.get('category'),
+    whatsapp: formData.get('whatsapp'),
+    city: formData.get('city'),
+    area: formData.get('area'),
+    addressMode: formData.get('addressMode'),
+    addressText: formData.get('addressText'),
+    locationLat: formData.get('locationLat'),
+    locationLng: formData.get('locationLng'),
+    locationAccuracyM: formData.get('locationAccuracyM'),
+    locationLabel: formData.get('locationLabel'),
+    path: formData.get('path')
+  });
+  if (!parsed.success) return;
+
+  const session = await requireSalonAdminSession();
+  if (!session) return;
+  const supabase = createServerSupabaseClient();
+  if (!supabase) return;
+
+  const salonRes = await supabase.from('salons').select('status').eq('id', session.salonId).maybeSingle();
+  if (salonRes.error) return;
+  const status = String(salonRes.data?.status || '').trim().toLowerCase();
+  if (!['draft', 'pending_review', 'pending_approval', 'rejected'].includes(status)) return;
+
+  const asNumber = (value: string | undefined) => {
+    const n = Number(String(value || '').trim());
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const patch: Record<string, unknown> = {
+    name: parsed.data.name,
+    category: parsed.data.category || null,
+    whatsapp: parsed.data.whatsapp || null,
+    city: parsed.data.city || null,
+    area: parsed.data.area || null,
+    address_mode: parsed.data.addressMode,
+    address_text: parsed.data.addressText || null,
+    location_lat: asNumber(parsed.data.locationLat),
+    location_lng: asNumber(parsed.data.locationLng),
+    location_accuracy_m: asNumber(parsed.data.locationAccuracyM),
+    location_label: parsed.data.locationLabel || null
+  };
+
+  const update = await supabase.from('salons').update(patch).eq('id', session.salonId);
+  if (update.error) return;
 
   revalidatePath(parsed.data.path);
 }

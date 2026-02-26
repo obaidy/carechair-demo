@@ -347,19 +347,31 @@ export const supabaseApi: CareChairApi = {
       const context = await readOwnerContext();
       if (!context.salon) throw new Error('SALON_REQUIRED');
       const client = assertSupabase();
+      const req = await client.functions.invoke('request-activation', {
+        body: {
+          salon_id: context.salon.id,
+          submitted_data: {
+            whatsapp: context.salon.phone || null,
+            city: input.city || null,
+            area: input.area || null,
+            address_mode: input.addressMode,
+            address_text: input.addressText || null,
+            location_lat: input.locationLat ?? null,
+            location_lng: input.locationLng ?? null,
+            location_accuracy_m: input.locationAccuracyM ?? null,
+            location_label: input.locationLabel || null,
+            instagram: input.instagram || null,
+            photo_url: input.storefrontPhotoUrl || null
+          }
+        }
+      });
+      if (req.error || !req.data?.ok) throw req.error || new Error(String(req.data?.error || 'REQUEST_FAILED'));
+
       const {data, error} = await client
         .from('salons')
-        .update({
-          status: 'pending_review',
-          area: input.locationAddress,
-          storefront_photo_url: input.storefrontPhotoUrl || null,
-          lat: input.locationLat || null,
-          lng: input.locationLng || null
-        } as any)
-        .eq('id', context.salon.id)
         .select('id,name,slug,status,area,whatsapp,updated_at,created_at')
+        .eq('id', context.salon.id)
         .single();
-
       if (error || !data) throw error || new Error('REQUEST_FAILED');
 
       return {

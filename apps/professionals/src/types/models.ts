@@ -151,9 +151,15 @@ export type CreateSalonInput = {
 };
 
 export type RequestActivationInput = {
-  locationAddress: string;
+  city?: string;
+  area?: string;
+  addressMode: 'LOCATION' | 'MANUAL';
+  addressText?: string;
   locationLat?: number;
   locationLng?: number;
+  locationAccuracyM?: number;
+  locationLabel?: string;
+  instagram?: string;
   storefrontPhotoUrl?: string;
 };
 

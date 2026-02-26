@@ -4,6 +4,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {Controller, useForm} from 'react-hook-form';
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
+import * as Location from 'expo-location';
 import {Button, Card, Input} from '../../components';
 import {useTheme} from '../../theme/provider';
 import {useI18n} from '../../i18n/provider';
@@ -13,7 +14,11 @@ import {persistActiveSalonId} from '../../auth/session';
 import {useAuthStore} from '../../state/authStore';
 
 const schema = z.object({
-  locationAddress: z.string().min(4),
+  city: z.string().optional(),
+  area: z.string().optional(),
+  addressMode: z.enum(['LOCATION', 'MANUAL']),
+  addressText: z.string().optional(),
+  locationLabel: z.string().optional(),
   storefrontPhotoUrl: z.string().optional()
 });
 
@@ -30,11 +35,16 @@ export function ActivationRequestScreen({route}: any) {
 
   const [submitError, setSubmitError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [geo, setGeo] = useState<{lat: number; lng: number; accuracy?: number} | null>(null);
 
   const {control, handleSubmit} = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      locationAddress: '',
+      city: '',
+      area: '',
+      addressMode: 'MANUAL',
+      addressText: '',
+      locationLabel: '',
       storefrontPhotoUrl: ''
     }
   });
@@ -52,12 +62,27 @@ export function ActivationRequestScreen({route}: any) {
 
   async function onSubmit(values: FormValues) {
     if (!salonId) return;
+    if (values.addressMode === 'MANUAL' && !String(values.addressText || '').trim()) {
+      setSubmitError(isRTL ? 'يرجى إدخال العنوان اليدوي.' : 'Please enter manual address.');
+      return;
+    }
+    if (values.addressMode === 'LOCATION' && !geo) {
+      setSubmitError(isRTL ? 'يرجى تحديد الموقع الحالي أولاً.' : 'Please fetch current location first.');
+      return;
+    }
     setSubmitError('');
     setSaving(true);
     try {
       await requestSalonActivationV2(salonId, {
-        locationAddress: values.locationAddress,
-        storefrontPhotoUrl: values.storefrontPhotoUrl
+        city: values.city || undefined,
+        area: values.area || undefined,
+        addressMode: values.addressMode,
+        addressText: values.addressMode === 'MANUAL' ? values.addressText || undefined : undefined,
+        locationLat: values.addressMode === 'LOCATION' ? geo?.lat : undefined,
+        locationLng: values.addressMode === 'LOCATION' ? geo?.lng : undefined,
+        locationAccuracyM: values.addressMode === 'LOCATION' ? geo?.accuracy : undefined,
+        locationLabel: values.locationLabel || undefined,
+        storefrontPhotoUrl: values.storefrontPhotoUrl || undefined
       });
       await finishAndEnterApp();
     } catch (error: any) {
@@ -77,6 +102,25 @@ export function ActivationRequestScreen({route}: any) {
     }
   }
 
+  async function useCurrentLocation() {
+    setSubmitError('');
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status !== 'granted') {
+        setSubmitError(isRTL ? 'تم رفض إذن الموقع.' : 'Location permission denied.');
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({accuracy: Location.Accuracy.High});
+      setGeo({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy ?? undefined
+      });
+    } catch (error: any) {
+      setSubmitError(String(error?.message || (isRTL ? 'تعذر قراءة الموقع.' : 'Failed to read location.')));
+    }
+  }
+
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: colors.background}}>
       <ScrollView contentContainerStyle={{padding: spacing.lg, gap: spacing.lg, flexGrow: 1}}>
@@ -92,16 +136,78 @@ export function ActivationRequestScreen({route}: any) {
         <Card style={{gap: spacing.md}}>
           <Controller
             control={control}
-            name="locationAddress"
+            name="addressMode"
+            render={({field: {value, onChange}}) => (
+              <View style={{gap: spacing.xs}}>
+                <Text style={[typography.bodySm, {color: colors.text}, textDir(isRTL)]}>{isRTL ? 'نمط العنوان' : 'Address mode'}</Text>
+                <View style={{flexDirection: isRTL ? 'row-reverse' : 'row', gap: spacing.sm}}>
+                  <Button title={isRTL ? 'يدوي' : 'Manual'} variant={value === 'MANUAL' ? 'primary' : 'secondary'} onPress={() => onChange('MANUAL')} />
+                  <Button title={isRTL ? 'موقعي الحالي' : 'Current location'} variant={value === 'LOCATION' ? 'primary' : 'secondary'} onPress={() => onChange('LOCATION')} />
+                </View>
+              </View>
+            )}
+          />
+
+          <View style={{flexDirection: isRTL ? 'row-reverse' : 'row', gap: spacing.sm}}>
+            <View style={{flex: 1}}>
+              <Controller
+                control={control}
+                name="city"
+                render={({field: {value, onChange}}) => (
+                  <Input
+                    label={isRTL ? 'المدينة' : 'City'}
+                    value={value || ''}
+                    onChangeText={onChange}
+                  />
+                )}
+              />
+            </View>
+            <View style={{flex: 1}}>
+              <Controller
+                control={control}
+                name="area"
+                render={({field: {value, onChange}}) => (
+                  <Input
+                    label={isRTL ? 'المنطقة' : 'Area'}
+                    value={value || ''}
+                    onChangeText={onChange}
+                  />
+                )}
+              />
+            </View>
+          </View>
+
+          <Controller
+            control={control}
+            name="addressText"
+            render={({field: {value, onChange}}) => (
+              <Input
+                label={isRTL ? 'العنوان اليدوي' : 'Manual address'}
+                value={value || ''}
+                onChangeText={onChange}
+              />
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="locationLabel"
             render={({field: {value, onChange}, fieldState: {error}}) => (
               <Input
-                label={isRTL ? 'عنوان المتجر' : 'Store address'}
-                value={value}
+                label={isRTL ? 'وصف الموقع' : 'Location label'}
+                value={value || ''}
                 onChangeText={onChange}
                 error={error ? (isRTL ? 'مطلوب' : 'Required') : undefined}
               />
             )}
           />
+
+          <Button title={isRTL ? 'استخدام موقعي الحالي' : 'Use my current location'} variant="secondary" onPress={useCurrentLocation} />
+          {geo ? (
+            <Text style={[typography.bodySm, {color: colors.textMuted}, textDir(isRTL)]}>
+              {isRTL ? 'الموقع المحدد' : 'Selected location'}: {geo.lat.toFixed(6)}, {geo.lng.toFixed(6)}
+            </Text>
+          ) : null}
 
           <Controller
             control={control}
