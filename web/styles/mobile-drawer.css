@@ -52,6 +52,11 @@ html[dir="ltr"] .cc-mobile-drawer-panel {
   pointer-events: auto;
 }
 
+.cc-mobile-drawer-panel.open[dir="ltr"],
+html[dir="ltr"] .cc-mobile-drawer-panel.open {
+  transform: translateX(0);
+}
+
 .cc-mobile-drawer-header {
   display: flex;
   align-items: center;
