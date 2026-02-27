@@ -23,6 +23,8 @@ export const env = {
     readEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY') ||
     readEnv('EXPO_PUBLIC_ANON_KEY') ||
     readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+  devOtpBypass: readStrictBoolean('EXPO_PUBLIC_DEV_OTP_BYPASS', false),
+  devOtpBypassCode: readEnv('EXPO_PUBLIC_DEV_OTP_BYPASS_CODE') || '000000',
   buildEnv: readEnv('EXPO_PUBLIC_BUILD_ENV') || readEnv('NODE_ENV') || 'development',
 };
 

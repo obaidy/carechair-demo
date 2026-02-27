@@ -10,6 +10,7 @@ import {useI18n} from '../i18n/provider';
 import {textDir} from '../utils/layout';
 import {useSendOtp} from '../api/authHooks';
 import {useAuthStore} from '../state/authStore';
+import {toPhoneWithPlus} from '../lib/phone';
 
 const schema = z.object({
   phone: z.string().min(8)
@@ -33,9 +34,14 @@ export function AuthPhoneScreen({navigation}: any) {
   async function onSubmit(values: FormValues) {
     setSubmitError('');
     try {
-      await sendOtp.mutateAsync(values.phone);
-      setPendingPhone(values.phone);
-      navigation.navigate('AuthOtp', {phone: values.phone});
+      const normalizedPhone = toPhoneWithPlus(values.phone);
+      if (!normalizedPhone) {
+        setSubmitError(t('invalidPhone'));
+        return;
+      }
+      await sendOtp.mutateAsync(normalizedPhone);
+      setPendingPhone(normalizedPhone);
+      navigation.navigate('AuthOtp', {phone: normalizedPhone});
     } catch (error: any) {
       setSubmitError(String(error?.message || t('invalidPhone')));
     }
@@ -66,7 +72,7 @@ export function AuthPhoneScreen({navigation}: any) {
                   keyboardType="phone-pad"
                   autoCapitalize="none"
                   error={error ? t('invalidPhone') : undefined}
-                  placeholder={isRTL ? '9647XXXXXXXX' : '+9647XXXXXXXX'}
+                  placeholder="+9647XXXXXXXX"
                 />
               )}
             />

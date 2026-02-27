@@ -228,17 +228,30 @@ function redactPayloadForLog(payload: unknown) {
 
 async function getAccessTokenForApi() {
   const client = assertClient();
+
+  async function validatedToken(rawToken: string, source: 'runtime' | 'restored' | 'store') {
+    const token = String(rawToken || '').trim();
+    if (!isLikelyJwt(token)) return null;
+    const probe = await client.auth.getUser(token);
+    if (!probe.error && probe.data.user) return {token, source};
+    if (__DEV__) {
+      pushDevLog('error', 'auth.token', 'Rejected unusable access token for API call', {
+        source,
+        error: String(probe.error?.message || probe.error || 'TOKEN_INVALID'),
+      });
+    }
+    return null;
+  }
+
   const runtime = await client.auth.getSession();
   const runtimeToken = String(runtime.data.session?.access_token || '').trim();
-  if (isLikelyJwt(runtimeToken)) {
-    return {token: runtimeToken, source: 'runtime' as const};
+  const runtimeValidated = await validatedToken(runtimeToken, 'runtime');
+  if (runtimeValidated) {
+    return runtimeValidated;
   }
 
   const cached = useAuthStore.getState().session;
   const cachedToken = String(cached?.accessToken || '').trim();
-  if (!isLikelyJwt(cachedToken)) {
-    throw new Error('AUTH_SESSION_MISSING');
-  }
 
   if (cached?.refreshToken) {
     const restored = await client.auth.setSession({
@@ -247,13 +260,17 @@ async function getAccessTokenForApi() {
     });
     if (!restored.error) {
       const restoredToken = String(restored.data.session?.access_token || '').trim();
-      if (isLikelyJwt(restoredToken)) {
-        return {token: restoredToken, source: 'restored' as const};
+      const restoredValidated = await validatedToken(restoredToken, 'restored');
+      if (restoredValidated) {
+        return restoredValidated;
       }
     }
   }
 
-  return {token: cachedToken, source: 'store' as const};
+  const cachedValidated = await validatedToken(cachedToken, 'store');
+  if (cachedValidated) return cachedValidated;
+
+  throw new Error('AUTH_SESSION_MISSING');
 }
 
 async function restRequest(path: string, init: RequestInit & {token: string}) {

@@ -25,6 +25,8 @@ import {supabase} from './client';
 import {useAuthStore} from '../../state/authStore';
 import {normalizeSalonStatus, toDbSalonStatus} from '../../types/status';
 import {pushDevLog} from '../../lib/devLogger';
+import {toPhoneWithPlus} from '../../lib/phone';
+import {env} from '../../utils/env';
 
 function assertSupabase() {
   if (!supabase) throw new Error('SUPABASE_CONFIG_MISSING');
@@ -260,13 +262,61 @@ export const supabaseApi: CareChairApi = {
     },
     sendOtp: async (phone) => {
       const client = assertSupabase();
-      const {error} = await client.auth.signInWithOtp({phone, options: {channel: 'sms', shouldCreateUser: true}});
+      const normalizedPhone = toPhoneWithPlus(phone);
+      if (!normalizedPhone) throw new Error('INVALID_PHONE_E164');
+
+      const canUseDevBypass = __DEV__ && env.devOtpBypass;
+      if (canUseDevBypass) {
+        const runtime = await client.auth.getSession();
+        const cached = useAuthStore.getState().session;
+        const hasReusableSession = Boolean(runtime.data.session?.access_token || (cached?.accessToken && cached?.refreshToken));
+        if (hasReusableSession) {
+          pushDevLog('info', 'auth.sendOtp', 'DEV OTP bypass enabled, skipping provider SMS', {
+            phone: `${normalizedPhone.slice(0, 5)}***${normalizedPhone.slice(-2)}`,
+          });
+          return {channel: 'sms'};
+        }
+      }
+
+      if (__DEV__) {
+        pushDevLog('info', 'auth.sendOtp', 'Sending OTP via Supabase', {
+          phone: `${normalizedPhone.slice(0, 5)}***${normalizedPhone.slice(-2)}`
+        });
+      }
+      const {error} = await client.auth.signInWithOtp({phone: normalizedPhone, options: {channel: 'sms', shouldCreateUser: true}});
       if (error) throw error;
+      if (__DEV__) {
+        pushDevLog('info', 'auth.sendOtp', 'Supabase accepted OTP request');
+      }
       return {channel: 'sms'};
     },
     verifyOtp: async (phone, code) => {
       const client = assertSupabase();
-      const {data, error} = await client.auth.verifyOtp({phone, token: code, type: 'sms'});
+      const normalizedPhone = toPhoneWithPlus(phone);
+      if (!normalizedPhone) throw new Error('INVALID_PHONE_E164');
+
+      const canUseDevBypass = __DEV__ && env.devOtpBypass && String(code || '').trim() === env.devOtpBypassCode;
+      if (canUseDevBypass) {
+        const runtime = await client.auth.getSession();
+        if (!runtime.error && runtime.data.session) {
+          pushDevLog('info', 'auth.verifyOtp', 'DEV OTP bypass accepted using runtime session');
+          return toSession(runtime.data.session);
+        }
+        const cached = useAuthStore.getState().session;
+        if (cached?.accessToken && cached.refreshToken) {
+          const restored = await client.auth.setSession({
+            access_token: cached.accessToken,
+            refresh_token: cached.refreshToken
+          });
+          if (!restored.error && restored.data.session) {
+            pushDevLog('info', 'auth.verifyOtp', 'DEV OTP bypass accepted using restored cached session');
+            return toSession(restored.data.session);
+          }
+        }
+        pushDevLog('info', 'auth.verifyOtp', 'DEV OTP bypass requested but no reusable session was found; falling back to Supabase verify');
+      }
+
+      const {data, error} = await client.auth.verifyOtp({phone: normalizedPhone, token: code, type: 'sms'});
       if (error || !data.session) throw error || new Error('OTP_FAILED');
       const restored = await client.auth.setSession({
         access_token: data.session.access_token,

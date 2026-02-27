@@ -9,6 +9,7 @@ if (__DEV__) {
   pushDevLog('info', 'startup.api', 'API mode selected', {
     useMockApi: env.useMockApi,
     useInvitesV2: String(process.env.EXPO_PUBLIC_USE_INVITES_V2 || '').trim() || '(default)',
+    devOtpBypass: __DEV__ && env.devOtpBypass,
     supabaseHost: supabaseHost || '(missing)',
     buildEnv: env.buildEnv,
   });

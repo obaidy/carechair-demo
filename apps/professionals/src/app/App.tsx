@@ -47,6 +47,7 @@ function AppInner() {
       apiMode: activeApiMode(),
       useMockApi: env.useMockApi,
       useInvitesV2: flags.USE_INVITES_V2,
+      devOtpBypass: __DEV__ && env.devOtpBypass,
       supabaseHost: supabaseHost || '(missing)',
       buildEnv: env.buildEnv,
       nodeEnv: process.env.NODE_ENV || 'development',
