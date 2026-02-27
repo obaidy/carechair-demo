@@ -4,6 +4,8 @@ import {flags} from '../config/flags';
 import {secureGet, secureRemove, secureSet} from '../utils/secureStore';
 import type {AuthSession, OwnerContext} from '../types/models';
 import {env} from '../utils/env';
+import {pushDevLog} from '../lib/devLogger';
+import {useAuthStore} from '../state/authStore';
 
 const ACTIVE_SALON_KEY = 'cc_prof_active_salon_id';
 const PENDING_JOIN_TOKEN_KEY = 'cc_prof_pending_join_token';
@@ -77,7 +79,14 @@ async function selectActiveSalon(memberships: Membership[]) {
 }
 
 export async function hydrateAuthState(options?: {pendingToken?: string | null; acceptPendingToken?: boolean}): Promise<HydratedAuthState | null> {
-  const session = await api.auth.getSession();
+  const liveSession = await api.auth.getSession();
+  const cachedSession = useAuthStore.getState().session;
+  const session = liveSession || cachedSession;
+  if (__DEV__ && !liveSession && cachedSession) {
+    pushDevLog('info', 'auth.hydrate', 'Recovered session from in-memory store fallback', {
+      userId: cachedSession.userId,
+    });
+  }
   if (!session) return null;
 
   const useLegacyIdentity = !flags.USE_INVITES_V2 && env.useMockApi;
