@@ -143,6 +143,24 @@ async function getActiveSupabaseSession(options?: {allowRefresh?: boolean}) {
     if (attempt < 2) await delay(180);
   }
 
+  if (!session) {
+    const cached = useAuthStore.getState().session;
+    if (cached?.accessToken && cached?.refreshToken) {
+      const restored = await client.auth.setSession({
+        access_token: cached.accessToken,
+        refresh_token: cached.refreshToken
+      });
+      if (!restored.error && restored.data.session?.access_token) {
+        session = restored.data.session;
+        if (__DEV__) {
+          pushDevLog('info', 'auth.session', 'Restored runtime Supabase session from persisted auth store tokens');
+        }
+      } else {
+        lastError = restored.error || lastError;
+      }
+    }
+  }
+
   if (!session && options?.allowRefresh !== false) {
     const refreshed = await client.auth.refreshSession();
     if (!refreshed.error && refreshed.data.session?.access_token) {
