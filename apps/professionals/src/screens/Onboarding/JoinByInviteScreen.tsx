@@ -8,7 +8,7 @@ import {Button, Card, Input} from '../../components';
 import {useTheme} from '../../theme/provider';
 import {useI18n} from '../../i18n/provider';
 import {textDir} from '../../utils/layout';
-import {acceptInvite, getOwnerContextBySalonIdV2, listActiveMembershipsV2, type AcceptInviteResult} from '../../api/invites';
+import {acceptInvite, getOwnerContextBySalonIdV2, listActiveMembershipsV2, type AcceptInviteResult, type Membership} from '../../api/invites';
 import {persistActiveSalonId, clearPendingJoinToken} from '../../auth/session';
 import {useAuthStore} from '../../state/authStore';
 
@@ -49,12 +49,33 @@ export function JoinByInviteScreen({route}: any) {
     defaultValues: {code: ''}
   });
 
-  async function completeFlow(salonId: string) {
-    const memberships = await listActiveMembershipsV2();
-    setMemberships(memberships);
+  async function completeFlow(result: AcceptInviteResult) {
+    const salonId = result.salonId;
+    let memberships: Membership[] = [];
+
+    try {
+      memberships = await listActiveMembershipsV2();
+    } catch {
+      memberships = [];
+    }
+
     await persistActiveSalonId(salonId);
     setActiveSalonId(salonId);
+
     const context = await getOwnerContextBySalonIdV2(salonId);
+    if (!memberships.length && context?.salon) {
+      memberships = [
+        {
+          salonId: context.salon.id,
+          userId: context.user.id,
+          role: result.role,
+          status: 'ACTIVE',
+          joinedAt: new Date().toISOString()
+        }
+      ];
+    }
+
+    setMemberships(memberships);
     setContext(context);
   }
 
@@ -89,6 +110,16 @@ export function JoinByInviteScreen({route}: any) {
       setSubmitInfo(isRTL ? 'تم التحقق من الدعوة.' : 'Invite verified successfully.');
     } catch (error: any) {
       setSubmitError(normalizeInviteError(String(error?.message || ''), isRTL));
+    }
+  }
+
+  async function onContinue() {
+    if (!accepted) return;
+    setSubmitError('');
+    try {
+      await completeFlow(accepted);
+    } catch (error: any) {
+      setSubmitError(String(error?.message || (isRTL ? 'تعذر إكمال الانضمام.' : 'Failed to complete join.')));
     }
   }
 
@@ -145,7 +176,7 @@ export function JoinByInviteScreen({route}: any) {
               <Text style={[typography.bodySm, {color: colors.textMuted}, textDir(isRTL)]}>
                 {isRTL ? 'الدور' : 'Role'}: {accepted.role}
               </Text>
-              <Button title={isRTL ? 'متابعة' : 'Continue'} onPress={() => completeFlow(accepted.salonId)} />
+              <Button title={isRTL ? 'متابعة' : 'Continue'} onPress={onContinue} />
             </Card>
           ) : null}
         </Card>

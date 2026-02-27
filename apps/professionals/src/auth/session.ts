@@ -107,7 +107,8 @@ export async function hydrateAuthState(options?: {pendingToken?: string | null; 
       await acceptInvite({token: pendingTokenFromStorage});
       await clearPendingJoinToken();
     } catch {
-      // Do not fail startup on invalid invite token.
+      // Prevent retry loops on bad/expired tokens.
+      await clearPendingJoinToken();
     }
   }
 

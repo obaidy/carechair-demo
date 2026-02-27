@@ -9,7 +9,7 @@ import {Button, Card, Input} from '../../components';
 import {useTheme} from '../../theme/provider';
 import {useI18n} from '../../i18n/provider';
 import {textDir} from '../../utils/layout';
-import {getOwnerContextBySalonIdV2, listActiveMembershipsV2, requestSalonActivationV2} from '../../api/invites';
+import {getOwnerContextBySalonIdV2, listActiveMembershipsV2, requestSalonActivationV2, type Membership} from '../../api/invites';
 import {persistActiveSalonId} from '../../auth/session';
 import {useAuthStore} from '../../state/authStore';
 
@@ -50,14 +50,33 @@ export function ActivationRequestScreen({route}: any) {
   });
 
   async function finishAndEnterApp() {
-    const memberships = await listActiveMembershipsV2();
-    setMemberships(memberships);
+    let memberships: Membership[] = [];
+    try {
+      memberships = await listActiveMembershipsV2();
+    } catch {
+      memberships = [];
+    }
+
     if (salonId) {
       await persistActiveSalonId(salonId);
       setActiveSalonId(salonId);
       const context = await getOwnerContextBySalonIdV2(salonId);
+      if (!memberships.length && context?.salon) {
+        memberships = [
+          {
+            salonId: context.salon.id,
+            userId: context.user.id,
+            role: 'OWNER',
+            status: 'ACTIVE',
+            joinedAt: new Date().toISOString()
+          }
+        ];
+      }
+      setMemberships(memberships);
       setContext(context);
+      return;
     }
+    setMemberships(memberships);
   }
 
   async function onSubmit(values: FormValues) {
@@ -97,6 +116,8 @@ export function ActivationRequestScreen({route}: any) {
     setSaving(true);
     try {
       await finishAndEnterApp();
+    } catch (error: any) {
+      setSubmitError(String(error?.message || (isRTL ? 'تعذر المتابعة كمسودة.' : 'Failed to continue as draft.')));
     } finally {
       setSaving(false);
     }

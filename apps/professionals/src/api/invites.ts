@@ -96,6 +96,10 @@ function toDbSalonStatus(status: SalonStatus) {
   return 'draft';
 }
 
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function readAuthUser() {
   const client = assertClient();
   const cached = useAuthStore.getState().session;
@@ -144,6 +148,41 @@ function missingColumn(error: unknown, column: string) {
   return message.toLowerCase().includes(column.toLowerCase());
 }
 
+async function getFunctionErrorMessage(error: any, fallback: string) {
+  if (!error) return fallback;
+
+  const context = error?.context;
+  if (context && typeof context.json === 'function') {
+    try {
+      const payload = await context.json();
+      const value = String(payload?.error || payload?.message || '').trim();
+      if (value) return value;
+    } catch {
+      // no-op
+    }
+  }
+
+  if (context && typeof context.text === 'function') {
+    try {
+      const text = String(await context.text());
+      if (text) {
+        try {
+          const parsed = JSON.parse(text);
+          const value = String(parsed?.error || parsed?.message || '').trim();
+          if (value) return value;
+        } catch {
+          return text.slice(0, 120);
+        }
+      }
+    } catch {
+      // no-op
+    }
+  }
+
+  const direct = String(error?.message || '').trim();
+  return direct || fallback;
+}
+
 export async function upsertUserProfileV2(params?: {phone?: string; fullName?: string}) {
   const client = assertClient();
   const user = await readAuthUser();
@@ -160,20 +199,31 @@ export async function upsertUserProfileV2(params?: {phone?: string; fullName?: s
 export async function listActiveMembershipsV2(): Promise<Membership[]> {
   const client = assertClient();
   const user = await readAuthUser();
-  const {data, error} = await client
-    .from('salon_members')
-    .select('salon_id,user_id,role,status,joined_at')
-    .eq('user_id', user.id)
-    .eq('status', 'ACTIVE')
-    .order('joined_at', {ascending: false});
-  if (error) throw error;
-  return (data || []).map((row: any) => ({
-    salonId: String(row.salon_id),
-    userId: String(row.user_id),
-    role: normalizeRole(row.role),
-    status: normalizeStatus(row.status),
-    joinedAt: String(row.joined_at || new Date().toISOString())
-  }));
+  let lastError: any = null;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const {data, error} = await client
+      .from('salon_members')
+      .select('salon_id,user_id,role,status,joined_at')
+      .eq('user_id', user.id)
+      .eq('status', 'ACTIVE')
+      .order('joined_at', {ascending: false});
+
+    if (!error) {
+      return (data || []).map((row: any) => ({
+        salonId: String(row.salon_id),
+        userId: String(row.user_id),
+        role: normalizeRole(row.role),
+        status: normalizeStatus(row.status),
+        joinedAt: String(row.joined_at || new Date().toISOString())
+      }));
+    }
+
+    lastError = error;
+    if (attempt < 2) await delay(220);
+  }
+
+  throw lastError || new Error('MEMBERSHIP_LOAD_FAILED');
 }
 
 export async function getUserProfileFromAuth(): Promise<UserProfile> {
@@ -215,14 +265,17 @@ export async function getOwnerContextBySalonIdV2(salonId: string | null): Promis
   const user = await getUserProfileFromAuth();
   if (!salonId) return {user, salon: null};
 
-  const {data, error} = await client
-    .from('salons')
-    .select('id,name,slug,whatsapp,status,area,address,city,created_at,updated_at')
-    .eq('id', salonId)
-    .maybeSingle();
-  if (error || !data) return {user, salon: null};
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const {data, error} = await client
+      .from('salons')
+      .select('id,name,slug,whatsapp,status,area,address,city,created_at,updated_at')
+      .eq('id', salonId)
+      .maybeSingle();
+    if (!error && data) return mapSalonRowToContext(data, user);
+    if (attempt < 2) await delay(220);
+  }
 
-  return mapSalonRowToContext(data, user);
+  return {user, salon: null};
 }
 
 export async function createSalonDraftV2(input: CreateSalonDraftInput): Promise<Salon> {
@@ -289,7 +342,12 @@ export async function requestSalonActivationV2(salonId: string, input: RequestAc
   };
 
   const req = await client.functions.invoke('request-activation', {body: payload});
-  if (req.error || !req.data?.ok) throw req.error || new Error(String(req.data?.error || 'REQUEST_FAILED'));
+  if (req.error || !req.data?.ok) {
+    if (req.error) {
+      throw new Error(await getFunctionErrorMessage(req.error, 'REQUEST_FAILED'));
+    }
+    throw new Error(String(req.data?.error || 'REQUEST_FAILED'));
+  }
 
   const user = await getUserProfileFromAuth();
   const refreshed = await client
@@ -311,7 +369,7 @@ export async function createInvite(input: CreateInviteInput): Promise<CreateInvi
       max_uses: input.maxUses
     }
   });
-  if (error) throw error;
+  if (error) throw new Error(await getFunctionErrorMessage(error, 'INVITE_CREATE_FAILED'));
   if (!data?.ok) throw new Error(String(data?.error || 'INVITE_CREATE_FAILED'));
   return {
     code: String(data.code || ''),
@@ -329,7 +387,7 @@ export async function acceptInvite(input: AcceptInviteInput): Promise<AcceptInvi
     code: input.code ? String(input.code).trim().toUpperCase() : undefined
   };
   const {data, error} = await client.functions.invoke('accept-invite', {body: payload});
-  if (error) throw error;
+  if (error) throw new Error(await getFunctionErrorMessage(error, 'INVALID_INVITE'));
   if (!data?.ok) throw new Error(String(data?.error || 'INVALID_INVITE'));
   return {
     salonId: String(data.salon_id || ''),

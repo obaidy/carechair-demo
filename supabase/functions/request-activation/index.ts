@@ -55,6 +55,10 @@ function normalizeSalonStatus(value: unknown) {
   return String(value || "").trim().toLowerCase();
 }
 
+function normalizeRole(value: unknown) {
+  return String(value || "").trim().toUpperCase();
+}
+
 function missingRpc(error: unknown, rpcName: string) {
   const message = String((error as any)?.message || (error as any)?.details || "").toLowerCase();
   return message.includes(String(rpcName || "").toLowerCase());
@@ -124,29 +128,85 @@ serve(async (req) => {
   const salonId = toText(body.salon_id, 80);
   if (!salonId) return json(400, { ok: false, error: "SALON_ID_REQUIRED" });
 
-  const roleRes = await serviceClient.rpc("member_role", {
-    p_salon_id: salonId,
-    p_uid: user.id,
-  });
-  const memberRole = String(roleRes.data || "").toUpperCase();
-  if (roleRes.error || memberRole !== "OWNER") {
-    await logAudit(serviceClient, salonId, user.id, "activation.request.denied", {
-      reason: "NOT_OWNER",
-    });
-    return json(403, { ok: false, error: "FORBIDDEN" });
-  }
-
   const salonRes = await serviceClient
     .from("salons")
-    .select("id,status,is_listed,is_public")
+    .select("id,status,is_listed,is_public,created_by")
     .eq("id", salonId)
     .maybeSingle();
   if (salonRes.error || !salonRes.data?.id) {
     return json(404, { ok: false, error: "SALON_NOT_FOUND" });
   }
 
+  let memberRole = "";
+  const roleRes = await serviceClient.rpc("member_role", {
+    p_salon_id: salonId,
+    p_uid: user.id,
+  });
+  if (!roleRes.error) {
+    memberRole = normalizeRole(roleRes.data);
+  } else if (!missingRpc(roleRes.error, "member_role")) {
+    return json(500, { ok: false, error: "ROLE_CHECK_FAILED" });
+  }
+
+  if (!memberRole) {
+    const membershipRes = await serviceClient
+      .from("salon_members")
+      .select("role,status")
+      .eq("salon_id", salonId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membershipRes.error && membershipRes.data) {
+      const status = normalizeRole((membershipRes.data as any).status);
+      if (status === "ACTIVE") {
+        memberRole = normalizeRole((membershipRes.data as any).role);
+      }
+    }
+  }
+
+  if (memberRole !== "OWNER") {
+    const createdBy = String((salonRes.data as any).created_by || "");
+    if (createdBy && createdBy === user.id) {
+      // Self-heal owner membership for freshly created salons when trigger timing/drift occurs.
+      const healMembership = await serviceClient
+        .from("salon_members")
+        .upsert(
+          {
+            salon_id: salonId,
+            user_id: user.id,
+            role: "OWNER",
+            status: "ACTIVE",
+          },
+          { onConflict: "salon_id,user_id" },
+        )
+        .select("salon_id")
+        .single();
+
+      if (healMembership.error) {
+        await logAudit(serviceClient, salonId, user.id, "activation.request.denied", {
+          reason: "OWNER_HEAL_FAILED",
+          details: String(healMembership.error.message || healMembership.error.code || ""),
+        });
+        return json(500, { ok: false, error: "OWNER_MEMBERSHIP_REQUIRED" });
+      }
+      memberRole = "OWNER";
+    }
+  }
+
+  if (memberRole !== "OWNER") {
+    await logAudit(serviceClient, salonId, user.id, "activation.request.denied", {
+      reason: "NOT_OWNER",
+    });
+    return json(403, { ok: false, error: "FORBIDDEN" });
+  }
+
   const currentStatus = normalizeSalonStatus(salonRes.data.status);
-  if (!["draft", "rejected"].includes(currentStatus)) {
+  if (["active", "trialing", "past_due"].includes(currentStatus)) {
+    return json(409, { ok: false, error: "ALREADY_ACTIVE" });
+  }
+  if (currentStatus === "suspended") {
+    return json(409, { ok: false, error: "SALON_SUSPENDED" });
+  }
+  if (!["draft", "rejected", "pending_approval", "pending_review"].includes(currentStatus)) {
     return json(400, { ok: false, error: "INVALID_STATUS" });
   }
 

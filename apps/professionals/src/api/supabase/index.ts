@@ -43,6 +43,41 @@ function missingColumn(error: unknown, column: string) {
   return message.includes(column);
 }
 
+async function getFunctionErrorMessage(error: any, fallback: string) {
+  if (!error) return fallback;
+
+  const context = error?.context;
+  if (context && typeof context.json === 'function') {
+    try {
+      const payload = await context.json();
+      const value = String(payload?.error || payload?.message || '').trim();
+      if (value) return value;
+    } catch {
+      // no-op
+    }
+  }
+
+  if (context && typeof context.text === 'function') {
+    try {
+      const text = String(await context.text());
+      if (text) {
+        try {
+          const parsed = JSON.parse(text);
+          const value = String(parsed?.error || parsed?.message || '').trim();
+          if (value) return value;
+        } catch {
+          return text.slice(0, 120);
+        }
+      }
+    } catch {
+      // no-op
+    }
+  }
+
+  const direct = String(error?.message || '').trim();
+  return direct || fallback;
+}
+
 function toSalonStatus(value: unknown): Salon['status'] {
   const normalized = String(value || '')
     .trim()
@@ -390,7 +425,10 @@ export const supabaseApi: CareChairApi = {
           }
         }
       });
-      if (req.error || !req.data?.ok) throw req.error || new Error(String(req.data?.error || 'REQUEST_FAILED'));
+      if (req.error || !req.data?.ok) {
+        if (req.error) throw new Error(await getFunctionErrorMessage(req.error, 'REQUEST_FAILED'));
+        throw new Error(String(req.data?.error || 'REQUEST_FAILED'));
+      }
 
       const {data, error} = await client
         .from('salons')

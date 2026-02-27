@@ -53,6 +53,41 @@ function normalizeStatus(status: unknown): SalonMemberStatus {
   return String(status || '').trim().toUpperCase() === 'REMOVED' ? 'REMOVED' : 'ACTIVE';
 }
 
+async function getFunctionErrorMessage(error: any, fallback: string) {
+  if (!error) return fallback;
+
+  const context = error?.context;
+  if (context && typeof context.json === 'function') {
+    try {
+      const payload = await context.json();
+      const value = String(payload?.error || payload?.message || '').trim();
+      if (value) return value;
+    } catch {
+      // no-op
+    }
+  }
+
+  if (context && typeof context.text === 'function') {
+    try {
+      const text = String(await context.text());
+      if (text) {
+        try {
+          const parsed = JSON.parse(text);
+          const value = String(parsed?.error || parsed?.message || '').trim();
+          if (value) return value;
+        } catch {
+          return text.slice(0, 120);
+        }
+      }
+    } catch {
+      // no-op
+    }
+  }
+
+  const direct = String(error?.message || '').trim();
+  return direct || fallback;
+}
+
 export async function upsertMyProfile(params: {phone?: string; fullName?: string}) {
   const client = assertClient();
   const userRes = await client.auth.getUser();
@@ -103,7 +138,7 @@ export async function createInvite(input: CreateInviteInput): Promise<CreateInvi
     max_uses: input.maxUses,
   };
   const {data, error} = await client.functions.invoke('create-invite', {body});
-  if (error) throw error;
+  if (error) throw new Error(await getFunctionErrorMessage(error, 'INVITE_CREATE_FAILED'));
   if (!data?.ok) throw new Error(String(data?.error || 'INVITE_CREATE_FAILED'));
 
   return {
@@ -122,7 +157,7 @@ export async function acceptInvite(input: AcceptInviteInput): Promise<AcceptInvi
     code: input.code || undefined,
   };
   const {data, error} = await client.functions.invoke('accept-invite', {body});
-  if (error) throw error;
+  if (error) throw new Error(await getFunctionErrorMessage(error, 'INVITE_ACCEPT_FAILED'));
   if (!data?.ok) throw new Error(String(data?.error || 'INVITE_ACCEPT_FAILED'));
 
   return {

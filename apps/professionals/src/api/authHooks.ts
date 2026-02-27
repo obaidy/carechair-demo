@@ -15,12 +15,17 @@ export function useBootstrapAuth() {
   const clear = useAuthStore((state) => state.clear);
 
   return useCallback(async function bootstrap() {
+    const existingSession = useAuthStore.getState().session;
     try {
       const hydrated = await hydrateAuthState({
         pendingToken: useAuthStore.getState().pendingJoinToken || undefined,
         acceptPendingToken: true
       });
       if (!hydrated) {
+        if (existingSession) {
+          setHydrated(true);
+          return;
+        }
         clear();
         return;
       }
@@ -31,6 +36,10 @@ export function useBootstrapAuth() {
       setPendingJoinToken(null);
       setHydrated(true);
     } catch {
+      if (existingSession) {
+        setHydrated(true);
+        return;
+      }
       clear();
     }
   }, [clear, setActiveSalonId, setContext, setHydrated, setMemberships, setPendingJoinToken, setSession]);
