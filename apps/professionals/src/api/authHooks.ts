@@ -17,18 +17,12 @@ export function useBootstrapAuth() {
   const clear = useAuthStore((state) => state.clear);
 
   return useCallback(async function bootstrap() {
-    const existingSession = useAuthStore.getState().session;
     try {
       const hydrated = await hydrateAuthState({
         pendingToken: useAuthStore.getState().pendingJoinToken || undefined,
         acceptPendingToken: true
       });
       if (!hydrated) {
-        if (existingSession) {
-          setBootstrapError('MEMBERSHIP_FETCH_EMPTY');
-          setHydrated(true);
-          return;
-        }
         clear();
         return;
       }
@@ -42,7 +36,11 @@ export function useBootstrapAuth() {
     } catch (error: any) {
       const message = String(error?.message || 'BOOTSTRAP_FAILED');
       pushDevLog('error', 'auth.bootstrap', 'Auth bootstrap failed', {message});
-      if (existingSession) {
+      if (message === 'NO_SESSION') {
+        clear();
+        return;
+      }
+      if (useAuthStore.getState().session) {
         setBootstrapError(message);
         setHydrated(true);
         return;

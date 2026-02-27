@@ -4,9 +4,6 @@ import {flags} from '../config/flags';
 import {secureGet, secureRemove, secureSet} from '../utils/secureStore';
 import type {AuthSession, OwnerContext} from '../types/models';
 import {env} from '../utils/env';
-import {pushDevLog} from '../lib/devLogger';
-import {useAuthStore} from '../state/authStore';
-import {supabase} from '../api/supabase/client';
 
 const ACTIVE_SALON_KEY = 'cc_prof_active_salon_id';
 const PENDING_JOIN_TOKEN_KEY = 'cc_prof_pending_join_token';
@@ -79,35 +76,10 @@ async function selectActiveSalon(memberships: Membership[]) {
   return null;
 }
 
-async function ensureSupabaseRuntimeSession(session: AuthSession | null) {
-  if (env.useMockApi || !supabase || !session?.accessToken || !session.refreshToken) return;
-  const current = await supabase.auth.getSession();
-  if (!current.error && current.data.session?.access_token === session.accessToken) return;
-  const restored = await supabase.auth.setSession({
-    access_token: session.accessToken,
-    refresh_token: session.refreshToken,
-  });
-  if (restored.error) {
-    if (__DEV__) {
-      pushDevLog('error', 'auth.hydrate', 'Failed to restore runtime Supabase session from store', {
-        message: String(restored.error.message || restored.error),
-      });
-    }
-    throw restored.error;
-  }
-}
-
 export async function hydrateAuthState(options?: {pendingToken?: string | null; acceptPendingToken?: boolean}): Promise<HydratedAuthState | null> {
   const liveSession = await api.auth.getSession();
-  const cachedSession = useAuthStore.getState().session;
-  const session = liveSession || cachedSession;
-  if (__DEV__ && !liveSession && cachedSession) {
-    pushDevLog('info', 'auth.hydrate', 'Recovered session from in-memory store fallback', {
-      userId: cachedSession.userId,
-    });
-  }
-  if (!session) return null;
-  await ensureSupabaseRuntimeSession(session);
+  if (!liveSession) return null;
+  const session = liveSession;
 
   const useLegacyIdentity = !flags.USE_INVITES_V2 && env.useMockApi;
   if (useLegacyIdentity) {

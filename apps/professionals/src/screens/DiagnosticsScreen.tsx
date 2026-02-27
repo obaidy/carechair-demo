@@ -9,6 +9,7 @@ import {readActiveSalonId} from '../auth/session';
 import {env, supabaseHost} from '../utils/env';
 import {getDevLogs, useDevLogs} from '../lib/devLogger';
 import {SALON_STATUS} from '../types/status';
+import {requestSalonActivationV2} from '../api/invites';
 
 type Json = Record<string, unknown> | unknown[] | string | number | boolean | null;
 
@@ -165,16 +166,13 @@ export function DiagnosticsScreen() {
       }
 
       const payload = {
-        salon_id: latestSalon.data.id,
-        submitted_data: {
-          city: 'Baghdad',
-          area: 'Diagnostics',
-          address_mode: 'MANUAL',
-          address_text: 'Diagnostics test address',
-          location_label: 'Diagnostics run',
-        },
+        city: 'Baghdad',
+        area: 'Diagnostics',
+        addressMode: 'MANUAL' as const,
+        addressText: 'Diagnostics test address',
+        locationLabel: 'Diagnostics run',
       };
-      const invokeRes = await supabase.functions.invoke('request-activation', {body: payload});
+      const invokeRes = await requestSalonActivationV2(latestSalon.data.id, payload);
       setResult('requestActivationForLatestSalon', {latestSalon, payload, invokeRes});
     } catch (error: any) {
       setResult('requestActivationForLatestSalon', {error: String(error?.message || error)});

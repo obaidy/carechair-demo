@@ -86,12 +86,7 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function isLikelyJwt(value: string) {
-  const token = String(value || '').trim();
-  if (!token) return false;
-  const parts = token.split('.');
-  return parts.length === 3 && parts.every((part) => part.length > 0);
-}
+const SESSION_REFRESH_LEEWAY_MS = 2 * 60 * 1000;
 
 function syncStoreSession(session: any) {
   if (!session?.access_token) return;
@@ -107,74 +102,69 @@ function syncStoreSession(session: any) {
   setSession(payload);
 }
 
+function clearStoreSession() {
+  useAuthStore.getState().setSession(null);
+  useAuthStore.getState().setContext(null);
+  useAuthStore.getState().setMemberships([]);
+  useAuthStore.getState().setActiveSalonId(null);
+}
+
+async function forceLogoutNoSession(reason: string) {
+  const client = assertClient();
+  if (__DEV__) {
+    pushDevLog('error', 'auth.session', 'Supabase session missing; forcing logout', {reason});
+  }
+  clearStoreSession();
+  try {
+    await client.auth.signOut();
+  } catch {
+    // Best effort.
+  }
+}
+
+function sessionExpiresSoon(session: any) {
+  const expiresAt = Number(session?.expires_at || 0) * 1000;
+  if (!Number.isFinite(expiresAt) || expiresAt <= 0) return false;
+  return expiresAt - Date.now() <= SESSION_REFRESH_LEEWAY_MS;
+}
+
+async function getActiveSupabaseSession(options?: {allowRefresh?: boolean}) {
+  const client = assertClient();
+  const {data, error} = await client.auth.getSession();
+  if (error) throw error;
+
+  let session = data.session;
+  if (session && options?.allowRefresh !== false && sessionExpiresSoon(session)) {
+    const refreshed = await client.auth.refreshSession();
+    if (!refreshed.error && refreshed.data.session) {
+      session = refreshed.data.session;
+    }
+  }
+
+  if (!session?.access_token) {
+    await forceLogoutNoSession('NO_SESSION');
+    throw new Error('NO_SESSION');
+  }
+
+  return session;
+}
+
 async function readAuthUser() {
   const client = assertClient();
-  const cached = useAuthStore.getState().session;
-
-  const fromSession = await client.auth.getSession();
-  if (!fromSession.error && fromSession.data.session?.access_token) {
-    const bySession = await client.auth.getUser(fromSession.data.session.access_token);
-    if (!bySession.error && bySession.data.user) {
-      syncStoreSession(fromSession.data.session);
-      return bySession.data.user;
+  const session = await getActiveSupabaseSession({allowRefresh: true});
+  syncStoreSession(session);
+  const userRes = await client.auth.getUser(session.access_token);
+  if (userRes.error || !userRes.data.user) {
+    const refreshed = await client.auth.refreshSession();
+    if (!refreshed.error && refreshed.data.session?.access_token) {
+      syncStoreSession(refreshed.data.session);
+      const retryUserRes = await client.auth.getUser(refreshed.data.session.access_token);
+      if (!retryUserRes.error && retryUserRes.data.user) return retryUserRes.data.user;
     }
-
-    // Force refresh if stored access token is stale.
-    if (fromSession.data.session.refresh_token) {
-      const refreshed = await client.auth.setSession({
-        access_token: fromSession.data.session.access_token,
-        refresh_token: fromSession.data.session.refresh_token
-      });
-      if (!refreshed.error && refreshed.data.session?.access_token) {
-        const byRefreshed = await client.auth.getUser(refreshed.data.session.access_token);
-        if (!byRefreshed.error && byRefreshed.data.user) {
-          syncStoreSession(refreshed.data.session);
-          return byRefreshed.data.user;
-        }
-      }
-    }
+    await forceLogoutNoSession('NO_SESSION');
+    throw userRes.error || new Error('NO_SESSION');
   }
-
-  // Force SDK re-hydration from the latest verified OTP tokens when available.
-  if (cached?.accessToken && cached?.refreshToken) {
-    const restored = await client.auth.setSession({
-      access_token: cached.accessToken,
-      refresh_token: cached.refreshToken
-    });
-    if (!restored.error && restored.data.session?.access_token) {
-      const byRestored = await client.auth.getUser(restored.data.session.access_token);
-      if (!byRestored.error && byRestored.data.user) {
-        syncStoreSession(restored.data.session);
-        return byRestored.data.user;
-      }
-    }
-  }
-
-  const first = await client.auth.getUser();
-  if (!first.error && first.data.user) {
-    const currentSession = await client.auth.getSession();
-    if (!currentSession.error && currentSession.data.session) {
-      syncStoreSession(currentSession.data.session);
-    }
-    return first.data.user;
-  }
-
-  const message = String(first.error?.message || '').toLowerCase();
-
-  // Expo hot reloads can lose in-memory session. Restore from cached tokens.
-  if (message.includes('session') && cached?.accessToken && cached?.refreshToken) {
-    const restored = await client.auth.setSession({
-      access_token: cached.accessToken,
-      refresh_token: cached.refreshToken
-    });
-    if (!restored.error) {
-      const second = await client.auth.getUser();
-      if (!second.error && second.data.user) return second.data.user;
-      throw second.error || new Error('UNAUTHORIZED');
-    }
-  }
-
-  throw first.error || new Error('UNAUTHORIZED');
+  return userRes.data.user;
 }
 
 function missingColumn(error: unknown, column: string) {
@@ -227,50 +217,18 @@ function redactPayloadForLog(payload: unknown) {
 }
 
 async function getAccessTokenForApi() {
-  const client = assertClient();
-
-  async function validatedToken(rawToken: string, source: 'runtime' | 'restored' | 'store') {
-    const token = String(rawToken || '').trim();
-    if (!isLikelyJwt(token)) return null;
-    const probe = await client.auth.getUser(token);
-    if (!probe.error && probe.data.user) return {token, source};
-    if (__DEV__) {
-      pushDevLog('error', 'auth.token', 'Rejected unusable access token for API call', {
-        source,
-        error: String(probe.error?.message || probe.error || 'TOKEN_INVALID'),
-      });
-    }
-    return null;
+  const session = await getActiveSupabaseSession({allowRefresh: true});
+  syncStoreSession(session);
+  const token = String(session.access_token || '').trim();
+  if (!token) {
+    await forceLogoutNoSession('NO_SESSION');
+    throw new Error('NO_SESSION');
   }
-
-  const runtime = await client.auth.getSession();
-  const runtimeToken = String(runtime.data.session?.access_token || '').trim();
-  const runtimeValidated = await validatedToken(runtimeToken, 'runtime');
-  if (runtimeValidated) {
-    return runtimeValidated;
-  }
-
-  const cached = useAuthStore.getState().session;
-  const cachedToken = String(cached?.accessToken || '').trim();
-
-  if (cached?.refreshToken) {
-    const restored = await client.auth.setSession({
-      access_token: cachedToken,
-      refresh_token: cached.refreshToken,
-    });
-    if (!restored.error) {
-      const restoredToken = String(restored.data.session?.access_token || '').trim();
-      const restoredValidated = await validatedToken(restoredToken, 'restored');
-      if (restoredValidated) {
-        return restoredValidated;
-      }
-    }
-  }
-
-  const cachedValidated = await validatedToken(cachedToken, 'store');
-  if (cachedValidated) return cachedValidated;
-
-  throw new Error('AUTH_SESSION_MISSING');
+  return {
+    token,
+    source: 'supabase.getSession' as const,
+    expiresAt: Number(session.expires_at || 0) * 1000 || null
+  };
 }
 
 async function restRequest(path: string, init: RequestInit & {token: string}) {
@@ -292,34 +250,65 @@ async function restRequest(path: string, init: RequestInit & {token: string}) {
 }
 
 async function invokeEdgeWithLog(functionName: string, body: Record<string, unknown>) {
-  const {token, source} = await getAccessTokenForApi();
+  const {token, source, expiresAt} = await getAccessTokenForApi();
   if (__DEV__) {
     pushDevLog('info', 'edge.invoke', `Invoking ${functionName}`, {
       functionName,
       body: redactPayloadForLog(body),
       hasAccessToken: true,
       tokenSource: source,
+      tokenLength: token.length,
+      expiresAt,
     });
   }
-  const {response, payload} = await restRequest(`/functions/v1/${functionName}`, {
+  let attempt = 0;
+  let invoke = await restRequest(`/functions/v1/${functionName}`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(body),
     token,
   });
-  const ok = response.ok;
+  if (invoke.response.status === 401) {
+    attempt = 1;
+    const client = assertClient();
+    const refreshed = await client.auth.refreshSession();
+    const refreshedToken = String(refreshed.data.session?.access_token || '').trim();
+    if (refreshedToken) {
+      syncStoreSession(refreshed.data.session);
+      if (__DEV__) {
+        pushDevLog('info', 'edge.invoke', `Retrying ${functionName} after 401 with refreshed session`, {
+          functionName,
+          tokenSource: 'supabase.getSession',
+          tokenLength: refreshedToken.length,
+          expiresAt: Number(refreshed.data.session?.expires_at || 0) * 1000 || null
+        });
+      }
+      invoke = await restRequest(`/functions/v1/${functionName}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body),
+        token: refreshedToken,
+      });
+    } else {
+      await forceLogoutNoSession('NO_SESSION');
+      throw new Error('NO_SESSION');
+    }
+  }
+
+  const ok = invoke.response.ok;
   const result = {
-    data: ok ? payload : null,
-    error: ok ? null : {message: String(payload?.error || payload?.message || `HTTP_${response.status}`)},
-    status: response.status,
+    data: ok ? invoke.payload : null,
+    error: ok ? null : {message: String(invoke.payload?.error || invoke.payload?.message || `HTTP_${invoke.response.status}`)},
+    status: invoke.response.status,
   };
   if (__DEV__) {
     pushDevLog(result.error || !result.data?.ok ? 'error' : 'info', 'edge.invoke', `Result ${functionName}`, {
       functionName,
-      status: response.status,
+      status: invoke.response.status,
       data: result.data ?? null,
       error: result.error ? String(result.error?.message || result.error) : null,
       tokenSource: source,
+      attempts: attempt + 1,
     });
   }
   return result;

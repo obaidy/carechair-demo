@@ -137,46 +137,47 @@ function mapBookingRow(row: any): Booking {
   };
 }
 
+const SESSION_REFRESH_LEEWAY_MS = 2 * 60 * 1000;
+
+function sessionExpiresSoon(session: any) {
+  const expiresAt = Number(session?.expires_at || 0) * 1000;
+  if (!Number.isFinite(expiresAt) || expiresAt <= 0) return false;
+  return expiresAt - Date.now() <= SESSION_REFRESH_LEEWAY_MS;
+}
+
+async function getActiveSupabaseSession(client: ReturnType<typeof assertSupabase>, options?: {allowRefresh?: boolean}) {
+  const sessionRes = await client.auth.getSession();
+  if (sessionRes.error) throw sessionRes.error;
+
+  let session = sessionRes.data.session;
+  if (session && options?.allowRefresh !== false && sessionExpiresSoon(session)) {
+    const refreshed = await client.auth.refreshSession();
+    if (!refreshed.error && refreshed.data.session) {
+      session = refreshed.data.session;
+    }
+  }
+
+  if (!session?.access_token) {
+    throw new Error('NO_SESSION');
+  }
+
+  return session;
+}
+
 async function readAuthUser() {
   const client = assertSupabase();
-  const cached = useAuthStore.getState().session;
+  const session = await getActiveSupabaseSession(client, {allowRefresh: true});
+  const userRes = await client.auth.getUser(session.access_token);
+  if (!userRes.error && userRes.data.user) return userRes.data.user;
 
-  const fromSession = await client.auth.getSession();
-  if (!fromSession.error && fromSession.data.session?.access_token) {
-    const bySession = await client.auth.getUser(fromSession.data.session.access_token);
-    if (!bySession.error && bySession.data.user) return bySession.data.user;
+  const refreshed = await client.auth.refreshSession();
+  if (!refreshed.error && refreshed.data.session?.access_token) {
+    const retry = await client.auth.getUser(refreshed.data.session.access_token);
+    if (!retry.error && retry.data.user) return retry.data.user;
+    throw retry.error || new Error('NO_SESSION');
   }
 
-  if (cached?.accessToken && cached?.refreshToken) {
-    const restored = await client.auth.setSession({
-      access_token: cached.accessToken,
-      refresh_token: cached.refreshToken
-    });
-    if (!restored.error && restored.data.session?.access_token) {
-      const byRestored = await client.auth.getUser(restored.data.session.access_token);
-      if (!byRestored.error && byRestored.data.user) return byRestored.data.user;
-    }
-  }
-
-  const first = await client.auth.getUser();
-  if (!first.error && first.data.user) return first.data.user;
-
-  const message = String(first.error?.message || '').toLowerCase();
-
-  // Supabase can lose in-memory session in Expo Go hot reloads; restore from latest verified tokens.
-  if (message.includes('session') && cached?.accessToken && cached?.refreshToken) {
-    const restored = await client.auth.setSession({
-      access_token: cached.accessToken,
-      refresh_token: cached.refreshToken
-    });
-    if (!restored.error) {
-      const second = await client.auth.getUser();
-      if (!second.error && second.data.user) return second.data.user;
-      throw second.error || new Error('UNAUTHORIZED');
-    }
-  }
-
-  throw first.error || new Error('UNAUTHORIZED');
+  throw userRes.error || new Error('NO_SESSION');
 }
 
 async function readOwnerContext(): Promise<OwnerContext> {
@@ -256,9 +257,12 @@ export const supabaseApi: CareChairApi = {
   auth: {
     getSession: async () => {
       const client = assertSupabase();
-      const {data} = await client.auth.getSession();
-      if (!data.session) return null;
-      return toSession(data.session);
+      try {
+        const session = await getActiveSupabaseSession(client, {allowRefresh: true});
+        return toSession(session);
+      } catch {
+        return null;
+      }
     },
     sendOtp: async (phone) => {
       const client = assertSupabase();
@@ -299,7 +303,11 @@ export const supabaseApi: CareChairApi = {
       if (canUseDevBypass) {
         const runtime = await client.auth.getSession();
         if (!runtime.error && runtime.data.session) {
-          pushDevLog('info', 'auth.verifyOtp', 'DEV OTP bypass accepted using runtime session');
+          pushDevLog('info', 'auth.verifyOtp', 'DEV OTP bypass accepted using runtime session', {
+            hasAccessToken: Boolean(runtime.data.session.access_token),
+            expiresAt: Number(runtime.data.session.expires_at || 0) * 1000 || null,
+            userId: String(runtime.data.session.user?.id || '')
+          });
           return toSession(runtime.data.session);
         }
         const cached = useAuthStore.getState().session;
@@ -309,7 +317,11 @@ export const supabaseApi: CareChairApi = {
             refresh_token: cached.refreshToken
           });
           if (!restored.error && restored.data.session) {
-            pushDevLog('info', 'auth.verifyOtp', 'DEV OTP bypass accepted using restored cached session');
+            pushDevLog('info', 'auth.verifyOtp', 'DEV OTP bypass accepted using restored cached session', {
+              hasAccessToken: Boolean(restored.data.session.access_token),
+              expiresAt: Number(restored.data.session.expires_at || 0) * 1000 || null,
+              userId: String(restored.data.session.user?.id || '')
+            });
             return toSession(restored.data.session);
           }
         }
@@ -323,7 +335,21 @@ export const supabaseApi: CareChairApi = {
         refresh_token: data.session.refresh_token
       });
       if (!restored.error && restored.data.session) {
+        if (__DEV__) {
+          pushDevLog('info', 'auth.verifyOtp', 'OTP verification succeeded', {
+            hasAccessToken: Boolean(restored.data.session.access_token),
+            expiresAt: Number(restored.data.session.expires_at || 0) * 1000 || null,
+            userId: String(restored.data.session.user?.id || '')
+          });
+        }
         return toSession(restored.data.session);
+      }
+      if (__DEV__) {
+        pushDevLog('info', 'auth.verifyOtp', 'OTP verification succeeded', {
+          hasAccessToken: Boolean(data.session.access_token),
+          expiresAt: Number(data.session.expires_at || 0) * 1000 || null,
+          userId: String(data.session.user?.id || '')
+        });
       }
       return toSession(data.session);
     },
@@ -466,24 +492,46 @@ export const supabaseApi: CareChairApi = {
         }
       };
       if (__DEV__) {
+        const activeSession = await client.auth.getSession();
         pushDevLog('info', 'edge.invoke', 'Invoking request-activation (legacy owner API)', {
           salonId: context.salon.id,
           payload,
-          hasAccessToken: Boolean(useAuthStore.getState().session?.accessToken)
+          hasAccessToken: Boolean(activeSession.data.session?.access_token),
+          tokenLength: String(activeSession.data.session?.access_token || '').length,
+          tokenSource: 'supabase.getSession',
+          expiresAt: Number(activeSession.data.session?.expires_at || 0) * 1000 || null
         });
       }
-      const accessToken = String(useAuthStore.getState().session?.accessToken || '').trim();
-      const req = await client.functions.invoke('request-activation', {
+      const session = await getActiveSupabaseSession(client, {allowRefresh: true});
+      let req = await client.functions.invoke('request-activation', {
         body: payload,
-        headers: accessToken ? {Authorization: `Bearer ${accessToken}`} : undefined
+        headers: {Authorization: `Bearer ${session.access_token}`}
       });
+      let attempts = 1;
+
+      const status = Number((req as any)?.error?.context?.status || ((req as any)?.error ? 500 : 200));
+      if (status === 401) {
+        const refreshed = await client.auth.refreshSession();
+        const retryToken = String(refreshed.data.session?.access_token || '').trim();
+        if (retryToken) {
+          attempts = 2;
+          req = await client.functions.invoke('request-activation', {
+            body: payload,
+            headers: {Authorization: `Bearer ${retryToken}`}
+          });
+        } else {
+          throw new Error('NO_SESSION');
+        }
+      }
       if (__DEV__) {
-        const status = Number((req as any)?.error?.context?.status || ((req as any)?.error ? 500 : 200));
+        const reqStatus = Number((req as any)?.error?.context?.status || ((req as any)?.error ? 500 : 200));
         pushDevLog(req.error || !req.data?.ok ? 'error' : 'info', 'edge.invoke', 'request-activation result (legacy owner API)', {
           salonId: context.salon.id,
-          status,
+          status: reqStatus,
           data: req.data ?? null,
-          error: req.error ? String(req.error?.message || req.error) : null
+          error: req.error ? String(req.error?.message || req.error) : null,
+          tokenSource: 'supabase.getSession',
+          attempts
         });
       }
       if (req.error || !req.data?.ok) {
