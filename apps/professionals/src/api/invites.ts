@@ -220,13 +220,18 @@ function redactPayloadForLog(payload: unknown) {
 
 async function invokeEdgeWithLog(functionName: string, body: Record<string, unknown>) {
   const client = assertClient();
+  const accessToken = String(useAuthStore.getState().session?.accessToken || '').trim();
   if (__DEV__) {
     pushDevLog('info', 'edge.invoke', `Invoking ${functionName}`, {
       functionName,
       body: redactPayloadForLog(body),
+      hasAccessToken: Boolean(accessToken),
     });
   }
-  const result = await client.functions.invoke(functionName, {body});
+  const result = await client.functions.invoke(functionName, {
+    body,
+    headers: accessToken ? {Authorization: `Bearer ${accessToken}`} : undefined,
+  });
   if (__DEV__) {
     const status = Number((result as any)?.error?.context?.status || ((result as any)?.error ? 500 : 200));
     pushDevLog(result.error || !result.data?.ok ? 'error' : 'info', 'edge.invoke', `Result ${functionName}`, {
@@ -242,6 +247,12 @@ async function invokeEdgeWithLog(functionName: string, body: Record<string, unkn
 export async function upsertUserProfileV2(params?: {phone?: string; fullName?: string}) {
   const client = assertClient();
   const user = await readAuthUser();
+  const runtimeSession = await client.auth.getSession();
+  if (runtimeSession.error || !runtimeSession.data.session?.access_token) {
+    const message = String(runtimeSession.error?.message || 'AUTH_SESSION_MISSING');
+    if (__DEV__) pushDevLog('error', 'db.user_profiles.upsert', 'Runtime Supabase session missing before profile upsert', {message});
+    throw new Error(message);
+  }
   const payload = {
     user_id: user.id,
     phone: params?.phone ?? user.phone ?? null,

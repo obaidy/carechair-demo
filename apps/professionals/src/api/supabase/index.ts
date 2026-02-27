@@ -418,10 +418,15 @@ export const supabaseApi: CareChairApi = {
       if (__DEV__) {
         pushDevLog('info', 'edge.invoke', 'Invoking request-activation (legacy owner API)', {
           salonId: context.salon.id,
-          payload
+          payload,
+          hasAccessToken: Boolean(useAuthStore.getState().session?.accessToken)
         });
       }
-      const req = await client.functions.invoke('request-activation', {body: payload});
+      const accessToken = String(useAuthStore.getState().session?.accessToken || '').trim();
+      const req = await client.functions.invoke('request-activation', {
+        body: payload,
+        headers: accessToken ? {Authorization: `Bearer ${accessToken}`} : undefined
+      });
       if (__DEV__) {
         const status = Number((req as any)?.error?.context?.status || ((req as any)?.error ? 500 : 200));
         pushDevLog(req.error || !req.data?.ok ? 'error' : 'info', 'edge.invoke', 'request-activation result (legacy owner API)', {
