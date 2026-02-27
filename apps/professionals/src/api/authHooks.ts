@@ -82,7 +82,10 @@ export function useVerifyOtp() {
         setPendingJoinToken(null);
         setBootstrapError(null);
       } else {
-        setBootstrapError('MEMBERSHIP_FETCH_EMPTY');
+        // OTP verified successfully. If hydration returns null (session race),
+        // continue with a valid authenticated shell and route to onboarding.
+        pushDevLog('info', 'auth.verifyOtp', 'Hydration returned null after OTP success; routing without bootstrap error');
+        setBootstrapError(null);
         setContext(null);
         setMemberships([]);
         setActiveSalonId(null);
