@@ -130,10 +130,30 @@ function sessionExpiresSoon(session: any) {
 
 async function getActiveSupabaseSession(options?: {allowRefresh?: boolean}) {
   const client = assertClient();
-  const {data, error} = await client.auth.getSession();
-  if (error) throw error;
+  let session: any = null;
+  let lastError: any = null;
 
-  let session = data.session;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const {data, error} = await client.auth.getSession();
+    if (!error && data.session?.access_token) {
+      session = data.session;
+      break;
+    }
+    lastError = error;
+    if (attempt < 2) await delay(180);
+  }
+
+  if (!session && options?.allowRefresh !== false) {
+    const refreshed = await client.auth.refreshSession();
+    if (!refreshed.error && refreshed.data.session?.access_token) {
+      session = refreshed.data.session;
+    } else {
+      lastError = refreshed.error || lastError;
+    }
+  }
+
+  if (!session && lastError) throw lastError;
+
   if (session && options?.allowRefresh !== false && sessionExpiresSoon(session)) {
     const refreshed = await client.auth.refreshSession();
     if (!refreshed.error && refreshed.data.session) {

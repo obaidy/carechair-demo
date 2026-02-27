@@ -146,10 +146,32 @@ function sessionExpiresSoon(session: any) {
 }
 
 async function getActiveSupabaseSession(client: ReturnType<typeof assertSupabase>, options?: {allowRefresh?: boolean}) {
-  const sessionRes = await client.auth.getSession();
-  if (sessionRes.error) throw sessionRes.error;
+  let session: any = null;
+  let lastError: any = null;
 
-  let session = sessionRes.data.session;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const sessionRes = await client.auth.getSession();
+    if (!sessionRes.error && sessionRes.data.session?.access_token) {
+      session = sessionRes.data.session;
+      break;
+    }
+    lastError = sessionRes.error;
+    if (attempt < 2) {
+      await new Promise((resolve) => setTimeout(resolve, 180));
+    }
+  }
+
+  if (!session && options?.allowRefresh !== false) {
+    const refreshed = await client.auth.refreshSession();
+    if (!refreshed.error && refreshed.data.session?.access_token) {
+      session = refreshed.data.session;
+    } else {
+      lastError = refreshed.error || lastError;
+    }
+  }
+
+  if (!session && lastError) throw lastError;
+
   if (session && options?.allowRefresh !== false && sessionExpiresSoon(session)) {
     const refreshed = await client.auth.refreshSession();
     if (!refreshed.error && refreshed.data.session) {
@@ -334,24 +356,28 @@ export const supabaseApi: CareChairApi = {
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token
       });
-      if (!restored.error && restored.data.session) {
+      if (restored.error) {
         if (__DEV__) {
-          pushDevLog('info', 'auth.verifyOtp', 'OTP verification succeeded', {
-            hasAccessToken: Boolean(restored.data.session.access_token),
-            expiresAt: Number(restored.data.session.expires_at || 0) * 1000 || null,
-            userId: String(restored.data.session.user?.id || '')
+          pushDevLog('error', 'auth.verifyOtp', 'OTP verify succeeded but setSession failed', {
+            error: String(restored.error?.message || restored.error)
           });
         }
-        return toSession(restored.data.session);
+        throw restored.error;
       }
-      if (__DEV__) {
-        pushDevLog('info', 'auth.verifyOtp', 'OTP verification succeeded', {
-          hasAccessToken: Boolean(data.session.access_token),
-          expiresAt: Number(data.session.expires_at || 0) * 1000 || null,
-          userId: String(data.session.user?.id || '')
-        });
+
+      const active = await getActiveSupabaseSession(client, {allowRefresh: true});
+      if (active?.access_token) {
+        if (__DEV__) {
+          pushDevLog('info', 'auth.verifyOtp', 'OTP verification succeeded', {
+            hasAccessToken: Boolean(active.access_token),
+            expiresAt: Number(active.expires_at || 0) * 1000 || null,
+            userId: String(active.user?.id || '')
+          });
+        }
+        return toSession(active);
       }
-      return toSession(data.session);
+
+      throw new Error('NO_SESSION');
     },
     signOut: async () => {
       const client = assertSupabase();
