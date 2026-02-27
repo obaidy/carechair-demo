@@ -2,6 +2,7 @@ import {redirect} from 'next/navigation';
 import {unstable_noStore as noStore} from 'next/cache';
 import ActivationQueueClient from '@/components/admin/ActivationQueueClient';
 import {createServiceSupabaseClient} from '@/lib/supabase/service';
+import {normalizeSalonLifecycleStatus, SALON_STATUS} from '@/lib/types/status';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -37,7 +38,7 @@ export default async function ActivationQueuePage({params}: Props) {
   const stateRes = await supabase
     .from('salons')
     .select('id,name,slug,status,city,area,whatsapp,updated_at')
-    .in('status', ['active', 'suspended'])
+    .in('status', [SALON_STATUS.ACTIVE, SALON_STATUS.SUSPENDED, 'active', 'suspended'])
     .order('updated_at', {ascending: false});
 
   if (pendingRes.error || stateRes.error) {
@@ -93,14 +94,14 @@ export default async function ActivationQueuePage({params}: Props) {
   }));
 
   const active = (stateRes.data || [])
-    .filter((row: any) => String(row.status || '') === 'active')
+    .filter((row: any) => normalizeSalonLifecycleStatus(row.status) === SALON_STATUS.ACTIVE)
     .map((row: any) => ({
       ...row,
       owner_phone: phoneByUser[ownerBySalon[String(row.id)]] || null
     }));
 
   const suspended = (stateRes.data || [])
-    .filter((row: any) => String(row.status || '') === 'suspended')
+    .filter((row: any) => normalizeSalonLifecycleStatus(row.status) === SALON_STATUS.SUSPENDED)
     .map((row: any) => ({
       ...row,
       owner_phone: phoneByUser[ownerBySalon[String(row.id)]] || null

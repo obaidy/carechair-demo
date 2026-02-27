@@ -3,6 +3,7 @@ import {acceptInvite, getOwnerContextBySalonIdV2, listActiveMembershipsV2, type 
 import {flags} from '../config/flags';
 import {secureGet, secureRemove, secureSet} from '../utils/secureStore';
 import type {AuthSession, OwnerContext} from '../types/models';
+import {env} from '../utils/env';
 
 const ACTIVE_SALON_KEY = 'cc_prof_active_salon_id';
 const PENDING_JOIN_TOKEN_KEY = 'cc_prof_pending_join_token';
@@ -79,7 +80,8 @@ export async function hydrateAuthState(options?: {pendingToken?: string | null; 
   const session = await api.auth.getSession();
   if (!session) return null;
 
-  if (!flags.USE_INVITES_V2) {
+  const useLegacyIdentity = !flags.USE_INVITES_V2 && env.useMockApi;
+  if (useLegacyIdentity) {
     const context = await api.owner.getContext();
     return {
       session,

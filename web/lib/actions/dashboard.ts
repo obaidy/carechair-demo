@@ -5,6 +5,7 @@ import {z} from 'zod';
 import {readAuthSession} from '@/lib/auth/server';
 import {getSuperadminCode} from '@/lib/auth/config';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
+import {normalizeSalonLifecycleStatus, SALON_STATUS} from '@/lib/types/status';
 
 function missingColumn(error: unknown, columnName: string): boolean {
   const raw = String((error as {message?: string})?.message || '').toLowerCase();
@@ -493,8 +494,8 @@ export async function updateOwnerSalonProfileAction(formData: FormData) {
 
   const salonRes = await supabase.from('salons').select('status').eq('id', session.salonId).maybeSingle();
   if (salonRes.error) return;
-  const status = String(salonRes.data?.status || '').trim().toLowerCase();
-  if (!['draft', 'pending_review', 'pending_approval', 'rejected'].includes(status)) return;
+  const status = normalizeSalonLifecycleStatus(salonRes.data?.status);
+  if (status !== SALON_STATUS.DRAFT && status !== SALON_STATUS.PENDING_REVIEW) return;
 
   const asNumber = (value: string | undefined) => {
     const n = Number(String(value || '').trim());
@@ -565,20 +566,16 @@ export async function superadminSalonAction(formData: FormData) {
   const trialEnd = new Date();
   trialEnd.setDate(trialEnd.getDate() + 7);
   const allowedStatuses = new Set([
-    'draft',
-    'pending_approval',
-    'pending_billing',
-    'trialing',
-    'active',
-    'past_due',
-    'suspended',
-    'rejected'
+    SALON_STATUS.DRAFT,
+    SALON_STATUS.PENDING_REVIEW,
+    SALON_STATUS.ACTIVE,
+    SALON_STATUS.SUSPENDED,
   ]);
 
   let patch: Record<string, unknown> = {};
   if (parsed.data.action === 'approve_trial') {
     patch = {
-      status: 'trialing',
+      status: SALON_STATUS.ACTIVE,
       subscription_status: 'trialing',
       billing_status: 'trialing',
       trial_end_at: trialEnd.toISOString(),
@@ -591,7 +588,7 @@ export async function superadminSalonAction(formData: FormData) {
 
   if (parsed.data.action === 'suspend') {
     patch = {
-      status: 'suspended',
+      status: SALON_STATUS.SUSPENDED,
       subscription_status: 'suspended',
       billing_status: 'suspended',
       is_active: false,
@@ -602,7 +599,7 @@ export async function superadminSalonAction(formData: FormData) {
 
   if (parsed.data.action === 'resume') {
     patch = {
-      status: 'active',
+      status: SALON_STATUS.ACTIVE,
       subscription_status: 'active',
       billing_status: 'active',
       is_active: true,
@@ -622,7 +619,7 @@ export async function superadminSalonAction(formData: FormData) {
 
   if (parsed.data.action === 'reject') {
     patch = {
-      status: 'rejected',
+      status: SALON_STATUS.DRAFT,
       subscription_status: 'canceled',
       billing_status: 'canceled',
       is_active: false,
@@ -644,7 +641,7 @@ export async function superadminSalonAction(formData: FormData) {
     const nextTrialEnd = new Date();
     nextTrialEnd.setDate(nextTrialEnd.getDate() + days);
     patch = {
-      status: 'trialing',
+      status: SALON_STATUS.ACTIVE,
       subscription_status: 'trialing',
       billing_status: 'trialing',
       trial_end_at: nextTrialEnd.toISOString(),
@@ -656,22 +653,21 @@ export async function superadminSalonAction(formData: FormData) {
   }
 
   if (parsed.data.action === 'force_status') {
-    const nextStatus = String(parsed.data.status || 'draft');
+    const nextStatus = normalizeSalonLifecycleStatus(parsed.data.status || SALON_STATUS.DRAFT);
     if (!allowedStatuses.has(nextStatus)) return;
     const billingMap: Record<string, string> = {
-      trialing: 'trialing',
-      active: 'active',
-      past_due: 'past_due',
-      suspended: 'suspended',
-      rejected: 'canceled'
+      [SALON_STATUS.DRAFT]: 'inactive',
+      [SALON_STATUS.PENDING_REVIEW]: 'inactive',
+      [SALON_STATUS.ACTIVE]: 'active',
+      [SALON_STATUS.SUSPENDED]: 'suspended',
     };
     const nextBilling = billingMap[nextStatus] || 'inactive';
     patch = {
       status: nextStatus,
       subscription_status: nextBilling,
       billing_status: nextBilling,
-      is_active: !['suspended', 'rejected'].includes(nextStatus),
-      suspended_reason: nextStatus === 'suspended' ? 'Suspended by superadmin' : null,
+      is_active: nextStatus !== SALON_STATUS.SUSPENDED,
+      suspended_reason: nextStatus === SALON_STATUS.SUSPENDED ? 'Suspended by superadmin' : null,
       updated_at: nowIso
     };
   }
@@ -926,7 +922,7 @@ export async function superadminCreateSalonAction(formData: FormData) {
     country_code: parsed.data.countryCode,
     setup_required: true,
     setup_paid: false,
-    status: 'pending_approval',
+    status: SALON_STATUS.PENDING_REVIEW,
     subscription_status: 'inactive',
     billing_status: 'inactive',
     trial_end_at: null,

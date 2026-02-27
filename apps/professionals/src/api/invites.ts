@@ -2,6 +2,8 @@ import type {AuthSession, OwnerContext, Salon, SalonStatus, UserProfile, UserRol
 import type {RequestActivationInput} from '../types/models';
 import {supabase} from './supabase/client';
 import {useAuthStore} from '../state/authStore';
+import {normalizeSalonStatus, toDbSalonStatus} from '../types/status';
+import {pushDevLog} from '../lib/devLogger';
 
 export type MembershipStatus = 'ACTIVE' | 'REMOVED';
 
@@ -77,23 +79,6 @@ function normalizeStatus(status: unknown): MembershipStatus {
     .trim()
     .toUpperCase();
   return value === 'REMOVED' ? 'REMOVED' : 'ACTIVE';
-}
-
-function toSalonStatus(input: unknown): SalonStatus {
-  const value = String(input || '')
-    .trim()
-    .toLowerCase();
-  if (value === 'active' || value === 'trialing' || value === 'past_due') return 'ACTIVE';
-  if (value === 'suspended') return 'SUSPENDED';
-  if (value === 'pending_review' || value === 'pending_approval') return 'PENDING_REVIEW';
-  return 'DRAFT';
-}
-
-function toDbSalonStatus(status: SalonStatus) {
-  if (status === 'PENDING_REVIEW') return 'pending_approval';
-  if (status === 'ACTIVE') return 'active';
-  if (status === 'SUSPENDED') return 'suspended';
-  return 'draft';
 }
 
 function delay(ms: number) {
@@ -224,6 +209,36 @@ async function getFunctionErrorMessage(error: any, fallback: string) {
   return direct || fallback;
 }
 
+function redactPayloadForLog(payload: unknown) {
+  if (!payload || typeof payload !== 'object') return payload;
+  const raw = payload as Record<string, unknown>;
+  const cloned: Record<string, unknown> = {...raw};
+  if (typeof cloned.token === 'string' && cloned.token) cloned.token = '***';
+  if (typeof cloned.code === 'string' && cloned.code) cloned.code = String(cloned.code).slice(0, 2) + '******';
+  return cloned;
+}
+
+async function invokeEdgeWithLog(functionName: string, body: Record<string, unknown>) {
+  const client = assertClient();
+  if (__DEV__) {
+    pushDevLog('info', 'edge.invoke', `Invoking ${functionName}`, {
+      functionName,
+      body: redactPayloadForLog(body),
+    });
+  }
+  const result = await client.functions.invoke(functionName, {body});
+  if (__DEV__) {
+    const status = Number((result as any)?.error?.context?.status || ((result as any)?.error ? 500 : 200));
+    pushDevLog(result.error || !result.data?.ok ? 'error' : 'info', 'edge.invoke', `Result ${functionName}`, {
+      functionName,
+      status,
+      data: result.data ?? null,
+      error: result.error ? String(result.error?.message || result.error) : null,
+    });
+  }
+  return result;
+}
+
 export async function upsertUserProfileV2(params?: {phone?: string; fullName?: string}) {
   const client = assertClient();
   const user = await readAuthUser();
@@ -234,7 +249,10 @@ export async function upsertUserProfileV2(params?: {phone?: string; fullName?: s
     last_active_at: new Date().toISOString()
   };
   const {error} = await client.from('user_profiles').upsert(payload, {onConflict: 'user_id'});
-  if (error) throw error;
+  if (error) {
+    if (__DEV__) pushDevLog('error', 'db.user_profiles.upsert', 'Failed to upsert user profile', {error: String(error.message || error.code || 'unknown')});
+    throw error;
+  }
 }
 
 export async function listActiveMembershipsV2(): Promise<Membership[]> {
@@ -261,6 +279,12 @@ export async function listActiveMembershipsV2(): Promise<Membership[]> {
     }
 
     lastError = error;
+    if (__DEV__) {
+      pushDevLog('error', 'db.salon_members.select', 'Failed to fetch active memberships', {
+        attempt: attempt + 1,
+        error: String(error?.message || error?.code || error),
+      });
+    }
     if (attempt < 2) await delay(220);
   }
 
@@ -291,7 +315,7 @@ function mapSalonRowToContext(row: any, user: UserProfile): OwnerContext {
     phone: String(row.whatsapp || ''),
     locationLabel: String(row.area || row.city || ''),
     locationAddress: String(row.address || row.area || ''),
-    status: toSalonStatus(row.status),
+    status: normalizeSalonStatus(row.status),
     workdayStart: '08:00',
     workdayEnd: '22:00',
     publicBookingUrl: row.slug ? `/s/${row.slug}` : undefined,
@@ -313,6 +337,13 @@ export async function getOwnerContextBySalonIdV2(salonId: string | null): Promis
       .eq('id', salonId)
       .maybeSingle();
     if (!error && data) return mapSalonRowToContext(data, user);
+    if (__DEV__ && error) {
+      pushDevLog('error', 'db.salons.select', 'Failed to fetch owner context salon', {
+        attempt: attempt + 1,
+        salonId,
+        error: String(error?.message || error?.code || error),
+      });
+    }
     if (attempt < 2) await delay(220);
   }
 
@@ -335,7 +366,7 @@ export async function createSalonDraftV2(input: CreateSalonDraftInput): Promise<
     whatsapp: input.phone,
     timezone: 'Asia/Baghdad',
     admin_passcode: generatedPasscode,
-    status: toDbSalonStatus('DRAFT'),
+    status: toDbSalonStatus('DRAFT' as SalonStatus),
     created_by: user.id,
     is_public: false,
     is_active: true
@@ -383,7 +414,7 @@ export async function requestSalonActivationV2(salonId: string, input: RequestAc
     }
   };
 
-  const req = await client.functions.invoke('request-activation', {body: payload});
+  const req = await invokeEdgeWithLog('request-activation', payload);
   if (req.error || !req.data?.ok) {
     if (req.error) {
       throw new Error(await getFunctionErrorMessage(req.error, 'REQUEST_FAILED'));
@@ -404,14 +435,13 @@ export async function requestSalonActivationV2(salonId: string, input: RequestAc
 export async function createInvite(input: CreateInviteInput): Promise<CreateInviteResult> {
   const client = assertClient();
   await readAuthUser();
-  const {data, error} = await client.functions.invoke('create-invite', {
-    body: {
-      salon_id: input.salonId,
-      role: input.role,
-      expires_in_hours: input.expiresInHours,
-      max_uses: input.maxUses
-    }
-  });
+  const payload = {
+    salon_id: input.salonId,
+    role: input.role,
+    expires_in_hours: input.expiresInHours,
+    max_uses: input.maxUses
+  };
+  const {data, error} = await invokeEdgeWithLog('create-invite', payload);
   if (error) throw new Error(await getFunctionErrorMessage(error, 'INVITE_CREATE_FAILED'));
   if (!data?.ok) throw new Error(String(data?.error || 'INVITE_CREATE_FAILED'));
   return {
@@ -430,7 +460,7 @@ export async function acceptInvite(input: AcceptInviteInput): Promise<AcceptInvi
     token: input.token || undefined,
     code: input.code ? String(input.code).trim().toUpperCase() : undefined
   };
-  const {data, error} = await client.functions.invoke('accept-invite', {body: payload});
+  const {data, error} = await invokeEdgeWithLog('accept-invite', payload);
   if (error) throw new Error(await getFunctionErrorMessage(error, 'INVALID_INVITE'));
   if (!data?.ok) throw new Error(String(data?.error || 'INVALID_INVITE'));
   return {

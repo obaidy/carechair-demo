@@ -1,5 +1,6 @@
 import {Link} from '@/i18n/navigation';
 import {tx} from '@/lib/messages';
+import {normalizeSalonLifecycleStatus, SALON_STATUS} from '@/lib/types/status';
 
 type Props = {
   locale: string;
@@ -10,19 +11,11 @@ type Props = {
   messages: Record<string, any>;
 };
 
-function normalizeStatus(value: unknown) {
-  const key = String(value || '').trim().toLowerCase();
-  if (key === 'active' || key === 'trialing' || key === 'past_due') return 'active';
-  if (key === 'suspended') return 'suspended';
-  if (key === 'pending_review' || key === 'pending_approval') return 'pending';
-  return 'draft';
-}
-
 export default function StatusBanner({locale, salon, messages}: Props) {
-  const status = normalizeStatus(salon.status);
+  const status = normalizeSalonLifecycleStatus(salon.status);
   const bookingLink = salon.slug ? `/${locale}/s/${salon.slug}` : '';
 
-  if (status === 'active') {
+  if (status === SALON_STATUS.ACTIVE) {
     return (
       <section className="panel" style={{borderColor: 'var(--success)'}}>
         <p className="muted" style={{color: 'var(--success)'}}>
@@ -37,7 +30,7 @@ export default function StatusBanner({locale, salon, messages}: Props) {
     );
   }
 
-  if (status === 'pending') {
+  if (status === SALON_STATUS.PENDING_REVIEW) {
     return (
       <section className="panel" style={{borderColor: 'var(--warning)'}}>
         <p className="muted" style={{color: 'var(--warning)'}}>
@@ -51,7 +44,7 @@ export default function StatusBanner({locale, salon, messages}: Props) {
     );
   }
 
-  if (status === 'suspended') {
+  if (status === SALON_STATUS.SUSPENDED) {
     return (
       <section className="panel" style={{borderColor: 'var(--danger)'}}>
         <p className="muted" style={{color: 'var(--danger)'}}>

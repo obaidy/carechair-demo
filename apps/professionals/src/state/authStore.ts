@@ -9,6 +9,7 @@ type AuthState = {
   activeSalonId: string | null;
   pendingJoinToken: string | null;
   pendingPhone: string;
+  bootstrapError: string | null;
   hydrated: boolean;
   setSession: (session: AuthSession | null) => void;
   setContext: (context: OwnerContext | null) => void;
@@ -16,6 +17,7 @@ type AuthState = {
   setActiveSalonId: (salonId: string | null) => void;
   setPendingJoinToken: (token: string | null) => void;
   setPendingPhone: (phone: string) => void;
+  setBootstrapError: (message: string | null) => void;
   setHydrated: (hydrated: boolean) => void;
   clear: () => void;
 };
@@ -27,6 +29,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   activeSalonId: null,
   pendingJoinToken: null,
   pendingPhone: '',
+  bootstrapError: null,
   hydrated: false,
   setSession: (session) => set({session}),
   setContext: (context) => set({context}),
@@ -34,6 +37,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setActiveSalonId: (activeSalonId) => set({activeSalonId}),
   setPendingJoinToken: (pendingJoinToken) => set({pendingJoinToken}),
   setPendingPhone: (pendingPhone) => set({pendingPhone}),
+  setBootstrapError: (bootstrapError) => set({bootstrapError}),
   setHydrated: (hydrated) => set({hydrated}),
   clear: () =>
     set({
@@ -43,6 +47,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       activeSalonId: null,
       pendingJoinToken: null,
       pendingPhone: '',
+      bootstrapError: null,
       hydrated: true
     })
 }));

@@ -3,6 +3,7 @@ import 'server-only';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 import {readAuthSession} from '@/lib/auth/server';
 import {getSuperadminCode} from '@/lib/auth/config';
+import {normalizeSalonLifecycleStatus, SALON_STATUS} from '@/lib/types/status';
 
 type SalonRecord = {
   id: string;
@@ -152,10 +153,36 @@ export async function getSessionSalon(): Promise<SalonRecord | null> {
   const supabase = createServerSupabaseClient();
   if (!supabase) return null;
 
+  let effectiveSalonId = String(session.salonId || '').trim();
+  const userId = String(session.userId || '').trim();
+
+  if (userId) {
+    let membershipQuery = supabase
+      .from('salon_members')
+      .select('salon_id')
+      .eq('user_id', userId)
+      .eq('status', 'ACTIVE')
+      .limit(1);
+
+    if (effectiveSalonId) {
+      membershipQuery = membershipQuery.eq('salon_id', effectiveSalonId);
+    } else {
+      membershipQuery = membershipQuery.order('joined_at', {ascending: false});
+    }
+
+    const membershipRes = await membershipQuery.maybeSingle();
+    if (!membershipRes.error && membershipRes.data?.salon_id) {
+      effectiveSalonId = String(membershipRes.data.salon_id);
+    } else if (!missingRelation(membershipRes.error, 'salon_members')) {
+      // Membership mismatch should block access instead of silently routing to stale salon cookie data.
+      return null;
+    }
+  }
+
   let query = supabase.from('salons').select('*').limit(1);
 
-  if (session.salonId) {
-    query = query.eq('id', session.salonId);
+  if (effectiveSalonId) {
+    query = query.eq('id', effectiveSalonId);
   } else if (session.salonSlug) {
     query = query.eq('slug', session.salonSlug);
   } else {
@@ -366,11 +393,11 @@ export async function getSuperadminOverviewData() {
 
   const fallbackStats = {
     total_salons: salons.length,
-    pending_approval_count: salons.filter((row) => String(row.status || '') === 'pending_approval').length,
+    pending_approval_count: salons.filter((row) => normalizeSalonLifecycleStatus(row.status) === SALON_STATUS.PENDING_REVIEW).length,
     trialing_count: salons.filter((row) => String(row.status || '') === 'trialing').length,
-    active_count: salons.filter((row) => String(row.status || '') === 'active').length,
+    active_count: salons.filter((row) => normalizeSalonLifecycleStatus(row.status) === SALON_STATUS.ACTIVE).length,
     past_due_count: salons.filter((row) => String(row.status || '') === 'past_due').length,
-    suspended_count: salons.filter((row) => String(row.status || '') === 'suspended').length,
+    suspended_count: salons.filter((row) => normalizeSalonLifecycleStatus(row.status) === SALON_STATUS.SUSPENDED).length,
     total_bookings: 0,
     bookings_today: 0,
     bookings_last_7_days: 0,

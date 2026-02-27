@@ -1,5 +1,6 @@
 import type {SupabaseClient, User} from '@supabase/supabase-js';
 import {digitsOnly} from './phone';
+import {normalizeSalonStatus, SALON_STATUS} from '../types/status';
 
 export type AccessRole = 'salon_admin' | 'superadmin';
 
@@ -73,7 +74,7 @@ async function resolveSalonById(client: SupabaseClient, salonId: string): Promis
     .eq('id', salonId)
     .maybeSingle();
   if (error || !data?.id || !data?.slug) return null;
-  const status = String(data.status || data.subscription_status || data.billing_status || 'draft');
+  const status = normalizeSalonStatus(data.status || data.subscription_status || data.billing_status || SALON_STATUS.DRAFT);
   return {
     salonId: String(data.id),
     salonSlug: String(data.slug),
@@ -90,7 +91,7 @@ async function resolveSalonBySlug(client: SupabaseClient, salonSlug: string): Pr
     .eq('slug', salonSlug)
     .maybeSingle();
   if (error || !data?.id || !data?.slug) return null;
-  const status = String(data.status || data.subscription_status || data.billing_status || 'draft');
+  const status = normalizeSalonStatus(data.status || data.subscription_status || data.billing_status || SALON_STATUS.DRAFT);
   return {
     salonId: String(data.id),
     salonSlug: String(data.slug),
@@ -158,7 +159,7 @@ async function resolveSalonByUserContact(client: SupabaseClient, user: User): Pr
       if (!salonRes.error && Array.isArray(salonRes.data)) {
         const match = salonRes.data.find((row: any) => digitsOnly(String(row?.whatsapp || '')) === phoneDigits);
         if (match?.id && match?.slug) {
-          const status = String(match.status || match.subscription_status || match.billing_status || 'draft');
+          const status = normalizeSalonStatus(match.status || match.subscription_status || match.billing_status || SALON_STATUS.DRAFT);
           return {
             salonId: String(match.id),
             salonSlug: String(match.slug),
@@ -191,7 +192,8 @@ async function resolveSalonByUserContact(client: SupabaseClient, user: User): Pr
 }
 
 function isPendingApproval(status: string): boolean {
-  return status === 'pending_approval' || status === 'pending_billing' || status === 'draft';
+  const normalized = normalizeSalonStatus(status);
+  return normalized === SALON_STATUS.PENDING_REVIEW || normalized === SALON_STATUS.DRAFT;
 }
 
 export async function resolveIdentitySession(
@@ -239,7 +241,7 @@ export async function resolveIdentitySession(
     return {ok: false, error: 'onboarding_required'};
   }
 
-  const salonStatus = String(salonIdentity.salonStatus || 'draft');
+  const salonStatus = normalizeSalonStatus(salonIdentity.salonStatus || SALON_STATUS.DRAFT);
 
   return {
     ok: true,

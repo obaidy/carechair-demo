@@ -1,6 +1,7 @@
 'use client';
 
 import {useMemo, useState} from 'react';
+import {normalizeSalonLifecycleStatus, SALON_STATUS} from '@/lib/types/status';
 
 type Props = {
   salonId: string;
@@ -19,16 +20,8 @@ type Props = {
   };
 };
 
-function normalizeStatus(value: unknown) {
-  const key = String(value || '').trim().toLowerCase();
-  if (key === 'active' || key === 'trialing' || key === 'past_due') return 'active';
-  if (key === 'suspended') return 'suspended';
-  if (key === 'pending_review' || key === 'pending_approval') return 'pending';
-  return 'draft';
-}
-
 export default function ActivationRequestCard({salonId, salonStatus, defaultValues}: Props) {
-  const status = normalizeStatus(salonStatus);
+  const status = normalizeSalonLifecycleStatus(salonStatus);
   const [addressMode, setAddressMode] = useState<'MANUAL' | 'LOCATION'>(
     String(defaultValues.address_mode || '').toUpperCase() === 'LOCATION' ? 'LOCATION' : 'MANUAL'
   );
@@ -59,8 +52,8 @@ export default function ActivationRequestCard({salonId, salonStatus, defaultValu
   );
 
   async function submit() {
-    if (status === 'active') return;
-    if (status === 'suspended') return;
+    if (status === SALON_STATUS.ACTIVE) return;
+    if (status === SALON_STATUS.SUSPENDED) return;
     setBusy(true);
     setMessage('');
     try {
@@ -91,11 +84,11 @@ export default function ActivationRequestCard({salonId, salonStatus, defaultValu
     <section className="panel settings-list" id="activation">
       <h2>Request Activation</h2>
       <p className="muted">
-        {status === 'active'
+        {status === SALON_STATUS.ACTIVE
           ? 'Your salon is already active.'
-          : status === 'pending'
+          : status === SALON_STATUS.PENDING_REVIEW
             ? 'Your activation is under review. You can resubmit details if needed.'
-            : status === 'suspended'
+            : status === SALON_STATUS.SUSPENDED
               ? 'Your salon is suspended. Contact support.'
               : 'Submit verification details for super admin review.'}
       </p>
@@ -164,7 +157,7 @@ export default function ActivationRequestCard({salonId, salonStatus, defaultValu
         <button
           type="button"
           className="btn btn-primary"
-          disabled={busy || status === 'active' || status === 'suspended'}
+          disabled={busy || status === SALON_STATUS.ACTIVE || status === SALON_STATUS.SUSPENDED}
           onClick={() => void submit()}
         >
           {busy ? 'Submitting...' : 'Request Activation'}

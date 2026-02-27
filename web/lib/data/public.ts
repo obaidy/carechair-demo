@@ -1,5 +1,6 @@
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 import {decodePathPart, normalizeSlug, slugEquals} from '@/lib/slug';
+import {SALON_STATUS} from '@/lib/types/status';
 
 export type SalonRow = {
   id: string;
@@ -199,7 +200,7 @@ async function getPublicSalonsBase(): Promise<SalonRow[]> {
     .select(SALON_SELECT)
     .eq('is_public', true)
     .eq('is_active', true)
-    .in('status', ['active', 'trialing'])
+    .in('status', [SALON_STATUS.ACTIVE, 'active', 'TRIALING', 'trialing', 'PAST_DUE', 'past_due'])
     .order('created_at', {ascending: false});
 
   if (!withPublicAndActive.error) {

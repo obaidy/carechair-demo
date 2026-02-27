@@ -1,5 +1,5 @@
 import {useEffect, useMemo} from 'react';
-import {Linking} from 'react-native';
+import {Linking, Text, View} from 'react-native';
 import {NavigationContainer, DarkTheme, DefaultTheme, type Theme as NavigationTheme} from '@react-navigation/native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -12,8 +12,22 @@ import {activeApiMode} from '../api';
 import {useAuthStore} from '../state/authStore';
 import {extractJoinTokenFromUrl, persistPendingJoinToken} from '../auth/session';
 import {flags} from '../config/flags';
+import {env, hasSupabaseConfig, supabaseHost} from '../utils/env';
+import {pushDevLog} from '../lib/devLogger';
 
 const queryClient = new QueryClient();
+
+function ConfigErrorScreen() {
+  return (
+    <View style={{flex: 1, padding: 24, backgroundColor: '#0b1220', justifyContent: 'center', gap: 12}}>
+      <Text style={{fontSize: 20, fontWeight: '700', color: '#fff'}}>Configuration error</Text>
+      <Text style={{fontSize: 14, color: '#cbd5e1', lineHeight: 20}}>
+        Mock mode is OFF but Supabase config is missing. Set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+      </Text>
+      <Text style={{fontSize: 13, color: '#93c5fd'}}>Current host: {supabaseHost || '(missing)'}</Text>
+    </View>
+  );
+}
 
 function AppInner() {
   const theme = useTheme();
@@ -29,9 +43,17 @@ function AppInner() {
   }, [bootstrapAuth]);
 
   useEffect(() => {
-    // Helpful visibility in dev; remove in production if needed.
+    const startup = {
+      apiMode: activeApiMode(),
+      useMockApi: env.useMockApi,
+      useInvitesV2: flags.USE_INVITES_V2,
+      supabaseHost: supabaseHost || '(missing)',
+      buildEnv: env.buildEnv,
+      nodeEnv: process.env.NODE_ENV || 'development',
+    };
     // eslint-disable-next-line no-console
-    console.log(`[CareChair Professionals] API mode: ${activeApiMode()} | invitesV2: ${flags.USE_INVITES_V2 ? 'on' : 'off'}`);
+    console.log('[CareChair Professionals] startup', startup);
+    if (__DEV__) pushDevLog('info', 'startup', 'App bootstrap started', startup);
   }, []);
 
   useEffect(() => {
@@ -88,6 +110,14 @@ function AppInner() {
 }
 
 export default function App() {
+  if (!env.useMockApi && !hasSupabaseConfig) {
+    return (
+      <GestureHandlerRootView style={{flex: 1}}>
+        <ConfigErrorScreen />
+      </GestureHandlerRootView>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{flex: 1}}>
       <QueryClientProvider client={queryClient}>

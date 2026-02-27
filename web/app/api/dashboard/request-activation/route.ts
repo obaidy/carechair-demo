@@ -1,6 +1,7 @@
 import {NextResponse} from 'next/server';
 import {readAuthSession} from '@/lib/auth/server';
 import {createServiceSupabaseClient} from '@/lib/supabase/service';
+import {normalizeSalonLifecycleStatus, SALON_STATUS} from '@/lib/types/status';
 
 function isUuid(value: string | null | undefined) {
   const text = String(value || '').trim();
@@ -82,14 +83,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ok: false, error: 'SALON_NOT_FOUND'}, {status: 404});
   }
 
-  const currentStatus = String(salonRes.data.status || '').trim().toLowerCase();
-  if (['active', 'trialing', 'past_due'].includes(currentStatus)) {
+  const currentStatus = normalizeSalonLifecycleStatus(salonRes.data.status);
+  if (currentStatus === SALON_STATUS.ACTIVE) {
     return NextResponse.json({ok: false, error: 'ALREADY_ACTIVE'}, {status: 409});
   }
-  if (currentStatus === 'suspended') {
+  if (currentStatus === SALON_STATUS.SUSPENDED) {
     return NextResponse.json({ok: false, error: 'SALON_SUSPENDED'}, {status: 409});
   }
-  if (!['draft', 'rejected', 'pending_approval', 'pending_review'].includes(currentStatus)) {
+  if (![SALON_STATUS.DRAFT, SALON_STATUS.PENDING_REVIEW].includes(currentStatus)) {
     return NextResponse.json({ok: false, error: 'INVALID_STATUS'}, {status: 409});
   }
 
@@ -177,7 +178,7 @@ export async function POST(request: Request) {
   }
 
   const salonPatch: Record<string, unknown> = {
-    status: 'pending_approval',
+    status: SALON_STATUS.PENDING_REVIEW,
     address_mode: submittedData.address_mode,
     address_text: submittedData.address_text,
     location_lat: submittedData.location_lat,
@@ -199,5 +200,5 @@ export async function POST(request: Request) {
     address_mode: submittedData.address_mode
   });
 
-  return NextResponse.json({ok: true, salon_status: 'PENDING_REVIEW'});
+  return NextResponse.json({ok: true, salon_status: SALON_STATUS.PENDING_REVIEW});
 }

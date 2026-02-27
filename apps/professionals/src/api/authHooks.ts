@@ -4,6 +4,7 @@ import {api} from './index';
 import {qk} from './queryKeys';
 import {useAuthStore} from '../state/authStore';
 import {hydrateAuthState, logoutSession} from '../auth/session';
+import {pushDevLog} from '../lib/devLogger';
 
 export function useBootstrapAuth() {
   const setSession = useAuthStore((state) => state.setSession);
@@ -11,6 +12,7 @@ export function useBootstrapAuth() {
   const setMemberships = useAuthStore((state) => state.setMemberships);
   const setActiveSalonId = useAuthStore((state) => state.setActiveSalonId);
   const setPendingJoinToken = useAuthStore((state) => state.setPendingJoinToken);
+  const setBootstrapError = useAuthStore((state) => state.setBootstrapError);
   const setHydrated = useAuthStore((state) => state.setHydrated);
   const clear = useAuthStore((state) => state.clear);
 
@@ -23,6 +25,7 @@ export function useBootstrapAuth() {
       });
       if (!hydrated) {
         if (existingSession) {
+          setBootstrapError('MEMBERSHIP_FETCH_EMPTY');
           setHydrated(true);
           return;
         }
@@ -34,15 +37,19 @@ export function useBootstrapAuth() {
       setMemberships(hydrated.memberships);
       setActiveSalonId(hydrated.activeSalonId);
       setPendingJoinToken(null);
+      setBootstrapError(null);
       setHydrated(true);
-    } catch {
+    } catch (error: any) {
+      const message = String(error?.message || 'BOOTSTRAP_FAILED');
+      pushDevLog('error', 'auth.bootstrap', 'Auth bootstrap failed', {message});
       if (existingSession) {
+        setBootstrapError(message);
         setHydrated(true);
         return;
       }
       clear();
     }
-  }, [clear, setActiveSalonId, setContext, setHydrated, setMemberships, setPendingJoinToken, setSession]);
+  }, [clear, setActiveSalonId, setBootstrapError, setContext, setHydrated, setMemberships, setPendingJoinToken, setSession]);
 }
 
 export function useSendOtp() {
@@ -58,6 +65,7 @@ export function useVerifyOtp() {
   const setMemberships = useAuthStore((state) => state.setMemberships);
   const setActiveSalonId = useAuthStore((state) => state.setActiveSalonId);
   const setPendingJoinToken = useAuthStore((state) => state.setPendingJoinToken);
+  const setBootstrapError = useAuthStore((state) => state.setBootstrapError);
   const setHydrated = useAuthStore((state) => state.setHydrated);
 
   return useMutation({
@@ -74,7 +82,9 @@ export function useVerifyOtp() {
         setMemberships(hydrated.memberships);
         setActiveSalonId(hydrated.activeSalonId);
         setPendingJoinToken(null);
+        setBootstrapError(null);
       } else {
+        setBootstrapError('MEMBERSHIP_FETCH_EMPTY');
         setContext(null);
         setMemberships([]);
         setActiveSalonId(null);

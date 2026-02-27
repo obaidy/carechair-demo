@@ -5,9 +5,10 @@ import {getSupabaseConfig} from '@/lib/supabase/config';
 
 type WebRole = 'salon_admin' | 'superadmin';
 
-function digitsOnly(value: string | null | undefined) {
-  return String(value || '').replace(/\D/g, '');
-}
+type SalonIdentity = {
+  salonId: string;
+  salonSlug: string;
+};
 
 function sanitizeNextPath(value: string, locale: string, fallback: string): string {
   if (!value) return fallback;
@@ -43,105 +44,62 @@ function hasRole(user: any, target: WebRole) {
   return roleList.some((row) => isTruthyRole(row, target));
 }
 
-function readSalonIdentityFromMetadata(user: any): {salonId: string; salonSlug: string} | null {
+function readPreferredSalonIdFromMetadata(user: any): string {
   const appMeta = user?.app_metadata || {};
   const userMeta = user?.user_metadata || {};
-  const salonId = String(appMeta.salon_id || appMeta.salonId || userMeta.salon_id || userMeta.salonId || '').trim();
-  const salonSlug = String(appMeta.salon_slug || appMeta.salonSlug || userMeta.salon_slug || userMeta.salonSlug || '').trim();
-  if (!salonId || !salonSlug) return null;
-  return {salonId, salonSlug};
+  return String(appMeta.salon_id || appMeta.salonId || userMeta.salon_id || userMeta.salonId || '').trim();
 }
 
-async function resolveSalonById(authClient: ReturnType<typeof createClient<any>>, salonId: string) {
+function missingRelation(error: unknown, relationName: string): boolean {
+  const code = String((error as {code?: string})?.code || '').toLowerCase();
+  const message = String((error as {message?: string})?.message || '').toLowerCase();
+  return code === '42p01' || (message.includes('relation') && message.includes(relationName.toLowerCase()));
+}
+
+async function resolveSalonById(client: ReturnType<typeof createClient<any>>, salonId: string): Promise<SalonIdentity | null> {
   if (!salonId) return null;
-  const {data, error} = await authClient.from('salons').select('id,slug').eq('id', salonId).maybeSingle();
+  const {data, error} = await client.from('salons').select('id,slug').eq('id', salonId).maybeSingle();
   if (error || !data?.id || !data?.slug) return null;
   return {salonId: String(data.id), salonSlug: String(data.slug)};
 }
 
-async function resolveSalonMembership(authClient: ReturnType<typeof createClient<any>>, userId: string) {
-  try {
-    const {data, error} = await authClient
-      .from('salon_memberships')
-      .select('salon_id,role,status')
-      .eq('user_id', userId)
-      .in('role', ['owner', 'admin', 'salon_admin'])
-      .limit(1)
-      .maybeSingle();
-    if (error || !data?.salon_id) return null;
-    return resolveSalonById(authClient, String(data.salon_id));
-  } catch {
-    return null;
-  }
-}
+async function listActiveMembershipSalonIds(client: ReturnType<typeof createClient<any>>, userId: string): Promise<string[]> {
+  const salonIds = new Set<string>();
 
-async function resolveSalonStaff(authClient: ReturnType<typeof createClient<any>>, userId: string) {
-  try {
-    const {data, error} = await authClient
-      .from('staff')
-      .select('salon_id')
-      .eq('auth_user_id', userId)
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
-    if (error || !data?.salon_id) return null;
-    return resolveSalonById(authClient, String(data.salon_id));
-  } catch {
-    return null;
-  }
-}
+  const v2Res = await client
+    .from('salon_members')
+    .select('salon_id,role,status,joined_at')
+    .eq('user_id', userId)
+    .eq('status', 'ACTIVE')
+    .in('role', ['OWNER', 'MANAGER', 'STAFF'])
+    .order('joined_at', {ascending: false})
+    .limit(20);
 
-async function resolveSalonByUserContact(authClient: ReturnType<typeof createClient<any>>, user: any) {
-  const phoneDigits = digitsOnly(user?.phone || user?.user_metadata?.phone || user?.app_metadata?.phone);
-  const email = String(user?.email || user?.user_metadata?.email || '').trim().toLowerCase();
-
-  if (phoneDigits) {
-    try {
-      const {data, error} = await authClient
-        .from('staff')
-        .select('salon_id,phone,is_active')
-        .eq('is_active', true)
-        .limit(2000);
-      if (!error && Array.isArray(data)) {
-        const match = data.find((row: any) => digitsOnly(row?.phone) === phoneDigits);
-        if (match?.salon_id) {
-          const byId = await resolveSalonById(authClient, String(match.salon_id));
-          if (byId) return byId;
-        }
-      }
-    } catch {
-      // Optional fallback only.
+  if (!v2Res.error && Array.isArray(v2Res.data)) {
+    for (const row of v2Res.data) {
+      const salonId = String((row as any)?.salon_id || '').trim();
+      if (salonId) salonIds.add(salonId);
     }
-
-    try {
-      const {data, error} = await authClient.from('salons').select('id,slug,whatsapp').limit(2000);
-      if (!error && Array.isArray(data)) {
-        const match = data.find((row: any) => digitsOnly(row?.whatsapp) === phoneDigits);
-        if (match?.id && match?.slug) {
-          return {salonId: String(match.id), salonSlug: String(match.slug)};
-        }
-      }
-    } catch {
-      // Optional fallback only.
-    }
+    return Array.from(salonIds);
   }
 
-  if (email) {
-    try {
-      const {data, error} = await authClient.from('staff').select('salon_id,email,is_active').eq('is_active', true).limit(2000);
-      if (!error && Array.isArray(data)) {
-        const match = data.find((row: any) => String(row?.email || '').trim().toLowerCase() === email);
-        if (match?.salon_id) {
-          const byId = await resolveSalonById(authClient, String(match.salon_id));
-          if (byId) return byId;
-        }
-      }
-    } catch {
-      // Optional fallback only.
-    }
+  if (!missingRelation(v2Res.error, 'salon_members')) {
+    return [];
   }
 
-  return null;
+  const legacyRes = await client
+    .from('salon_memberships')
+    .select('salon_id,role,status')
+    .eq('user_id', userId)
+    .in('role', ['owner', 'admin', 'salon_admin'])
+    .limit(20);
+
+  if (legacyRes.error || !Array.isArray(legacyRes.data)) return [];
+  for (const row of legacyRes.data) {
+    const salonId = String((row as any)?.salon_id || '').trim();
+    if (salonId) salonIds.add(salonId);
+  }
+  return Array.from(salonIds);
 }
 
 export async function POST(request: NextRequest) {
@@ -182,7 +140,7 @@ export async function POST(request: NextRequest) {
   }
 
   const serviceKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
-  const mappingClient = serviceKey
+  const lookupClient = serviceKey
     ? createClient<any>(cfg.url, serviceKey, {
         auth: {persistSession: false, autoRefreshToken: false}
       })
@@ -199,22 +157,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ok: true, nextPath});
   }
 
-  let salonIdentity = readSalonIdentityFromMetadata(user);
-  if (salonIdentity?.salonId && !salonIdentity?.salonSlug) {
-    salonIdentity = await resolveSalonById(mappingClient, salonIdentity.salonId);
+  const memberships = await listActiveMembershipSalonIds(lookupClient, String(user.id));
+  if (!memberships.length) {
+    return NextResponse.json({
+      ok: true,
+      nextPath: `/${locale}/onboarding/salon-setup`,
+      needsOnboarding: true
+    });
   }
 
-  if (!salonIdentity) {
-    salonIdentity = await resolveSalonMembership(mappingClient, String(user.id));
-  }
-
-  if (!salonIdentity) {
-    salonIdentity = await resolveSalonStaff(mappingClient, String(user.id));
-  }
-
-  if (!salonIdentity) {
-    salonIdentity = await resolveSalonByUserContact(mappingClient, user);
-  }
+  const preferredSalonId = readPreferredSalonIdFromMetadata(user);
+  const chosenSalonId = preferredSalonId && memberships.includes(preferredSalonId) ? preferredSalonId : memberships[0];
+  const salonIdentity = await resolveSalonById(lookupClient, chosenSalonId);
 
   if (!salonIdentity?.salonId || !salonIdentity?.salonSlug) {
     return NextResponse.json({

@@ -2,6 +2,7 @@ import 'server-only';
 
 import {createClient} from '@supabase/supabase-js';
 import {getSupabaseConfig} from '@/lib/supabase/config';
+import {createSupabaseFetch} from '@/lib/supabase/fetch';
 
 export function createServiceSupabaseClient() {
   const cfg = getSupabaseConfig();
@@ -12,6 +13,9 @@ export function createServiceSupabaseClient() {
     auth: {
       persistSession: false,
       autoRefreshToken: false
-    }
+    },
+    global: {
+      fetch: createSupabaseFetch('server-service'),
+    },
   });
 }

@@ -32,6 +32,9 @@ export default async function SalonDashboardLayout({children, params}: Props) {
     {href: '/app/clients', label: tx(messages, 'dashboard.clients', 'Clients')},
     {href: '/app/settings', label: tx(messages, 'dashboard.settings', 'Settings')}
   ];
+  if (process.env.NODE_ENV !== 'production') {
+    items.push({href: '/app/diagnostics', label: 'Diagnostics'});
+  }
 
   return (
     <div className="platform-page">

@@ -316,6 +316,7 @@ export function MoreScreen() {
         </Card>
 
         <Button title={t('support')} variant="secondary" onPress={() => undefined} />
+        {__DEV__ ? <Button title="Diagnostics" variant="secondary" onPress={() => navigation.navigate('Diagnostics')} /> : null}
         <Button title={t('logout')} variant="ghost" onPress={() => signOut.mutate()} loading={signOut.isPending} />
       </ScrollView>
 

@@ -22,6 +22,20 @@ function json(status: number, body: Record<string, unknown>) {
   });
 }
 
+function log(event: string, meta: Record<string, unknown> = {}, level: "info" | "error" = "info") {
+  const payload = {
+    at: new Date().toISOString(),
+    fn: "request-activation",
+    event,
+    ...meta,
+  };
+  if (level === "error") {
+    console.error(JSON.stringify(payload));
+  } else {
+    console.log(JSON.stringify(payload));
+  }
+}
+
 function bearerToken(req: Request) {
   const header = req.headers.get("authorization") || "";
   const parts = header.split(" ");
@@ -52,7 +66,12 @@ function normalizeAddressMode(value: unknown): "LOCATION" | "MANUAL" {
 }
 
 function normalizeSalonStatus(value: unknown) {
-  return String(value || "").trim().toLowerCase();
+  const raw = String(value || "").trim().toUpperCase();
+  if (!raw) return "DRAFT";
+  if (raw === "PENDING_APPROVAL" || raw === "PENDING_BILLING") return "PENDING_REVIEW";
+  if (raw === "TRIALING" || raw === "PAST_DUE") return "ACTIVE";
+  if (raw === "REJECTED") return "DRAFT";
+  return raw;
 }
 
 function normalizeRole(value: unknown) {
@@ -94,17 +113,24 @@ async function logAudit(
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json(405, { ok: false, error: "ONLY_POST_ALLOWED" });
+  if (req.method !== "POST") {
+    log("method_not_allowed", { method: req.method }, "error");
+    return json(405, { ok: false, error: "ONLY_POST_ALLOWED" });
+  }
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
   const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
+    log("missing_env", {}, "error");
     return json(500, { ok: false, error: "MISSING_SUPABASE_ENV" });
   }
 
   const accessToken = bearerToken(req);
-  if (!accessToken) return json(401, { ok: false, error: "UNAUTHORIZED" });
+  if (!accessToken) {
+    log("missing_bearer", {}, "error");
+    return json(401, { ok: false, error: "UNAUTHORIZED" });
+  }
 
   const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -116,7 +142,10 @@ serve(async (req) => {
 
   const userRes = await authClient.auth.getUser(accessToken);
   const user = userRes.data?.user;
-  if (userRes.error || !user?.id) return json(401, { ok: false, error: "UNAUTHORIZED" });
+  if (userRes.error || !user?.id) {
+    log("auth_failed", { error: String(userRes.error?.message || userRes.error || "unknown") }, "error");
+    return json(401, { ok: false, error: "UNAUTHORIZED" });
+  }
 
   let body: RequestActivationBody = {};
   try {
@@ -126,7 +155,11 @@ serve(async (req) => {
   }
 
   const salonId = toText(body.salon_id, 80);
-  if (!salonId) return json(400, { ok: false, error: "SALON_ID_REQUIRED" });
+  if (!salonId) {
+    log("salon_id_missing", { uid: user.id }, "error");
+    return json(400, { ok: false, error: "SALON_ID_REQUIRED" });
+  }
+  log("start", { uid: user.id, salon_id: salonId });
 
   const salonRes = await serviceClient
     .from("salons")
@@ -134,6 +167,7 @@ serve(async (req) => {
     .eq("id", salonId)
     .maybeSingle();
   if (salonRes.error || !salonRes.data?.id) {
+    log("salon_not_found", { uid: user.id, salon_id: salonId, error: String(salonRes.error?.message || salonRes.error || "") }, "error");
     return json(404, { ok: false, error: "SALON_NOT_FOUND" });
   }
 
@@ -196,17 +230,21 @@ serve(async (req) => {
     await logAudit(serviceClient, salonId, user.id, "activation.request.denied", {
       reason: "NOT_OWNER",
     });
+    log("forbidden_not_owner", { uid: user.id, salon_id: salonId }, "error");
     return json(403, { ok: false, error: "FORBIDDEN" });
   }
 
   const currentStatus = normalizeSalonStatus(salonRes.data.status);
-  if (["active", "trialing", "past_due"].includes(currentStatus)) {
+  if (currentStatus === "ACTIVE") {
+    log("already_active", { uid: user.id, salon_id: salonId, status: currentStatus }, "error");
     return json(409, { ok: false, error: "ALREADY_ACTIVE" });
   }
-  if (currentStatus === "suspended") {
+  if (currentStatus === "SUSPENDED") {
+    log("suspended_denied", { uid: user.id, salon_id: salonId }, "error");
     return json(409, { ok: false, error: "SALON_SUSPENDED" });
   }
-  if (!["draft", "rejected", "pending_approval", "pending_review"].includes(currentStatus)) {
+  if (!["DRAFT", "PENDING_REVIEW"].includes(currentStatus)) {
+    log("invalid_status", { uid: user.id, salon_id: salonId, status: currentStatus }, "error");
     return json(400, { ok: false, error: "INVALID_STATUS" });
   }
 
@@ -218,6 +256,7 @@ serve(async (req) => {
   });
   if (!rateRes.error && !rateRes.data?.ok) {
     await logAudit(serviceClient, salonId, user.id, "activation.request.denied", { reason: "RATE_LIMITED" });
+    log("rate_limited", { uid: user.id, salon_id: salonId }, "error");
     return json(429, { ok: false, error: "RATE_LIMITED" });
   }
   if (rateRes.error && !missingRpc(rateRes.error, "consume_rate_limit")) {
@@ -242,7 +281,7 @@ serve(async (req) => {
   };
 
   const salonPatch: Record<string, unknown> = {
-    status: "pending_approval",
+    status: "PENDING_REVIEW",
     address_mode: addressMode,
     address_text: submittedData.address_text,
     location_lat: submittedData.location_lat,
@@ -294,11 +333,15 @@ serve(async (req) => {
     .select("status")
     .single();
 
-  if (updateSalon.error) return json(500, { ok: false, error: "SALON_UPDATE_FAILED" });
+  if (updateSalon.error) {
+    log("salon_update_failed", { uid: user.id, salon_id: salonId, error: String(updateSalon.error.message || updateSalon.error.code || "") }, "error");
+    return json(500, { ok: false, error: "SALON_UPDATE_FAILED" });
+  }
 
   await logAudit(serviceClient, salonId, user.id, "activation.requested", {
     address_mode: addressMode,
   });
+  log("success", { uid: user.id, salon_id: salonId, salon_status: "PENDING_REVIEW" });
 
   return json(200, {
     ok: true,

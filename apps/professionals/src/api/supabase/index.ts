@@ -23,6 +23,8 @@ import type {
 } from '../../types/models';
 import {supabase} from './client';
 import {useAuthStore} from '../../state/authStore';
+import {normalizeSalonStatus, toDbSalonStatus} from '../../types/status';
+import {pushDevLog} from '../../lib/devLogger';
 
 function assertSupabase() {
   if (!supabase) throw new Error('SUPABASE_CONFIG_MISSING');
@@ -76,16 +78,6 @@ async function getFunctionErrorMessage(error: any, fallback: string) {
 
   const direct = String(error?.message || '').trim();
   return direct || fallback;
-}
-
-function toSalonStatus(value: unknown): Salon['status'] {
-  const normalized = String(value || '')
-    .trim()
-    .toLowerCase();
-  if (normalized === 'active' || normalized === 'trialing' || normalized === 'past_due') return 'ACTIVE';
-  if (normalized === 'suspended') return 'SUSPENDED';
-  if (normalized === 'pending_review' || normalized === 'pending_approval') return 'PENDING_REVIEW';
-  return 'DRAFT';
 }
 
 function normalizeBookingStatus(value: unknown): BookingStatus {
@@ -216,7 +208,7 @@ async function readOwnerContext(): Promise<OwnerContext> {
     phone: String((salonRow as any).whatsapp || ''),
     locationLabel: String((salonRow as any).area || ''),
     locationAddress: String((salonRow as any).area || ''),
-    status: toSalonStatus((salonRow as any).status),
+    status: normalizeSalonStatus((salonRow as any).status),
     workdayStart: '08:00',
     workdayEnd: '22:00',
     publicBookingUrl: salonRow.slug ? `/s/${salonRow.slug}` : undefined,
@@ -302,7 +294,7 @@ export const supabaseApi: CareChairApi = {
       let slug = slugBase;
       let createdAt = new Date().toISOString();
       let updatedAt = createdAt;
-      let rawStatus: unknown = 'draft';
+      let rawStatus: unknown = 'DRAFT';
 
       const rpcPayload = {
         salon: {
@@ -351,7 +343,7 @@ export const supabaseApi: CareChairApi = {
           admin_passcode: generatedPasscode,
           country_code: 'IQ',
           language_default: 'ar',
-          status: 'draft'
+          status: toDbSalonStatus('DRAFT')
         };
 
         let insert = await client.from('salons').insert(insertPayload as any).select('id,slug,status,created_at,updated_at').single();
@@ -374,7 +366,7 @@ export const supabaseApi: CareChairApi = {
 
         salonId = String((insert.data as any).id);
         slug = String((insert.data as any).slug || slugBase);
-        rawStatus = (insert.data as any).status || 'draft';
+        rawStatus = (insert.data as any).status || 'DRAFT';
         createdAt = String((insert.data as any).created_at || createdAt);
         updatedAt = String((insert.data as any).updated_at || updatedAt);
       }
@@ -395,7 +387,7 @@ export const supabaseApi: CareChairApi = {
         phone: input.phone,
         locationLabel: input.locationLabel,
         locationAddress: input.locationAddress,
-        status: toSalonStatus(rawStatus),
+        status: normalizeSalonStatus(rawStatus),
         workdayStart: input.workdayStart,
         workdayEnd: input.workdayEnd,
         publicBookingUrl: slug ? `/s/${slug}` : undefined,
@@ -407,24 +399,38 @@ export const supabaseApi: CareChairApi = {
       const context = await readOwnerContext();
       if (!context.salon) throw new Error('SALON_REQUIRED');
       const client = assertSupabase();
-      const req = await client.functions.invoke('request-activation', {
-        body: {
-          salon_id: context.salon.id,
-          submitted_data: {
-            whatsapp: context.salon.phone || null,
-            city: input.city || null,
-            area: input.area || null,
-            address_mode: input.addressMode,
-            address_text: input.addressText || null,
-            location_lat: input.locationLat ?? null,
-            location_lng: input.locationLng ?? null,
-            location_accuracy_m: input.locationAccuracyM ?? null,
-            location_label: input.locationLabel || null,
-            instagram: input.instagram || null,
-            photo_url: input.storefrontPhotoUrl || null
-          }
+      const payload = {
+        salon_id: context.salon.id,
+        submitted_data: {
+          whatsapp: context.salon.phone || null,
+          city: input.city || null,
+          area: input.area || null,
+          address_mode: input.addressMode,
+          address_text: input.addressText || null,
+          location_lat: input.locationLat ?? null,
+          location_lng: input.locationLng ?? null,
+          location_accuracy_m: input.locationAccuracyM ?? null,
+          location_label: input.locationLabel || null,
+          instagram: input.instagram || null,
+          photo_url: input.storefrontPhotoUrl || null
         }
-      });
+      };
+      if (__DEV__) {
+        pushDevLog('info', 'edge.invoke', 'Invoking request-activation (legacy owner API)', {
+          salonId: context.salon.id,
+          payload
+        });
+      }
+      const req = await client.functions.invoke('request-activation', {body: payload});
+      if (__DEV__) {
+        const status = Number((req as any)?.error?.context?.status || ((req as any)?.error ? 500 : 200));
+        pushDevLog(req.error || !req.data?.ok ? 'error' : 'info', 'edge.invoke', 'request-activation result (legacy owner API)', {
+          salonId: context.salon.id,
+          status,
+          data: req.data ?? null,
+          error: req.error ? String(req.error?.message || req.error) : null
+        });
+      }
       if (req.error || !req.data?.ok) {
         if (req.error) throw new Error(await getFunctionErrorMessage(req.error, 'REQUEST_FAILED'));
         throw new Error(String(req.data?.error || 'REQUEST_FAILED'));
