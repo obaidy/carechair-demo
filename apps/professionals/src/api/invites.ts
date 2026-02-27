@@ -1,4 +1,4 @@
-import type {OwnerContext, Salon, SalonStatus, UserProfile, UserRole} from '../types/models';
+import type {AuthSession, OwnerContext, Salon, SalonStatus, UserProfile, UserRole} from '../types/models';
 import type {RequestActivationInput} from '../types/models';
 import {supabase} from './supabase/client';
 import {useAuthStore} from '../state/authStore';
@@ -100,6 +100,20 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function syncStoreSession(session: any) {
+  if (!session?.access_token) return;
+  const current = useAuthStore.getState().session;
+  const setSession = useAuthStore.getState().setSession;
+  const payload: AuthSession = {
+    accessToken: String(session.access_token),
+    refreshToken: String(session.refresh_token || current?.refreshToken || ''),
+    userId: String(session.user?.id || current?.userId || ''),
+    phone: String(session.user?.phone || session.user?.user_metadata?.phone || current?.phone || ''),
+    expiresAt: typeof session.expires_at === 'number' ? Number(session.expires_at) * 1000 : current?.expiresAt
+  };
+  setSession(payload);
+}
+
 async function readAuthUser() {
   const client = assertClient();
   const cached = useAuthStore.getState().session;
@@ -107,7 +121,25 @@ async function readAuthUser() {
   const fromSession = await client.auth.getSession();
   if (!fromSession.error && fromSession.data.session?.access_token) {
     const bySession = await client.auth.getUser(fromSession.data.session.access_token);
-    if (!bySession.error && bySession.data.user) return bySession.data.user;
+    if (!bySession.error && bySession.data.user) {
+      syncStoreSession(fromSession.data.session);
+      return bySession.data.user;
+    }
+
+    // Force refresh if stored access token is stale.
+    if (fromSession.data.session.refresh_token) {
+      const refreshed = await client.auth.setSession({
+        access_token: fromSession.data.session.access_token,
+        refresh_token: fromSession.data.session.refresh_token
+      });
+      if (!refreshed.error && refreshed.data.session?.access_token) {
+        const byRefreshed = await client.auth.getUser(refreshed.data.session.access_token);
+        if (!byRefreshed.error && byRefreshed.data.user) {
+          syncStoreSession(refreshed.data.session);
+          return byRefreshed.data.user;
+        }
+      }
+    }
   }
 
   // Force SDK re-hydration from the latest verified OTP tokens when available.
@@ -118,12 +150,21 @@ async function readAuthUser() {
     });
     if (!restored.error && restored.data.session?.access_token) {
       const byRestored = await client.auth.getUser(restored.data.session.access_token);
-      if (!byRestored.error && byRestored.data.user) return byRestored.data.user;
+      if (!byRestored.error && byRestored.data.user) {
+        syncStoreSession(restored.data.session);
+        return byRestored.data.user;
+      }
     }
   }
 
   const first = await client.auth.getUser();
-  if (!first.error && first.data.user) return first.data.user;
+  if (!first.error && first.data.user) {
+    const currentSession = await client.auth.getSession();
+    if (!currentSession.error && currentSession.data.session) {
+      syncStoreSession(currentSession.data.session);
+    }
+    return first.data.user;
+  }
 
   const message = String(first.error?.message || '').toLowerCase();
 
@@ -324,6 +365,7 @@ export async function createSalonDraftV2(input: CreateSalonDraftInput): Promise<
 
 export async function requestSalonActivationV2(salonId: string, input: RequestActivationInput): Promise<Salon> {
   const client = assertClient();
+  await readAuthUser();
   const payload = {
     salon_id: salonId,
     submitted_data: {
@@ -361,6 +403,7 @@ export async function requestSalonActivationV2(salonId: string, input: RequestAc
 
 export async function createInvite(input: CreateInviteInput): Promise<CreateInviteResult> {
   const client = assertClient();
+  await readAuthUser();
   const {data, error} = await client.functions.invoke('create-invite', {
     body: {
       salon_id: input.salonId,
@@ -382,6 +425,7 @@ export async function createInvite(input: CreateInviteInput): Promise<CreateInvi
 
 export async function acceptInvite(input: AcceptInviteInput): Promise<AcceptInviteResult> {
   const client = assertClient();
+  await readAuthUser();
   const payload = {
     token: input.token || undefined,
     code: input.code ? String(input.code).trim().toUpperCase() : undefined
