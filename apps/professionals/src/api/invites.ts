@@ -4,6 +4,7 @@ import {supabase} from './supabase/client';
 import {useAuthStore} from '../state/authStore';
 import {normalizeSalonStatus, toDbSalonStatus} from '../types/status';
 import {pushDevLog} from '../lib/devLogger';
+import {env} from '../utils/env';
 
 export type MembershipStatus = 'ACTIVE' | 'REMOVED';
 
@@ -83,6 +84,13 @@ function normalizeStatus(status: unknown): MembershipStatus {
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isLikelyJwt(value: string) {
+  const token = String(value || '').trim();
+  if (!token) return false;
+  const parts = token.split('.');
+  return parts.length === 3 && parts.every((part) => part.length > 0);
 }
 
 function syncStoreSession(session: any) {
@@ -218,51 +226,115 @@ function redactPayloadForLog(payload: unknown) {
   return cloned;
 }
 
-async function invokeEdgeWithLog(functionName: string, body: Record<string, unknown>) {
+async function getAccessTokenForApi() {
   const client = assertClient();
-  const accessToken = String(useAuthStore.getState().session?.accessToken || '').trim();
+  const runtime = await client.auth.getSession();
+  const runtimeToken = String(runtime.data.session?.access_token || '').trim();
+  if (isLikelyJwt(runtimeToken)) {
+    return {token: runtimeToken, source: 'runtime' as const};
+  }
+
+  const cached = useAuthStore.getState().session;
+  const cachedToken = String(cached?.accessToken || '').trim();
+  if (!isLikelyJwt(cachedToken)) {
+    throw new Error('AUTH_SESSION_MISSING');
+  }
+
+  if (cached?.refreshToken) {
+    const restored = await client.auth.setSession({
+      access_token: cachedToken,
+      refresh_token: cached.refreshToken,
+    });
+    if (!restored.error) {
+      const restoredToken = String(restored.data.session?.access_token || '').trim();
+      if (isLikelyJwt(restoredToken)) {
+        return {token: restoredToken, source: 'restored' as const};
+      }
+    }
+  }
+
+  return {token: cachedToken, source: 'store' as const};
+}
+
+async function restRequest(path: string, init: RequestInit & {token: string}) {
+  const url = `${env.supabaseUrl}${path}`;
+  const headers: Record<string, string> = {
+    apikey: env.supabaseAnonKey,
+    Authorization: `Bearer ${init.token}`,
+    ...(init.headers as Record<string, string> | undefined),
+  };
+  const response = await fetch(url, {...init, headers});
+  const text = await response.text();
+  let payload: any = null;
+  try {
+    payload = text ? JSON.parse(text) : null;
+  } catch {
+    payload = text || null;
+  }
+  return {response, payload};
+}
+
+async function invokeEdgeWithLog(functionName: string, body: Record<string, unknown>) {
+  const {token, source} = await getAccessTokenForApi();
   if (__DEV__) {
     pushDevLog('info', 'edge.invoke', `Invoking ${functionName}`, {
       functionName,
       body: redactPayloadForLog(body),
-      hasAccessToken: Boolean(accessToken),
+      hasAccessToken: true,
+      tokenSource: source,
     });
   }
-  const result = await client.functions.invoke(functionName, {
-    body,
-    headers: accessToken ? {Authorization: `Bearer ${accessToken}`} : undefined,
+  const {response, payload} = await restRequest(`/functions/v1/${functionName}`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+    token,
   });
+  const ok = response.ok;
+  const result = {
+    data: ok ? payload : null,
+    error: ok ? null : {message: String(payload?.error || payload?.message || `HTTP_${response.status}`)},
+    status: response.status,
+  };
   if (__DEV__) {
-    const status = Number((result as any)?.error?.context?.status || ((result as any)?.error ? 500 : 200));
     pushDevLog(result.error || !result.data?.ok ? 'error' : 'info', 'edge.invoke', `Result ${functionName}`, {
       functionName,
-      status,
+      status: response.status,
       data: result.data ?? null,
       error: result.error ? String(result.error?.message || result.error) : null,
+      tokenSource: source,
     });
   }
   return result;
 }
 
 export async function upsertUserProfileV2(params?: {phone?: string; fullName?: string}) {
-  const client = assertClient();
   const user = await readAuthUser();
-  const runtimeSession = await client.auth.getSession();
-  if (runtimeSession.error || !runtimeSession.data.session?.access_token) {
-    const message = String(runtimeSession.error?.message || 'AUTH_SESSION_MISSING');
-    if (__DEV__) pushDevLog('error', 'db.user_profiles.upsert', 'Runtime Supabase session missing before profile upsert', {message});
-    throw new Error(message);
-  }
+  const {token, source} = await getAccessTokenForApi();
   const payload = {
     user_id: user.id,
     phone: params?.phone ?? user.phone ?? null,
     full_name: params?.fullName ?? null,
     last_active_at: new Date().toISOString()
   };
-  const {error} = await client.from('user_profiles').upsert(payload, {onConflict: 'user_id'});
-  if (error) {
-    if (__DEV__) pushDevLog('error', 'db.user_profiles.upsert', 'Failed to upsert user profile', {error: String(error.message || error.code || 'unknown')});
-    throw error;
+  const {response, payload: resPayload} = await restRequest('/rest/v1/user_profiles?on_conflict=user_id', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates,return=minimal',
+    },
+    body: JSON.stringify(payload),
+    token,
+  });
+  if (!response.ok) {
+    if (__DEV__) {
+      pushDevLog('error', 'db.user_profiles.upsert', 'Failed to upsert user profile', {
+        error: String(resPayload?.message || resPayload?.code || 'unknown'),
+        status: response.status,
+        tokenSource: source,
+      });
+    }
+    throw new Error(String(resPayload?.message || resPayload?.code || 'USER_PROFILE_UPSERT_FAILED'));
   }
 }
 
