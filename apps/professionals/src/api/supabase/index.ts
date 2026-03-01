@@ -374,28 +374,21 @@ export const supabaseApi: CareChairApi = {
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token
       });
-      if (restored.error) {
-        if (__DEV__) {
-          pushDevLog('error', 'auth.verifyOtp', 'OTP verify succeeded but setSession failed', {
-            error: String(restored.error?.message || restored.error)
-          });
-        }
-        throw restored.error;
+      if (restored.error && __DEV__) {
+        pushDevLog('warn', 'auth.verifyOtp', 'OTP verify succeeded but runtime setSession did not settle immediately; using verified session payload', {
+          error: String(restored.error?.message || restored.error)
+        });
       }
 
-      const active = await getActiveSupabaseSession(client, {allowRefresh: true});
-      if (active?.access_token) {
-        if (__DEV__) {
-          pushDevLog('info', 'auth.verifyOtp', 'OTP verification succeeded', {
-            hasAccessToken: Boolean(active.access_token),
-            expiresAt: Number(active.expires_at || 0) * 1000 || null,
-            userId: String(active.user?.id || '')
-          });
-        }
-        return toSession(active);
+      const settledSession = restored.data.session || data.session;
+      if (__DEV__) {
+        pushDevLog('info', 'auth.verifyOtp', 'OTP verification succeeded', {
+          hasAccessToken: Boolean(settledSession.access_token),
+          expiresAt: Number(settledSession.expires_at || 0) * 1000 || null,
+          userId: String(settledSession.user?.id || '')
+        });
       }
-
-      throw new Error('NO_SESSION');
+      return toSession(settledSession);
     },
     signOut: async () => {
       const client = assertSupabase();
