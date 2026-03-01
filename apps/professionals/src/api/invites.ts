@@ -66,6 +66,47 @@ function normalizeSlug(value: string) {
     .slice(0, 60);
 }
 
+function toHHMM(value: unknown, fallback = '08:00') {
+  const raw = String(value || '').trim();
+  const match = /^(\d{2}):(\d{2})/.exec(raw);
+  if (!match) return fallback;
+  return `${match[1]}:${match[2]}`;
+}
+
+function parseHmToMinutes(value: string, fallback: number) {
+  const [hRaw, mRaw] = String(value || '').split(':');
+  const hours = Number(hRaw);
+  const mins = Number(mRaw);
+  if (!Number.isFinite(hours) || !Number.isFinite(mins)) return fallback;
+  return hours * 60 + mins;
+}
+
+type HourRow = {
+  day_of_week: number;
+  open_time?: string | null;
+  close_time?: string | null;
+  is_closed?: boolean | null;
+};
+
+async function selectSalonHoursWithFallback(client: ReturnType<typeof assertClient>, salonId: string) {
+  const primary = await client.from('salon_working_hours').select('*').eq('salon_id', salonId);
+  const fallback = primary.error ? await client.from('salon_hours').select('*').eq('salon_id', salonId) : primary;
+  return (fallback.data || []) as HourRow[];
+}
+
+function deriveSalonWindowFromHours(rows: HourRow[]) {
+  const openRows = (rows || []).filter((row) => !row?.is_closed);
+  if (!openRows.length) return {workdayStart: '08:00', workdayEnd: '22:00'};
+  const starts = openRows.map((row) => parseHmToMinutes(toHHMM(row.open_time, '08:00'), 8 * 60)).sort((a, b) => a - b);
+  const ends = openRows.map((row) => parseHmToMinutes(toHHMM(row.close_time, '22:00'), 22 * 60)).sort((a, b) => b - a);
+  const start = starts[0] ?? 8 * 60;
+  const end = ends[0] ?? 22 * 60;
+  return {
+    workdayStart: `${String(Math.floor(start / 60)).padStart(2, '0')}:${String(start % 60).padStart(2, '0')}`,
+    workdayEnd: `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`
+  };
+}
+
 function normalizeRole(role: unknown): UserRole {
   const value = String(role || '')
     .trim()
@@ -441,17 +482,20 @@ export async function getUserProfileFromAuth(): Promise<UserProfile> {
 }
 
 function mapSalonRowToContext(row: any, user: UserProfile): OwnerContext {
+  const derivedWindow = deriveSalonWindowFromHours([]);
   const salon: Salon = {
     id: String(row.id),
     ownerId: user.id,
     name: String(row.name || 'Salon'),
     slug: String(row.slug || ''),
     phone: String(row.whatsapp || ''),
-    locationLabel: String(row.area || row.city || ''),
-    locationAddress: String(row.address || row.area || ''),
+    locationLabel: String(row.location_label || row.area || row.city || ''),
+    locationAddress: String(row.address_text || row.address || row.area || ''),
+    locationLat: Number.isFinite(Number(row.location_lat)) ? Number(row.location_lat) : undefined,
+    locationLng: Number.isFinite(Number(row.location_lng)) ? Number(row.location_lng) : undefined,
     status: normalizeSalonStatus(row.status),
-    workdayStart: '08:00',
-    workdayEnd: '22:00',
+    workdayStart: derivedWindow.workdayStart,
+    workdayEnd: derivedWindow.workdayEnd,
     publicBookingUrl: row.slug ? `/s/${row.slug}` : undefined,
     createdAt: String(row.created_at || new Date().toISOString()),
     updatedAt: String(row.updated_at || row.created_at || new Date().toISOString())
@@ -460,20 +504,30 @@ function mapSalonRowToContext(row: any, user: UserProfile): OwnerContext {
 }
 
 export async function getOwnerContextBySalonIdV2(salonId: string | null): Promise<OwnerContext> {
+  const client = assertClient();
   const user = await getUserProfileFromAuth();
   if (!salonId) return {user, salon: null};
   const {token, source} = await getAccessTokenForApi();
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const {response, payload} = await restRequest(
-      `/rest/v1/salons?select=id,name,slug,whatsapp,status,area,address,city,created_at,updated_at&id=eq.${encodeURIComponent(salonId)}&limit=1`,
+      `/rest/v1/salons?select=id,name,slug,whatsapp,status,area,address,address_text,city,location_lat,location_lng,location_label,created_at,updated_at&id=eq.${encodeURIComponent(salonId)}&limit=1`,
       {
         method: 'GET',
         token
       }
     );
     const row = Array.isArray(payload) ? payload[0] : null;
-    if (response.ok && row) return mapSalonRowToContext(row, user);
+    if (response.ok && row) {
+      const hours = await selectSalonHoursWithFallback(client, salonId);
+      const context = mapSalonRowToContext(row, user);
+      if (context.salon) {
+        const derived = deriveSalonWindowFromHours(hours);
+        context.salon.workdayStart = derived.workdayStart;
+        context.salon.workdayEnd = derived.workdayEnd;
+      }
+      return context;
+    }
     if (__DEV__) {
       pushDevLog('error', 'db.salons.select', 'Failed to fetch owner context salon', {
         attempt: attempt + 1,
@@ -529,7 +583,30 @@ export async function createSalonDraftV2(input: CreateSalonDraftInput): Promise<
     throw insert.error || new Error('SALON_CREATE_FAILED');
   }
 
+  await client.from('salon_hours').upsert(
+    Array.from({length: 7}, (_row, dayIndex) => ({
+      salon_id: String(insert.data.id),
+      day_of_week: dayIndex,
+      open_time: `${String(input.workdayStart || '08:00').slice(0, 5)}:00`,
+      close_time: `${String(input.workdayEnd || '22:00').slice(0, 5)}:00`,
+      is_closed: false
+    })),
+    {onConflict: 'salon_id,day_of_week'}
+  );
+
   const context = mapSalonRowToContext(insert.data, user);
+  const derived = deriveSalonWindowFromHours(
+    Array.from({length: 7}, (_row, dayIndex) => ({
+      day_of_week: dayIndex,
+      open_time: `${String(input.workdayStart || '08:00').slice(0, 5)}:00`,
+      close_time: `${String(input.workdayEnd || '22:00').slice(0, 5)}:00`,
+      is_closed: false
+    }))
+  );
+  if (context.salon) {
+    context.salon.workdayStart = derived.workdayStart;
+    context.salon.workdayEnd = derived.workdayEnd;
+  }
   return context.salon!;
 }
 
@@ -564,11 +641,18 @@ export async function requestSalonActivationV2(salonId: string, input: RequestAc
   const user = await getUserProfileFromAuth();
   const refreshed = await client
     .from('salons')
-    .select('id,name,slug,whatsapp,status,area,address,city,created_at,updated_at')
+    .select('id,name,slug,whatsapp,status,area,address,address_text,city,location_lat,location_lng,location_label,created_at,updated_at')
     .eq('id', salonId)
     .single();
   if (refreshed.error || !refreshed.data) throw refreshed.error || new Error('REQUEST_FAILED');
-  return mapSalonRowToContext(refreshed.data, user).salon!;
+  const context = mapSalonRowToContext(refreshed.data, user);
+  const hours = await selectSalonHoursWithFallback(client, salonId);
+  if (context.salon) {
+    const derived = deriveSalonWindowFromHours(hours);
+    context.salon.workdayStart = derived.workdayStart;
+    context.salon.workdayEnd = derived.workdayEnd;
+  }
+  return context.salon!;
 }
 
 export async function createInvite(input: CreateInviteInput): Promise<CreateInviteResult> {

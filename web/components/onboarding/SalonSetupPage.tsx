@@ -895,16 +895,53 @@ export default function SalonSetupPage() {
 
       const createdSalonId = String(data?.salon_id || payload?.salon?.id || "");
       if (createdSalonId) {
-        // Hybrid onboarding: newly submitted salons enter approval queue.
-        const pendingPatch = {
-          status: "pending_approval",
-          subscription_status: "inactive",
-          billing_status: "inactive",
-          trial_end_at: null,
-          trial_end: null,
-          is_active: true,
+        const activationSubmittedData = {
+          whatsapp: basic.whatsapp.trim() || null,
+          city: basic.city.trim() || null,
+          area: String(location.city || basic.city || "").trim() || null,
+          address_mode: hasLocationPin ? "LOCATION" : "MANUAL",
+          address_text: String(location.formatted_address || location.address_line || "").trim() || null,
+          location_lat: locationLat,
+          location_lng: locationLng,
+          location_accuracy_m: null,
+          location_label: String(location.label || "Main Branch").trim() || null,
+          instagram: null,
+          photo_url: coverRes.url || null,
         };
-        await supabase.from("salons").update(pendingPatch).eq("id", createdSalonId);
+
+        const sessionRes = await supabase.auth.getSession();
+        const accessToken = String(sessionRes.data.session?.access_token || "").trim();
+
+        if (accessToken) {
+          const finalizeRes = await fetch("/api/onboarding/finalize-owner-salon", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+              accessToken,
+              salonId: createdSalonId,
+              submittedData: activationSubmittedData,
+            }),
+          });
+          const finalizeData = await finalizeRes.json().catch(() => null);
+          if (!finalizeRes.ok || !finalizeData?.ok) {
+            throw new Error(String(finalizeData?.error || "ONBOARDING_FINALIZE_FAILED"));
+          }
+        } else {
+          const pendingPatch = {
+            status: "PENDING_REVIEW",
+            subscription_status: "inactive",
+            billing_status: "inactive",
+            trial_end_at: null,
+            trial_end: null,
+            is_active: true,
+            address_mode: activationSubmittedData.address_mode,
+            address_text: activationSubmittedData.address_text,
+            location_lat: activationSubmittedData.location_lat,
+            location_lng: activationSubmittedData.location_lng,
+            location_label: activationSubmittedData.location_label,
+          };
+          await supabase.from("salons").update(pendingPatch).eq("id", createdSalonId);
+        }
       }
 
       setSuccessData(data || null);

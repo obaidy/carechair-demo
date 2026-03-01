@@ -30,6 +30,21 @@ import {toPhoneWithPlus} from '../../lib/phone';
 import {env} from '../../utils/env';
 import {requestSalonActivationV2} from '../invites';
 
+type HourRow = {
+  day_of_week: number;
+  open_time?: string | null;
+  close_time?: string | null;
+  is_closed?: boolean | null;
+};
+
+type EmployeeHourRow = {
+  staff_id: string;
+  day_of_week: number;
+  start_time?: string | null;
+  end_time?: string | null;
+  is_off?: boolean | null;
+};
+
 function assertSupabase() {
   if (!supabase) throw new Error('SUPABASE_CONFIG_MISSING');
   return supabase;
@@ -42,6 +57,21 @@ function normalizeSlug(value: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 60);
+}
+
+function toHHMM(value: unknown, fallback = '08:00') {
+  const raw = String(value || '').trim();
+  const match = /^(\d{2}):(\d{2})/.exec(raw);
+  if (!match) return fallback;
+  return `${match[1]}:${match[2]}`;
+}
+
+function parseHmToMinutes(value: string, fallback: number) {
+  const [hRaw, mRaw] = String(value || '').split(':');
+  const hours = Number(hRaw);
+  const mins = Number(mRaw);
+  if (!Number.isFinite(hours) || !Number.isFinite(mins)) return fallback;
+  return hours * 60 + mins;
 }
 
 function missingColumn(error: unknown, column: string) {
@@ -226,6 +256,59 @@ async function readAuthUser() {
   throw userRes.error || new Error('NO_SESSION');
 }
 
+async function selectWorkingHoursWithFallback(client: ReturnType<typeof assertSupabase>, salonId: string) {
+  const salonPrimary = await client.from('salon_working_hours').select('*').eq('salon_id', salonId);
+  const salonHours = salonPrimary.error ? await client.from('salon_hours').select('*').eq('salon_id', salonId) : salonPrimary;
+
+  const employeePrimary = await client.from('employee_working_hours').select('*').eq('salon_id', salonId);
+  const employeeHours = employeePrimary.error ? await client.from('employee_hours').select('*').eq('salon_id', salonId) : employeePrimary;
+
+  return {
+    salonHours: ((salonHours.data || []) as HourRow[]),
+    employeeHours: ((employeeHours.data || []) as EmployeeHourRow[])
+  };
+}
+
+function deriveSalonWindowFromHours(rows: HourRow[]) {
+  const openRows = (rows || []).filter((row) => !row?.is_closed);
+  if (!openRows.length) {
+    return {workdayStart: '08:00', workdayEnd: '22:00'};
+  }
+
+  const sortedStarts = openRows
+    .map((row) => parseHmToMinutes(toHHMM(row.open_time, '08:00'), 8 * 60))
+    .sort((a, b) => a - b);
+  const sortedEnds = openRows
+    .map((row) => parseHmToMinutes(toHHMM(row.close_time, '22:00'), 22 * 60))
+    .sort((a, b) => b - a);
+
+  const start = sortedStarts[0] ?? 8 * 60;
+  const end = sortedEnds[0] ?? 22 * 60;
+  const startHours = String(Math.floor(start / 60)).padStart(2, '0');
+  const startMins = String(start % 60).padStart(2, '0');
+  const endHours = String(Math.floor(end / 60)).padStart(2, '0');
+  const endMins = String(end % 60).padStart(2, '0');
+  return {
+    workdayStart: `${startHours}:${startMins}`,
+    workdayEnd: `${endHours}:${endMins}`
+  };
+}
+
+function buildStaffWorkingHours(rows: EmployeeHourRow[], staffId: string) {
+  const entries = rows.filter((row) => String(row.staff_id || '') === staffId);
+  const out: Record<number, {start: string; end: string; off?: boolean}> = {};
+  for (const row of entries) {
+    const day = Number(row.day_of_week);
+    if (!Number.isFinite(day)) continue;
+    out[day] = {
+      start: toHHMM(row.start_time, '08:00'),
+      end: toHHMM(row.end_time, '22:00'),
+      off: Boolean(row.is_off)
+    };
+  }
+  return out;
+}
+
 async function readOwnerContext(): Promise<OwnerContext> {
   const client = assertSupabase();
   const user = await readAuthUser();
@@ -258,13 +341,19 @@ async function readOwnerContext(): Promise<OwnerContext> {
   }
   if (!salonId) return {user: profile, salon: null};
 
-  const {data: salonRow} = await client
-    .from('salons')
-    .select('id,name,slug,whatsapp,status,area,address,created_at,updated_at')
-    .eq('id', salonId)
-    .maybeSingle();
+  const [salonRes, hoursRes] = await Promise.all([
+    client
+      .from('salons')
+      .select('id,name,slug,whatsapp,status,area,address,address_text,city,location_lat,location_lng,location_label,created_at,updated_at')
+      .eq('id', salonId)
+      .maybeSingle(),
+    selectWorkingHoursWithFallback(client, salonId)
+  ]);
+  const salonRow = salonRes.data;
 
   if (!salonRow) return {user: profile, salon: null};
+
+  const derivedWindow = deriveSalonWindowFromHours(hoursRes.salonHours);
 
   const salon: Salon = {
     id: String(salonRow.id),
@@ -272,11 +361,13 @@ async function readOwnerContext(): Promise<OwnerContext> {
     name: String(salonRow.name || 'Salon'),
     slug: String(salonRow.slug || ''),
     phone: String((salonRow as any).whatsapp || ''),
-    locationLabel: String((salonRow as any).area || ''),
-    locationAddress: String((salonRow as any).address || (salonRow as any).area || ''),
+    locationLabel: String((salonRow as any).location_label || (salonRow as any).area || (salonRow as any).city || ''),
+    locationAddress: String((salonRow as any).address_text || (salonRow as any).address || (salonRow as any).area || ''),
+    locationLat: Number.isFinite(Number((salonRow as any).location_lat)) ? Number((salonRow as any).location_lat) : undefined,
+    locationLng: Number.isFinite(Number((salonRow as any).location_lng)) ? Number((salonRow as any).location_lng) : undefined,
     status: normalizeSalonStatus((salonRow as any).status),
-    workdayStart: '08:00',
-    workdayEnd: '22:00',
+    workdayStart: derivedWindow.workdayStart,
+    workdayEnd: derivedWindow.workdayEnd,
     publicBookingUrl: salonRow.slug ? `/s/${salonRow.slug}` : undefined,
     createdAt: String((salonRow as any).created_at || new Date().toISOString()),
     updatedAt: String((salonRow as any).updated_at || new Date().toISOString())
@@ -298,8 +389,18 @@ function toSession(value: any): AuthSession {
 async function safeListBookings(salonId: string, date: string, mode: 'day' | 'week' | 'list'): Promise<Booking[]> {
   const client = assertSupabase();
   const base = parseISO(date);
-  const from = mode === 'week' ? startOfWeek(base, {weekStartsOn: 1}) : startOfDay(base);
-  const to = mode === 'week' ? endOfDay(new Date(from.getTime() + 6 * 24 * 60 * 60 * 1000)) : endOfDay(base);
+  const from =
+    mode === 'week'
+      ? startOfWeek(base, {weekStartsOn: 1})
+      : mode === 'list'
+        ? startOfDay(new Date(base.getTime() - 30 * 24 * 60 * 60 * 1000))
+        : startOfDay(base);
+  const to =
+    mode === 'week'
+      ? endOfDay(new Date(from.getTime() + 6 * 24 * 60 * 60 * 1000))
+      : mode === 'list'
+        ? endOfDay(new Date(base.getTime() + 365 * 24 * 60 * 60 * 1000))
+        : endOfDay(base);
 
   const {data, error} = await client
     .from('bookings')
@@ -314,6 +415,18 @@ async function safeListBookings(salonId: string, date: string, mode: 'day' | 'we
   return (data || []).map((row: any) => ({
     ...mapBookingRow(row)
   }));
+}
+
+async function listSalonBookingsAll(salonId: string): Promise<Booking[]> {
+  const client = assertSupabase();
+  const {data, error} = await client
+    .from('bookings')
+    .select('id,salon_id,staff_id,service_id,customer_name,customer_phone,appointment_start,appointment_end,status,created_at,notes')
+    .eq('salon_id', salonId)
+    .order('appointment_start', {ascending: false})
+    .limit(1000);
+  if (error) return [];
+  return (data || []).map((row: any) => mapBookingRow(row));
 }
 
 async function nextSortOrder(client: ReturnType<typeof assertSupabase>, table: 'staff' | 'services', salonId: string) {
@@ -534,7 +647,8 @@ export const supabaseApi: CareChairApi = {
           admin_passcode: generatedPasscode,
           country_code: 'IQ',
           language_default: 'ar',
-          status: toDbSalonStatus('DRAFT')
+          status: toDbSalonStatus('DRAFT'),
+          created_by: user.id
         };
 
         let insert = await client.from('salons').insert(insertPayload as any).select('id,slug,status,created_at,updated_at').single();
@@ -561,6 +675,17 @@ export const supabaseApi: CareChairApi = {
         createdAt = String((insert.data as any).created_at || createdAt);
         updatedAt = String((insert.data as any).updated_at || updatedAt);
       }
+
+      await client.from('salon_hours').upsert(
+        Array.from({length: 7}, (_row, dayIndex) => ({
+          salon_id: salonId,
+          day_of_week: dayIndex,
+          open_time: `${String(input.workdayStart || '08:00').slice(0, 5)}:00`,
+          close_time: `${String(input.workdayEnd || '22:00').slice(0, 5)}:00`,
+          is_closed: false
+        })),
+        {onConflict: 'salon_id,day_of_week'}
+      );
 
       const {error: updateUserError} = await client.auth.updateUser({
         data: {salon_id: salonId, salon_slug: slug, role: 'salon_admin'}
@@ -624,7 +749,9 @@ export const supabaseApi: CareChairApi = {
     list: async (params) => {
       const context = await readOwnerContext();
       if (!context.salon) throw new Error('SALON_REQUIRED');
-      return safeListBookings(context.salon.id, params.date, params.mode);
+      const bookings = await safeListBookings(context.salon.id, params.date, params.mode);
+      if (!params.staffId) return bookings;
+      return bookings.filter((row) => row.staffId === params.staffId);
     },
     create: async (input: CreateBookingInput) => {
       const context = await readOwnerContext();
@@ -692,7 +819,7 @@ export const supabaseApi: CareChairApi = {
     list: async (query) => {
       const context = await readOwnerContext();
       if (!context.salon) throw new Error('SALON_REQUIRED');
-      const bookings = await safeListBookings(context.salon.id, new Date().toISOString(), 'list');
+      const bookings = await listSalonBookingsAll(context.salon.id);
       const map = new Map<string, Client>();
 
       for (const row of bookings) {
@@ -744,7 +871,7 @@ export const supabaseApi: CareChairApi = {
     history: async (clientId) => {
       const context = await readOwnerContext();
       if (!context.salon) throw new Error('SALON_REQUIRED');
-      const bookings = await safeListBookings(context.salon.id, new Date().toISOString(), 'list');
+      const bookings = await listSalonBookingsAll(context.salon.id);
       return bookings.filter((row) => String(row.clientPhone || row.clientName || row.id) === String(clientId));
     }
   },
@@ -753,9 +880,10 @@ export const supabaseApi: CareChairApi = {
       const context = await readOwnerContext();
       if (!context.salon) throw new Error('SALON_REQUIRED');
       const client = assertSupabase();
-      const [staffRes, linksRes] = await Promise.all([
+      const [staffRes, linksRes, hoursRes] = await Promise.all([
         client.from('staff').select('id,name,role,phone,photo_url,is_active').eq('salon_id', context.salon.id).eq('is_active', true),
-        client.from('staff_services').select('staff_id,service_id').eq('salon_id', context.salon.id)
+        client.from('staff_services').select('staff_id,service_id').eq('salon_id', context.salon.id),
+        selectWorkingHoursWithFallback(client, context.salon.id)
       ]);
       if (staffRes.error) return [];
       const serviceIdsByStaff = new Map<string, string[]>();
@@ -775,7 +903,7 @@ export const supabaseApi: CareChairApi = {
         color: ['#2563EB', '#0EA5E9', '#14B8A6', '#F59E0B'][index % 4],
         isActive: true,
         serviceIds: serviceIdsByStaff.get(String(row.id)) || [],
-        workingHours: {}
+        workingHours: buildStaffWorkingHours(hoursRes.employeeHours, String(row.id))
       }));
     },
     upsert: async (input: UpsertStaffInput) => {
