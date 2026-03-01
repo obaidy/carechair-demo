@@ -7,6 +7,7 @@ import {getSuperadminCode} from '@/lib/auth/config';
 import {setSalonAdminSession, setSuperadminSession} from '@/lib/auth/server';
 import {tx} from '@/lib/messages';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
+import {createServiceSupabaseClient} from '@/lib/supabase/service';
 
 type Props = {
   params: Promise<{locale: string}>;
@@ -90,7 +91,23 @@ export default async function LoginPage({params, searchParams}: Props) {
       redirect(`/${locale}/login?error=wrong_superadmin`);
     }
 
-    await setSuperadminSession();
+    const service = createServiceSupabaseClient();
+    if (!service) {
+      redirect(`/${locale}/login?error=supabase_service_missing`);
+    }
+
+    const adminRes = await service
+      .from('admin_users')
+      .select('user_id')
+      .order('created_at', {ascending: true})
+      .limit(1)
+      .maybeSingle();
+
+    if (adminRes.error || !adminRes.data?.user_id) {
+      redirect(`/${locale}/login?error=admin_users_missing`);
+    }
+
+    await setSuperadminSession({userId: String(adminRes.data.user_id)});
     redirect(nextPath);
   }
 
