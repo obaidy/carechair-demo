@@ -182,9 +182,8 @@ export default function BookingForm({
   useEffect(() => {
     if (!mounted) return;
     if (!serviceId) setServiceId(services[0]?.id || '');
-    if (!staffId) setStaffId(staff[0]?.id || '');
     if (!dateValue) setDateValue(toDateInput(new Date()));
-  }, [mounted, serviceId, staffId, dateValue, services, staff]);
+  }, [mounted, serviceId, dateValue, services]);
 
   const servicesById = useMemo(() => Object.fromEntries(services.map((item) => [item.id, item])), [services]);
   const staffById = useMemo(() => Object.fromEntries(staff.map((item) => [item.id, item])), [staff]);
@@ -202,12 +201,6 @@ export default function BookingForm({
     return staff.filter((item) => assignmentSet.has(`${item.id}:${serviceId}`));
   }, [serviceId, staff, assignmentSet]);
 
-  const filteredServices = useMemo(() => {
-    if (bookingMode === 'auto_assign') return services;
-    if (!staffId) return services;
-    return services.filter((item) => assignmentSet.has(`${staffId}:${item.id}`));
-  }, [bookingMode, services, staffId, assignmentSet]);
-
   const eligibleStaffIds = useMemo(() => filteredStaff.map((item) => item.id), [filteredStaff]);
 
   const isValidPair = bookingMode === 'auto_assign'
@@ -215,14 +208,12 @@ export default function BookingForm({
     : Boolean(serviceId && staffId && assignmentSet.has(`${staffId}:${serviceId}`));
 
   useEffect(() => {
-    if (serviceId && !filteredServices.some((row) => row.id === serviceId)) {
-      setServiceId(filteredServices[0]?.id || '');
-    }
-  }, [serviceId, filteredServices]);
-
-  useEffect(() => {
     if (bookingMode === 'auto_assign') return;
-    if (staffId && !filteredStaff.some((row) => row.id === staffId)) {
+    if (!filteredStaff.length) {
+      if (staffId) setStaffId('');
+      return;
+    }
+    if (!staffId || !filteredStaff.some((row) => row.id === staffId)) {
       setStaffId(filteredStaff[0]?.id || '');
     }
   }, [bookingMode, staffId, filteredStaff]);
@@ -749,7 +740,7 @@ ${t('whatsappFallback.phone')}: ${normalizedPhone}`;
         ) : (
           <div className="service-grid-compact">
             {services.map((service) => {
-              const disabled = Boolean(staffId) && !assignmentSet.has(`${staffId}:${service.id}`);
+              const disabled = bookingMode === 'choose_employee' && !staff.some((member) => assignmentSet.has(`${member.id}:${service.id}`));
               const active = serviceId === service.id;
 
               return (

@@ -1,24 +1,38 @@
-import {useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {Pressable, ScrollView, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons} from '@expo/vector-icons';
 import {format} from 'date-fns';
+import {useFocusEffect} from '@react-navigation/native';
 import {Button, Card, Sheet, StatCard} from '../components';
 import {useTheme} from '../theme/provider';
 import {useI18n} from '../i18n/provider';
 import {useDashboardSummary, useEvents} from '../api/hooks';
 import {useAuthStore} from '../state/authStore';
 import {textDir} from '../utils/layout';
+import {api} from '../api';
 
 export function DashboardScreen({navigation}: any) {
   const {colors, spacing, typography, radius} = useTheme();
   const {t, isRTL} = useI18n();
   const [quickOpen, setQuickOpen] = useState(false);
   const context = useAuthStore((state) => state.context);
+  const setContext = useAuthStore((state) => state.setContext);
 
   const todayIso = useMemo(() => new Date().toISOString(), []);
   const summaryQuery = useDashboardSummary(todayIso);
   const eventsQuery = useEvents(10);
+
+  useFocusEffect(
+    useCallback(() => {
+      void summaryQuery.refetch();
+      void eventsQuery.refetch();
+      void api.owner.getContext().then((next) => {
+        setContext(next);
+      }).catch(() => {});
+      return () => {};
+    }, [eventsQuery, setContext, summaryQuery])
+  );
 
   const status = context?.salon?.status || 'DRAFT';
 

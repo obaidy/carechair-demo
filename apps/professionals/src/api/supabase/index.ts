@@ -224,21 +224,38 @@ async function readAuthUser() {
 async function readOwnerContext(): Promise<OwnerContext> {
   const client = assertSupabase();
   const user = await readAuthUser();
+  const store = useAuthStore.getState();
   const profile: UserProfile = {
     id: String(user.id),
     phone: String(user.phone || user.user_metadata?.phone || ''),
     displayName: String(user.user_metadata?.display_name || 'Owner'),
     role: 'OWNER',
-    salonId: String(user.user_metadata?.salon_id || user.app_metadata?.salon_id || '') || null,
+    salonId:
+      String(store.activeSalonId || store.context?.salon?.id || user.user_metadata?.salon_id || user.app_metadata?.salon_id || '') || null,
     createdAt: String(user.created_at || new Date().toISOString())
   };
 
-  const salonId = profile.salonId;
+  let salonId = profile.salonId;
+  if (!salonId) {
+    const membershipRes = await client
+      .from('salon_members')
+      .select('salon_id')
+      .eq('user_id', user.id)
+      .eq('status', 'ACTIVE')
+      .order('joined_at', {ascending: false})
+      .limit(1)
+      .maybeSingle();
+    if (!membershipRes.error && membershipRes.data?.salon_id) {
+      salonId = String(membershipRes.data.salon_id);
+      profile.salonId = salonId;
+      useAuthStore.getState().setActiveSalonId(salonId);
+    }
+  }
   if (!salonId) return {user: profile, salon: null};
 
   const {data: salonRow} = await client
     .from('salons')
-    .select('id,name,slug,whatsapp,status,area,created_at,updated_at')
+    .select('id,name,slug,whatsapp,status,area,address,created_at,updated_at')
     .eq('id', salonId)
     .maybeSingle();
 
@@ -251,7 +268,7 @@ async function readOwnerContext(): Promise<OwnerContext> {
     slug: String(salonRow.slug || ''),
     phone: String((salonRow as any).whatsapp || ''),
     locationLabel: String((salonRow as any).area || ''),
-    locationAddress: String((salonRow as any).area || ''),
+    locationAddress: String((salonRow as any).address || (salonRow as any).area || ''),
     status: normalizeSalonStatus((salonRow as any).status),
     workdayStart: '08:00',
     workdayEnd: '22:00',
@@ -646,9 +663,19 @@ export const supabaseApi: CareChairApi = {
       const context = await readOwnerContext();
       if (!context.salon) throw new Error('SALON_REQUIRED');
       const client = assertSupabase();
-      const {data, error} = await client.from('staff').select('id,name,role,phone,photo_url,is_active').eq('salon_id', context.salon.id).eq('is_active', true);
-      if (error) return [];
-      return (data || []).map((row: any, index: number) => ({
+      const [staffRes, linksRes] = await Promise.all([
+        client.from('staff').select('id,name,role,phone,photo_url,is_active').eq('salon_id', context.salon.id).eq('is_active', true),
+        client.from('staff_services').select('staff_id,service_id').eq('salon_id', context.salon.id)
+      ]);
+      if (staffRes.error) return [];
+      const serviceIdsByStaff = new Map<string, string[]>();
+      for (const row of linksRes.data || []) {
+        const key = String((row as any).staff_id || '');
+        const list = serviceIdsByStaff.get(key) || [];
+        list.push(String((row as any).service_id || ''));
+        serviceIdsByStaff.set(key, list);
+      }
+      return (staffRes.data || []).map((row: any, index: number) => ({
         id: String(row.id),
         salonId: context.salon!.id,
         name: String(row.name || ''),
@@ -657,7 +684,7 @@ export const supabaseApi: CareChairApi = {
         avatarUrl: String(row.photo_url || ''),
         color: ['#2563EB', '#0EA5E9', '#14B8A6', '#F59E0B'][index % 4],
         isActive: true,
-        serviceIds: [],
+        serviceIds: serviceIdsByStaff.get(String(row.id)) || [],
         workingHours: {}
       }));
     },
@@ -681,9 +708,19 @@ export const supabaseApi: CareChairApi = {
       const context = await readOwnerContext();
       if (!context.salon) throw new Error('SALON_REQUIRED');
       const client = assertSupabase();
-      const {data, error} = await client.from('services').select('id,name,duration_minutes,price,is_active,category').eq('salon_id', context.salon.id);
-      if (error) return [];
-      return (data || []).map((row: any) => ({
+      const [servicesRes, linksRes] = await Promise.all([
+        client.from('services').select('id,name,duration_minutes,price,is_active,category').eq('salon_id', context.salon.id),
+        client.from('staff_services').select('staff_id,service_id').eq('salon_id', context.salon.id)
+      ]);
+      if (servicesRes.error) return [];
+      const staffIdsByService = new Map<string, string[]>();
+      for (const row of linksRes.data || []) {
+        const key = String((row as any).service_id || '');
+        const list = staffIdsByService.get(key) || [];
+        list.push(String((row as any).staff_id || ''));
+        staffIdsByService.set(key, list);
+      }
+      return (servicesRes.data || []).map((row: any) => ({
         id: String(row.id),
         salonId: context.salon!.id,
         name: String(row.name || ''),
@@ -691,7 +728,7 @@ export const supabaseApi: CareChairApi = {
         price: Number(row.price || 0),
         isActive: row.is_active !== false,
         category: String(row.category || ''),
-        assignedStaffIds: []
+        assignedStaffIds: staffIdsByService.get(String(row.id)) || []
       }));
     },
     upsert: async (input: UpsertServiceInput) => {

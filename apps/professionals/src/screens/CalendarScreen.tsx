@@ -1,6 +1,7 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {FlatList, Pressable, ScrollView, Text, View, useWindowDimensions} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useFocusEffect} from '@react-navigation/native';
 import {Controller, useForm, useWatch} from 'react-hook-form';
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
@@ -166,6 +167,15 @@ export function CalendarScreen() {
   const staffRows = staffQuery.data || [];
   const servicesRows = servicesQuery.data || [];
   const bookingRows = bookingsQuery.data || [];
+
+  useFocusEffect(
+    useCallback(() => {
+      void staffQuery.refetch();
+      void servicesQuery.refetch();
+      void bookingsQuery.refetch();
+      return () => {};
+    }, [bookingsQuery, servicesQuery, staffQuery])
+  );
 
   const activeServices = useMemo(() => servicesRows.filter((s) => s.isActive), [servicesRows]);
   const staffById = useMemo(() => new Map(staffRows.map((row) => [row.id, row])), [staffRows]);

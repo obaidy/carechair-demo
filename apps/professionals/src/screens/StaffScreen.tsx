@@ -1,6 +1,7 @@
-import {useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {FlatList, Pressable, ScrollView, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useFocusEffect} from '@react-navigation/native';
 import {Controller, useForm} from 'react-hook-form';
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
@@ -80,6 +81,15 @@ export function StaffScreen() {
       };
     });
   }, [bookingsQuery.data, servicesQuery.data, staffQuery.data]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void staffQuery.refetch();
+      void servicesQuery.refetch();
+      void bookingsQuery.refetch();
+      return () => {};
+    }, [bookingsQuery, servicesQuery, staffQuery])
+  );
 
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: colors.background}}>

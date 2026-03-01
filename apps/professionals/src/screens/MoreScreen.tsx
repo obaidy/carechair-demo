@@ -1,7 +1,7 @@
-import {useState} from 'react';
+import {useCallback, useState} from 'react';
 import {ScrollView, Share, Switch, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Controller, useForm} from 'react-hook-form';
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
@@ -15,6 +15,7 @@ import {useReminders, useRequestActivation, useServices, useStaff, useUpdateRemi
 import {useSignOut} from '../api/authHooks';
 import type {UpsertServiceInput} from '../types/models';
 import {createInvite, type CreateInviteResult} from '../api/invites';
+import {api} from '../api';
 
 const activationSchema = z.object({
   city: z.string().optional(),
@@ -95,6 +96,18 @@ export function MoreScreen() {
   const isActive = context?.salon?.status === 'ACTIVE';
   const currentMembership = memberships.find((membership) => membership.salonId === context?.salon?.id && membership.status === 'ACTIVE');
   const canCreateInvite = currentMembership?.role === 'OWNER' || currentMembership?.role === 'MANAGER';
+
+  useFocusEffect(
+    useCallback(() => {
+      void servicesQuery.refetch();
+      void staffQuery.refetch();
+      void remindersQuery.refetch();
+      void api.owner.getContext().then((next) => {
+        setContext(next);
+      }).catch(() => {});
+      return () => {};
+    }, [remindersQuery, servicesQuery, staffQuery, setContext])
+  );
 
   async function onRequestActivation(values: ActivationValues) {
     const salon = await requestActivation.mutateAsync({
