@@ -387,20 +387,21 @@ export async function upsertUserProfileV2(params?: {phone?: string; fullName?: s
 }
 
 export async function listActiveMembershipsV2(): Promise<Membership[]> {
-  const client = assertClient();
   const user = await readAuthUser();
+  const {token, source} = await getAccessTokenForApi();
   let lastError: any = null;
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const {data, error} = await client
-      .from('salon_members')
-      .select('salon_id,user_id,role,status,joined_at')
-      .eq('user_id', user.id)
-      .eq('status', 'ACTIVE')
-      .order('joined_at', {ascending: false});
+    const {response, payload} = await restRequest(
+      `/rest/v1/salon_members?select=salon_id,user_id,role,status,joined_at&user_id=eq.${encodeURIComponent(user.id)}&status=eq.ACTIVE&order=joined_at.desc`,
+      {
+        method: 'GET',
+        token
+      }
+    );
 
-    if (!error) {
-      return (data || []).map((row: any) => ({
+    if (response.ok && Array.isArray(payload)) {
+      return payload.map((row: any) => ({
         salonId: String(row.salon_id),
         userId: String(row.user_id),
         role: normalizeRole(row.role),
@@ -409,11 +410,13 @@ export async function listActiveMembershipsV2(): Promise<Membership[]> {
       }));
     }
 
-    lastError = error;
+    lastError = payload || new Error(`HTTP_${response.status}`);
     if (__DEV__) {
       pushDevLog('error', 'db.salon_members.select', 'Failed to fetch active memberships', {
         attempt: attempt + 1,
-        error: String(error?.message || error?.code || error),
+        error: String(payload?.message || payload?.code || `HTTP_${response.status}`),
+        status: response.status,
+        tokenSource: source,
       });
     }
     if (attempt < 2) await delay(220);
@@ -457,22 +460,27 @@ function mapSalonRowToContext(row: any, user: UserProfile): OwnerContext {
 }
 
 export async function getOwnerContextBySalonIdV2(salonId: string | null): Promise<OwnerContext> {
-  const client = assertClient();
   const user = await getUserProfileFromAuth();
   if (!salonId) return {user, salon: null};
+  const {token, source} = await getAccessTokenForApi();
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const {data, error} = await client
-      .from('salons')
-      .select('id,name,slug,whatsapp,status,area,address,city,created_at,updated_at')
-      .eq('id', salonId)
-      .maybeSingle();
-    if (!error && data) return mapSalonRowToContext(data, user);
-    if (__DEV__ && error) {
+    const {response, payload} = await restRequest(
+      `/rest/v1/salons?select=id,name,slug,whatsapp,status,area,address,city,created_at,updated_at&id=eq.${encodeURIComponent(salonId)}&limit=1`,
+      {
+        method: 'GET',
+        token
+      }
+    );
+    const row = Array.isArray(payload) ? payload[0] : null;
+    if (response.ok && row) return mapSalonRowToContext(row, user);
+    if (__DEV__) {
       pushDevLog('error', 'db.salons.select', 'Failed to fetch owner context salon', {
         attempt: attempt + 1,
         salonId,
-        error: String(error?.message || error?.code || error),
+        error: String(payload?.message || payload?.code || `HTTP_${response.status}`),
+        status: response.status,
+        tokenSource: source,
       });
     }
     if (attempt < 2) await delay(220);

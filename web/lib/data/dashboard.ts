@@ -1,6 +1,7 @@
 import 'server-only';
 
 import {createServerSupabaseClient} from '@/lib/supabase/server';
+import {createServiceSupabaseClient} from '@/lib/supabase/service';
 import {readAuthSession} from '@/lib/auth/server';
 import {getSuperadminCode} from '@/lib/auth/config';
 import {normalizeSalonLifecycleStatus, SALON_STATUS} from '@/lib/types/status';
@@ -150,7 +151,7 @@ export async function getSessionSalon(): Promise<SalonRecord | null> {
   const session = await readAuthSession();
   if (!session || session.role !== 'salon_admin') return null;
 
-  const supabase = createServerSupabaseClient();
+  const supabase = createServiceSupabaseClient() || createServerSupabaseClient();
   if (!supabase) return null;
 
   let effectiveSalonId = String(session.salonId || '').trim();
@@ -173,6 +174,18 @@ export async function getSessionSalon(): Promise<SalonRecord | null> {
     const membershipRes = await membershipQuery.maybeSingle();
     if (!membershipRes.error && membershipRes.data?.salon_id) {
       effectiveSalonId = String(membershipRes.data.salon_id);
+    } else if (!membershipRes.error && !membershipRes.data && effectiveSalonId) {
+      const fallbackSalon = await supabase
+        .from('salons')
+        .select('id')
+        .eq('id', effectiveSalonId)
+        .eq('created_by', userId)
+        .maybeSingle();
+      if (!fallbackSalon.error && fallbackSalon.data?.id) {
+        effectiveSalonId = String(fallbackSalon.data.id);
+      } else {
+        return null;
+      }
     } else if (!missingRelation(membershipRes.error, 'salon_members')) {
       // Membership mismatch should block access instead of silently routing to stale salon cookie data.
       return null;
