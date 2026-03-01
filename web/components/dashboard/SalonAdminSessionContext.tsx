@@ -9,8 +9,8 @@ type SalonAdminSessionContextValue = {
 
 const SalonAdminSessionContext = createContext<SalonAdminSessionContextValue | null>(null);
 
-export function SalonAdminSessionProvider({children}: {children: React.ReactNode}) {
-  const [unlocked, setUnlocked] = useState(false);
+export function SalonAdminSessionProvider({children, initialUnlocked = false}: {children: React.ReactNode; initialUnlocked?: boolean}) {
+  const [unlocked, setUnlocked] = useState(initialUnlocked);
   const value = useMemo(() => ({unlocked, setUnlocked}), [unlocked]);
   return <SalonAdminSessionContext.Provider value={value}>{children}</SalonAdminSessionContext.Provider>;
 }

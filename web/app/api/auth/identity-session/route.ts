@@ -10,11 +10,34 @@ type SalonIdentity = {
   salonSlug: string;
 };
 
+function salonAdminPath(locale: string, salonSlug: string, module = 'dashboard') {
+  return `/${locale}/s/${salonSlug}/admin/${module}`;
+}
+
 function sanitizeNextPath(value: string, locale: string, fallback: string): string {
   if (!value) return fallback;
   if (!value.startsWith('/')) return fallback;
   if (!value.startsWith(`/${locale}/`)) return fallback;
   return value;
+}
+
+function translateSalonAdminNextPath(value: string, locale: string, salonSlug: string) {
+  const fallback = salonAdminPath(locale, salonSlug, 'dashboard');
+  const safe = sanitizeNextPath(value, locale, fallback);
+  const prefix = `/${locale}/app`;
+  if (!safe.startsWith(prefix)) return safe;
+  const suffix = safe.slice(prefix.length).replace(/^\/+/, '');
+  const moduleMap: Record<string, string> = {
+    '': 'dashboard',
+    bookings: 'bookings',
+    calendar: 'calendar',
+    staff: 'employees',
+    services: 'services',
+    clients: 'clients',
+    settings: 'settings'
+  };
+  const translated = moduleMap[suffix] || 'dashboard';
+  return salonAdminPath(locale, salonSlug, translated);
 }
 
 function parseRole(input: unknown): WebRole {
@@ -217,10 +240,11 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  const resolvedNextPath = translateSalonAdminNextPath(nextPath, locale, salonIdentity.salonSlug);
   await setSalonAdminSession({
     userId: String(user.id),
     salonId: salonIdentity.salonId,
     salonSlug: salonIdentity.salonSlug
   });
-  return NextResponse.json({ok: true, nextPath});
+  return NextResponse.json({ok: true, nextPath: resolvedNextPath});
 }

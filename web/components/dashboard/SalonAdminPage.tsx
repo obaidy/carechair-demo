@@ -3463,7 +3463,7 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                   <input
                     type="checkbox"
                     checked={Boolean(salon.is_listed)}
-                    onChange={(e) => saveSalonFlags({ is_listed: e.target.checked })}
+                    onChange={(e) => saveSalonFlags({ is_listed: e.target.checked, is_public: e.target.checked })}
                     disabled={savingSalonFlags}
                   />
                   {tr("admin.settings.showInExplore", "Show in explore page")}

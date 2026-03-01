@@ -2245,9 +2245,9 @@ export default function SuperAdminPage() {
                           onClick={() =>
                             patchSalon(
                               selectedSalon,
-                              { is_listed: !selectedSalon.is_listed },
+                              { is_listed: !selectedSalon.is_listed, is_public: !selectedSalon.is_listed },
                               selectedSalon.is_listed ? t("superadmin.messages.hiddenFromExplore") : t("superadmin.messages.shownInExplore")
-                            ).then(() => logAdminAction(selectedSalon.id, "toggle_listed", { is_listed: !selectedSalon.is_listed }))
+                            ).then(() => logAdminAction(selectedSalon.id, "toggle_listed", { is_listed: !selectedSalon.is_listed, is_public: !selectedSalon.is_listed }))
                           }
                         >
                           {selectedSalon.is_listed ? t("superadmin.hideFromExplore") : t("superadmin.showInExplore")}

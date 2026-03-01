@@ -199,7 +199,6 @@ async function getPublicSalonsBase(): Promise<SalonRow[]> {
     .from('salons')
     .select(SALON_SELECT)
     .eq('is_public', true)
-    .eq('is_active', true)
     .in('status', [SALON_STATUS.ACTIVE, 'active', 'TRIALING', 'trialing', 'PAST_DUE', 'past_due'])
     .order('created_at', {ascending: false});
 
@@ -224,7 +223,7 @@ async function getPublicSalonsBase(): Promise<SalonRow[]> {
     }
   }
 
-  if (missingColumn(withPublicAndActive.error, 'is_active')) {
+  if (missingColumn(withPublicAndActive.error, 'is_active') || missingColumn(withPublicAndActive.error, 'status')) {
     const withPublicOnly = await supabase
       .from('salons')
       .select(SALON_SELECT)

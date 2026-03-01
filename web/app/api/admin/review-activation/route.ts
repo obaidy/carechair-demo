@@ -116,7 +116,8 @@ export async function POST(request: Request) {
   const salonPatch: Record<string, unknown> = {
     status: decision === 'APPROVE' ? SALON_STATUS.ACTIVE : SALON_STATUS.DRAFT,
     is_active: decision === 'APPROVE',
-    is_public: decision === 'APPROVE'
+    is_public: decision === 'APPROVE',
+    is_listed: decision === 'APPROVE'
   };
 
   const updateSalon = await supabase

@@ -21,6 +21,28 @@ function sanitizeNextPath(value: string, locale: string, fallback: string): stri
   return value;
 }
 
+function salonAdminPath(locale: string, salonSlug: string, module = 'dashboard') {
+  return `/${locale}/s/${salonSlug}/admin/${module}`;
+}
+
+function translateSalonAdminNextPath(value: string, locale: string, salonSlug: string) {
+  const fallback = salonAdminPath(locale, salonSlug, 'dashboard');
+  const safe = sanitizeNextPath(value, locale, fallback);
+  const prefix = `/${locale}/app`;
+  if (!safe.startsWith(prefix)) return safe;
+  const suffix = safe.slice(prefix.length).replace(/^\/+/, '');
+  const moduleMap: Record<string, string> = {
+    '': 'dashboard',
+    bookings: 'bookings',
+    calendar: 'calendar',
+    staff: 'employees',
+    services: 'services',
+    clients: 'clients',
+    settings: 'settings'
+  };
+  return salonAdminPath(locale, salonSlug, moduleMap[suffix] || 'dashboard');
+}
+
 const salonLoginSchema = z.object({
   slug: z.string().trim().min(2),
   passcode: z.string().trim().min(3),
@@ -50,7 +72,6 @@ export default async function LoginPage({params, searchParams}: Props) {
       redirect(`/${locale}/login?error=invalid_salon`);
     }
 
-    const nextPath = sanitizeNextPath(parsed.data.next || '', locale, `/${locale}/app`);
     const supabase = createServerSupabaseClient();
     if (!supabase) {
       redirect(`/${locale}/login?error=supabase_missing`);
@@ -70,6 +91,7 @@ export default async function LoginPage({params, searchParams}: Props) {
       redirect(`/${locale}/login?error=wrong_passcode`);
     }
 
+    const nextPath = translateSalonAdminNextPath(parsed.data.next || '', locale, data.slug);
     await setSalonAdminSession({salonId: data.id, salonSlug: data.slug});
     redirect(nextPath);
   }
