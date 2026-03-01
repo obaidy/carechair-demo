@@ -70,21 +70,34 @@ export function useVerifyOtp() {
     mutationFn: (payload: {phone: string; code: string}) => api.auth.verifyOtp(payload.phone, payload.code),
     onSuccess: async (session) => {
       setSession(session);
-      const hydrated = await hydrateAuthState({
-        pendingToken: useAuthStore.getState().pendingJoinToken || undefined,
-        acceptPendingToken: true
-      });
-      if (hydrated) {
-        setSession(hydrated.session);
-        setContext(hydrated.context);
-        setMemberships(hydrated.memberships);
-        setActiveSalonId(hydrated.activeSalonId);
-        setPendingJoinToken(null);
-        setBootstrapError(null);
-      } else {
-        // OTP verified successfully. If hydration returns null (session race),
-        // continue with a valid authenticated shell and route to onboarding.
-        pushDevLog('info', 'auth.verifyOtp', 'Hydration returned null after OTP success; routing without bootstrap error');
+      try {
+        const hydrated = await hydrateAuthState({
+          pendingToken: useAuthStore.getState().pendingJoinToken || undefined,
+          acceptPendingToken: true
+        });
+        if (hydrated) {
+          setSession(hydrated.session);
+          setContext(hydrated.context);
+          setMemberships(hydrated.memberships);
+          setActiveSalonId(hydrated.activeSalonId);
+          setPendingJoinToken(null);
+          setBootstrapError(null);
+        } else {
+          pushDevLog('info', 'auth.verifyOtp', 'Hydration returned null after OTP success; routing without bootstrap error');
+          setBootstrapError(null);
+          setContext(null);
+          setMemberships([]);
+          setActiveSalonId(null);
+        }
+      } catch (error: any) {
+        const message = String(error?.message || error || 'HYDRATION_AFTER_OTP_FAILED');
+        if (message === 'NO_SESSION' || message === 'Auth session missing!') {
+          pushDevLog('warn', 'auth.verifyOtp', 'Post-OTP hydration hit transient session race; continuing to onboarding', {
+            message
+          });
+        } else {
+          throw error;
+        }
         setBootstrapError(null);
         setContext(null);
         setMemberships([]);
