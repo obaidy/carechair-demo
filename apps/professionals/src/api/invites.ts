@@ -328,8 +328,12 @@ async function invokeEdgeWithLog(functionName: string, body: Record<string, unkn
         token: refreshedToken,
       });
     } else {
-      await forceLogoutNoSession('NO_SESSION');
-      throw new Error('NO_SESSION');
+      if (__DEV__) {
+        pushDevLog('warn', 'edge.invoke', `Refresh session unavailable after 401 from ${functionName}`, {
+          functionName,
+          tokenSource: source,
+        });
+      }
     }
   }
 
