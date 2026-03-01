@@ -102,6 +102,33 @@ export default function ActivationQueueClient({locale, pending, active, suspende
     }
   }
 
+  function renderReviewActions(requestId: string) {
+    const isCurrent = selected?.id === requestId;
+    return (
+      <div className="row-actions" style={{marginTop: 12}}>
+        <button
+          className="btn btn-primary"
+          disabled={Boolean(decisionLoading) || !isCurrent}
+          onClick={() => review('APPROVE')}
+        >
+          {decisionLoading === 'APPROVE' && isCurrent ? 'Approving...' : 'Approve'}
+        </button>
+        <button
+          className="btn btn-danger"
+          disabled={Boolean(decisionLoading) || !isCurrent}
+          onClick={() => review('REJECT')}
+        >
+          {decisionLoading === 'REJECT' && isCurrent ? 'Rejecting...' : 'Reject'}
+        </button>
+        {selected?.salon_slug && isCurrent ? (
+          <a className="btn btn-secondary" href={`/${locale}/s/${selected.salon_slug}`}>
+            Public page
+          </a>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="cc-section" style={{gap: 16}}>
       <section className="panel hero-lite">
@@ -127,30 +154,36 @@ export default function ActivationQueueClient({locale, pending, active, suspende
             <article className="booking-card" style={{maxHeight: '70vh', overflow: 'auto'}}>
               {!pending.length ? <p className="muted">No pending activation requests.</p> : null}
               {pending.map((row) => (
-                <button
+                <div
                   key={row.id}
-                  type="button"
                   className="settings-row"
                   style={{
                     width: '100%',
                     textAlign: 'left',
                     background: selectedId === row.id ? 'var(--panel-soft)' : 'transparent',
                     borderRadius: 12,
-                    border: selectedId === row.id ? '1px solid var(--line)' : '1px solid transparent'
-                  }}
-                  onClick={() => {
-                    setSelectedId(row.id);
-                    setNotes(row.admin_notes || '');
+                    border: selectedId === row.id ? '1px solid var(--line)' : '1px solid transparent',
+                    paddingBottom: selectedId === row.id ? 12 : 0
                   }}
                 >
-                  <div>
-                    <strong>{row.salon_name}</strong>
-                    <p className="muted">
-                      {row.city || row.area || '-'} • {row.owner_phone || row.whatsapp || '-'}
-                    </p>
-                    <p className="muted">Requested: {fmtDate(row.created_at)}</p>
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    style={{all: 'unset', cursor: 'pointer', display: 'block', width: '100%'}}
+                    onClick={() => {
+                      setSelectedId(row.id);
+                      setNotes(row.admin_notes || '');
+                    }}
+                  >
+                    <div>
+                      <strong>{row.salon_name}</strong>
+                      <p className="muted">
+                        {row.city || row.area || '-'} • {row.owner_phone || row.whatsapp || '-'}
+                      </p>
+                      <p className="muted">Requested: {fmtDate(row.created_at)}</p>
+                    </div>
+                  </button>
+                  {selectedId === row.id ? renderReviewActions(row.id) : null}
+                </div>
               ))}
             </article>
 
@@ -165,6 +198,11 @@ export default function ActivationQueueClient({locale, pending, active, suspende
                     City/Area: {selected.city || '-'} / {selected.area || '-'}
                   </p>
                   <p className="muted">Submitted: {fmtDate(selected.created_at)}</p>
+
+                  <div className="panel" style={{padding: 12}}>
+                    <b>Review actions</b>
+                    {renderReviewActions(selected.id)}
+                  </div>
 
                   <div className="panel" style={{padding: 12}}>
                     <b>Submitted Data</b>
@@ -188,18 +226,6 @@ export default function ActivationQueueClient({locale, pending, active, suspende
                     <span>Admin notes</span>
                     <textarea className="input" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
                   </label>
-
-                  <div className="row-actions">
-                    <button className="btn btn-primary" disabled={Boolean(decisionLoading)} onClick={() => review('APPROVE')}>
-                      {decisionLoading === 'APPROVE' ? 'Approving...' : 'Approve'}
-                    </button>
-                    <button className="btn btn-danger" disabled={Boolean(decisionLoading)} onClick={() => review('REJECT')}>
-                      {decisionLoading === 'REJECT' ? 'Rejecting...' : 'Reject'}
-                    </button>
-                    <a className="btn btn-secondary" href={`/${locale}/s/${selected.salon_slug}`}>
-                      Public page
-                    </a>
-                  </div>
                   {message ? <p className="muted">{message}</p> : null}
                 </div>
               )}
