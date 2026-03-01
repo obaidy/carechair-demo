@@ -102,6 +102,36 @@ async function listActiveMembershipSalonIds(client: ReturnType<typeof createClie
   return Array.from(salonIds);
 }
 
+async function listOwnedSalonsByCreator(client: ReturnType<typeof createClient<any>>, userId: string): Promise<SalonIdentity[]> {
+  const {data, error} = await client
+    .from('salons')
+    .select('id,slug,created_at')
+    .eq('created_by', userId)
+    .order('created_at', {ascending: false})
+    .limit(20);
+
+  if (error || !Array.isArray(data)) return [];
+  return data
+    .map((row: any) => ({
+      salonId: String(row?.id || '').trim(),
+      salonSlug: String(row?.slug || '').trim()
+    }))
+    .filter((row) => row.salonId && row.salonSlug);
+}
+
+async function ensureOwnerMemberships(client: ReturnType<typeof createClient<any>>, userId: string, salons: SalonIdentity[]) {
+  if (!salons.length) return;
+  await client.from('salon_members').upsert(
+    salons.map((row) => ({
+      salon_id: row.salonId,
+      user_id: userId,
+      role: 'OWNER',
+      status: 'ACTIVE'
+    })),
+    {onConflict: 'salon_id,user_id'}
+  );
+}
+
 export async function POST(request: NextRequest) {
   let body: any = null;
   try {
@@ -158,7 +188,16 @@ export async function POST(request: NextRequest) {
   }
 
   const memberships = await listActiveMembershipSalonIds(lookupClient, String(user.id));
-  if (!memberships.length) {
+  let resolvedMemberships = memberships;
+  if (!resolvedMemberships.length && serviceKey) {
+    const ownedSalons = await listOwnedSalonsByCreator(lookupClient, String(user.id));
+    if (ownedSalons.length) {
+      await ensureOwnerMemberships(lookupClient, String(user.id), ownedSalons);
+      resolvedMemberships = ownedSalons.map((row) => row.salonId);
+    }
+  }
+
+  if (!resolvedMemberships.length) {
     return NextResponse.json({
       ok: true,
       nextPath: `/${locale}/onboarding/salon-setup`,
@@ -167,7 +206,7 @@ export async function POST(request: NextRequest) {
   }
 
   const preferredSalonId = readPreferredSalonIdFromMetadata(user);
-  const chosenSalonId = preferredSalonId && memberships.includes(preferredSalonId) ? preferredSalonId : memberships[0];
+  const chosenSalonId = preferredSalonId && resolvedMemberships.includes(preferredSalonId) ? preferredSalonId : resolvedMemberships[0];
   const salonIdentity = await resolveSalonById(lookupClient, chosenSalonId);
 
   if (!salonIdentity?.salonId || !salonIdentity?.salonSlug) {

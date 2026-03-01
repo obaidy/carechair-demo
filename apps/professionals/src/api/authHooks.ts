@@ -6,6 +6,10 @@ import {useAuthStore} from '../state/authStore';
 import {hydrateAuthState, logoutSession} from '../auth/session';
 import {pushDevLog} from '../lib/devLogger';
 
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function useBootstrapAuth() {
   const setSession = useAuthStore((state) => state.setSession);
   const setContext = useAuthStore((state) => state.setContext);
@@ -71,10 +75,16 @@ export function useVerifyOtp() {
     onSuccess: async (session) => {
       setSession(session);
       try {
-        const hydrated = await hydrateAuthState({
-          pendingToken: useAuthStore.getState().pendingJoinToken || undefined,
-          acceptPendingToken: true
-        });
+        let hydrated = null;
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+          hydrated = await hydrateAuthState({
+            pendingToken: useAuthStore.getState().pendingJoinToken || undefined,
+            acceptPendingToken: true,
+            initialSession: session
+          });
+          if (hydrated) break;
+          await delay(220);
+        }
         if (hydrated) {
           setSession(hydrated.session);
           setContext(hydrated.context);
@@ -83,25 +93,21 @@ export function useVerifyOtp() {
           setPendingJoinToken(null);
           setBootstrapError(null);
         } else {
-          pushDevLog('info', 'auth.verifyOtp', 'Hydration returned null after OTP success; routing without bootstrap error');
-          setBootstrapError(null);
-          setContext(null);
-          setMemberships([]);
-          setActiveSalonId(null);
+          pushDevLog('error', 'auth.verifyOtp', 'Hydration returned null after OTP success; keeping authenticated state and surfacing error', {
+            userId: session.userId
+          });
+          setBootstrapError('POST_OTP_HYDRATION_NULL');
         }
       } catch (error: any) {
         const message = String(error?.message || error || 'HYDRATION_AFTER_OTP_FAILED');
         if (message === 'NO_SESSION' || message === 'Auth session missing!') {
-          pushDevLog('warn', 'auth.verifyOtp', 'Post-OTP hydration hit transient session race; continuing to onboarding', {
+          pushDevLog('warn', 'auth.verifyOtp', 'Post-OTP hydration hit transient session race; surfacing retry state instead of onboarding', {
             message
           });
+          setBootstrapError(message);
         } else {
           throw error;
         }
-        setBootstrapError(null);
-        setContext(null);
-        setMemberships([]);
-        setActiveSalonId(null);
       }
       setHydrated(true);
       queryClient.invalidateQueries({queryKey: qk.ownerContext});

@@ -74,26 +74,6 @@ export default function IdentityLoginCard({locale, nextPath, defaultRole}: Props
     setInfo('');
     try {
       const shouldCreateUser = role === 'salon_admin';
-
-      const {error: waError} = await supabase.auth.signInWithOtp({
-        phone: phoneWithPlus,
-        options: {
-          shouldCreateUser,
-          channel: 'whatsapp'
-        }
-      });
-
-      if (!waError) {
-        setOtpSent(true);
-        setInfo(
-          t(
-            'auth.phone.sentWhatsapp',
-            'Verification code sent to WhatsApp. Enter the code to continue.'
-          )
-        );
-        return;
-      }
-
       const {error: smsError} = await supabase.auth.signInWithOtp({
         phone: phoneWithPlus,
         options: {
@@ -109,7 +89,7 @@ export default function IdentityLoginCard({locale, nextPath, defaultRole}: Props
       setInfo(
         t(
           'auth.phone.sentSmsFallback',
-          'WhatsApp is unavailable right now, so we sent the code by SMS.'
+          'Verification code sent by SMS.'
         )
       );
     } catch (err) {
@@ -146,7 +126,7 @@ export default function IdentityLoginCard({locale, nextPath, defaultRole}: Props
         type: 'sms'
       });
       if (verifyError) throw verifyError;
-      const accessToken = data?.session?.access_token;
+      const accessToken = data?.session?.access_token || (await supabase.auth.getSession()).data.session?.access_token;
       if (!accessToken) throw new Error(t('auth.errors.noSession', 'No active session returned by auth.'));
       await finalizeLogin(accessToken);
     } catch (err) {

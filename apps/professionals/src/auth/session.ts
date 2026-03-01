@@ -1,6 +1,7 @@
 import {api} from '../api';
 import {acceptInvite, getOwnerContextBySalonIdV2, listActiveMembershipsV2, type Membership, upsertUserProfileV2} from '../api/invites';
 import {flags} from '../config/flags';
+import {useAuthStore} from '../state/authStore';
 import {secureGet, secureRemove, secureSet} from '../utils/secureStore';
 import type {AuthSession, OwnerContext} from '../types/models';
 import {env} from '../utils/env';
@@ -73,12 +74,19 @@ async function selectActiveSalon(memberships: Membership[]) {
   }
   const saved = await readActiveSalonId();
   if (saved && memberships.some((member) => member.salonId === saved)) return saved;
-  return null;
+  const fallback = memberships[0]?.salonId || null;
+  if (fallback) {
+    await persistActiveSalonId(fallback);
+  }
+  return fallback;
 }
 
-export async function hydrateAuthState(options?: {pendingToken?: string | null; acceptPendingToken?: boolean}): Promise<HydratedAuthState | null> {
-  const liveSession = await api.auth.getSession();
+export async function hydrateAuthState(options?: {pendingToken?: string | null; acceptPendingToken?: boolean; initialSession?: AuthSession | null}): Promise<HydratedAuthState | null> {
+  const liveSession = options?.initialSession?.accessToken ? options.initialSession : await api.auth.getSession();
   if (!liveSession) return null;
+  if (!useAuthStore.getState().session?.accessToken && liveSession.accessToken) {
+    useAuthStore.getState().setSession(liveSession);
+  }
   const session = liveSession;
 
   const useLegacyIdentity = !flags.USE_INVITES_V2 && env.useMockApi;
