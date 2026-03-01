@@ -1,8 +1,7 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {supabase} from '@/lib/supabase';
 
 type PendingRequest = {
   id: string;
@@ -65,19 +64,35 @@ export default function ActivationQueueClient({locale, pending, active, suspende
 
   const selected = useMemo(() => pending.find((row) => row.id === selectedId) || null, [pending, selectedId]);
 
+  useEffect(() => {
+    if (!pending.length) {
+      setSelectedId('');
+      return;
+    }
+    if (!selectedId || !pending.some((row) => row.id === selectedId)) {
+      setSelectedId(pending[0].id);
+      setNotes(pending[0].admin_notes || '');
+    }
+  }, [pending, selectedId]);
+
   async function review(decision: 'APPROVE' | 'REJECT') {
-    if (!supabase || !selected?.id) return;
+    if (!selected?.id) return;
     setDecisionLoading(decision);
     setMessage('');
     try {
-      const {data, error} = await supabase.functions.invoke('review-activation', {
-        body: {
+      const res = await fetch('/api/admin/review-activation', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
           activation_request_id: selected.id,
           decision,
           admin_notes: notes
-        }
+        })
       });
-      if (error || !data?.ok) throw error || new Error(String(data?.error || 'Review failed'));
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error(String(data?.error || 'Review failed'));
+      }
       setMessage(decision === 'APPROVE' ? 'Salon approved successfully.' : 'Activation request rejected.');
       router.refresh();
     } catch (error: any) {
