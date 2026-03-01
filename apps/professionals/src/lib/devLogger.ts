@@ -38,7 +38,7 @@ export function pushDevLog(level: DevLogLevel, scope: string, message: string, d
   emit();
 
   const printable = `[Diagnostics:${scope}] ${message}`;
-  if (level === 'error') console.error(printable, data ?? '');
+  if (level === 'error') console.log(`${printable} [error]`, data ?? '');
   else if (level === 'warn') console.warn(printable, data ?? '');
   else console.log(printable, data ?? '');
 }

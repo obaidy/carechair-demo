@@ -27,6 +27,7 @@ import {normalizeSalonStatus, toDbSalonStatus} from '../../types/status';
 import {pushDevLog} from '../../lib/devLogger';
 import {toPhoneWithPlus} from '../../lib/phone';
 import {env} from '../../utils/env';
+import {requestSalonActivationV2} from '../invites';
 
 function assertSupabase() {
   if (!supabase) throw new Error('SUPABASE_CONFIG_MISSING');
@@ -511,84 +512,7 @@ export const supabaseApi: CareChairApi = {
     requestActivation: async (input: RequestActivationInput) => {
       const context = await readOwnerContext();
       if (!context.salon) throw new Error('SALON_REQUIRED');
-      const client = assertSupabase();
-      const payload = {
-        salon_id: context.salon.id,
-        submitted_data: {
-          whatsapp: context.salon.phone || null,
-          city: input.city || null,
-          area: input.area || null,
-          address_mode: input.addressMode,
-          address_text: input.addressText || null,
-          location_lat: input.locationLat ?? null,
-          location_lng: input.locationLng ?? null,
-          location_accuracy_m: input.locationAccuracyM ?? null,
-          location_label: input.locationLabel || null,
-          instagram: input.instagram || null,
-          photo_url: input.storefrontPhotoUrl || null
-        }
-      };
-      if (__DEV__) {
-        const activeSession = await client.auth.getSession();
-        pushDevLog('info', 'edge.invoke', 'Invoking request-activation (legacy owner API)', {
-          salonId: context.salon.id,
-          payload,
-          hasAccessToken: Boolean(activeSession.data.session?.access_token),
-          tokenLength: String(activeSession.data.session?.access_token || '').length,
-          tokenSource: 'supabase.getSession',
-          expiresAt: Number(activeSession.data.session?.expires_at || 0) * 1000 || null
-        });
-      }
-      const session = await getActiveSupabaseSession(client, {allowRefresh: true});
-      let req = await client.functions.invoke('request-activation', {
-        body: payload,
-        headers: {Authorization: `Bearer ${session.access_token}`}
-      });
-      let attempts = 1;
-
-      const status = Number((req as any)?.error?.context?.status || ((req as any)?.error ? 500 : 200));
-      if (status === 401) {
-        const refreshed = await client.auth.refreshSession();
-        const retryToken = String(refreshed.data.session?.access_token || '').trim();
-        if (retryToken) {
-          attempts = 2;
-          req = await client.functions.invoke('request-activation', {
-            body: payload,
-            headers: {Authorization: `Bearer ${retryToken}`}
-          });
-        } else {
-          throw new Error('NO_SESSION');
-        }
-      }
-      if (__DEV__) {
-        const reqStatus = Number((req as any)?.error?.context?.status || ((req as any)?.error ? 500 : 200));
-        pushDevLog(req.error || !req.data?.ok ? 'error' : 'info', 'edge.invoke', 'request-activation result (legacy owner API)', {
-          salonId: context.salon.id,
-          status: reqStatus,
-          data: req.data ?? null,
-          error: req.error ? String(req.error?.message || req.error) : null,
-          tokenSource: 'supabase.getSession',
-          attempts
-        });
-      }
-      if (req.error || !req.data?.ok) {
-        if (req.error) throw new Error(await getFunctionErrorMessage(req.error, 'REQUEST_FAILED'));
-        throw new Error(String(req.data?.error || 'REQUEST_FAILED'));
-      }
-
-      const {data, error} = await client
-        .from('salons')
-        .select('id,name,slug,status,area,whatsapp,updated_at,created_at')
-        .eq('id', context.salon.id)
-        .single();
-      if (error || !data) throw error || new Error('REQUEST_FAILED');
-
-      return {
-        ...context.salon,
-        locationAddress: String((data as any).area || context.salon.locationAddress),
-        status: 'PENDING_REVIEW',
-        updatedAt: String((data as any).updated_at || new Date().toISOString())
-      };
+      return requestSalonActivationV2(context.salon.id, input);
     },
     updateSalonProfile: async (patch) => {
       const context = await readOwnerContext();
