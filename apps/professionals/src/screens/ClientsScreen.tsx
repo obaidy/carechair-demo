@@ -1,6 +1,7 @@
-import {useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {FlatList, Pressable, Text, useWindowDimensions, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useFocusEffect} from '@react-navigation/native';
 import {Controller, useForm} from 'react-hook-form';
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
@@ -47,6 +48,14 @@ export function ClientsScreen() {
   }
 
   const clientList = useMemo(() => clientsQuery.data || [], [clientsQuery.data]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void clientsQuery.refetch();
+      if (selected?.id) void historyQuery.refetch();
+      return () => {};
+    }, [clientsQuery, historyQuery, selected?.id])
+  );
 
   const listPane = (
     <View style={{flex: 1, gap: spacing.sm}}>

@@ -5,6 +5,7 @@ import type {
   BlockTimeInput,
   Booking,
   BookingStatus,
+  Client,
   CreateBookingInput,
   CreateClientInput,
   CreateSalonInput,
@@ -136,6 +137,10 @@ function mapBookingRow(row: any): Booking {
     createdAt: String(row.created_at || new Date().toISOString()),
     updatedAt: String(row.created_at || new Date().toISOString())
   };
+}
+
+function slugifyTempId(prefix: string) {
+  return `${prefix}_${Date.now().toString(36)}`;
 }
 
 const SESSION_REFRESH_LEEWAY_MS = 2 * 60 * 1000;
@@ -309,6 +314,61 @@ async function safeListBookings(salonId: string, date: string, mode: 'day' | 'we
   return (data || []).map((row: any) => ({
     ...mapBookingRow(row)
   }));
+}
+
+async function nextSortOrder(client: ReturnType<typeof assertSupabase>, table: 'staff' | 'services', salonId: string) {
+  const {data} = await client
+    .from(table)
+    .select('sort_order')
+    .eq('salon_id', salonId)
+    .order('sort_order', {ascending: false})
+    .limit(1)
+    .maybeSingle();
+  const current = Number((data as any)?.sort_order || 0);
+  return Number.isFinite(current) ? current + 10 : 10;
+}
+
+async function syncStaffServiceAssignments(client: ReturnType<typeof assertSupabase>, salonId: string, params: {staffId?: string; serviceId?: string; nextIds: string[]}) {
+  if (!params.staffId && !params.serviceId) return;
+
+  let query = client.from('staff_services').select('staff_id,service_id').eq('salon_id', salonId);
+  if (params.staffId) query = query.eq('staff_id', params.staffId);
+  if (params.serviceId) query = query.eq('service_id', params.serviceId);
+
+  const currentRes = await query;
+  if (currentRes.error) throw currentRes.error;
+
+  const currentRows = currentRes.data || [];
+  const currentSet = new Set(
+    currentRows.map((row: any) =>
+      params.staffId ? String(row.service_id || '') : String(row.staff_id || '')
+    )
+  );
+  const nextSet = new Set(params.nextIds.map((id) => String(id)));
+
+  const toDelete = Array.from(currentSet).filter((id) => !nextSet.has(id));
+  const toInsert = Array.from(nextSet).filter((id) => !currentSet.has(id));
+
+  if (toDelete.length > 0) {
+    let del = client.from('staff_services').delete().eq('salon_id', salonId);
+    if (params.staffId) {
+      del = del.eq('staff_id', params.staffId).in('service_id', toDelete);
+    } else {
+      del = del.eq('service_id', params.serviceId!).in('staff_id', toDelete);
+    }
+    const delRes = await del;
+    if (delRes.error) throw delRes.error;
+  }
+
+  if (toInsert.length > 0) {
+    const rows = toInsert.map((id) => ({
+      salon_id: salonId,
+      staff_id: params.staffId || id,
+      service_id: params.serviceId || id
+    }));
+    const insRes = await client.from('staff_services').upsert(rows, {onConflict: 'staff_id,service_id'});
+    if (insRes.error) throw insRes.error;
+  }
 }
 
 export const supabaseApi: CareChairApi = {
@@ -629,15 +689,40 @@ export const supabaseApi: CareChairApi = {
     }
   },
   clients: {
-    list: async () => {
-      // TODO: connect with real clients table; currently inferred from bookings.
-      return [];
+    list: async (query) => {
+      const context = await readOwnerContext();
+      if (!context.salon) throw new Error('SALON_REQUIRED');
+      const bookings = await safeListBookings(context.salon.id, new Date().toISOString(), 'list');
+      const map = new Map<string, Client>();
+
+      for (const row of bookings) {
+        const key = String(row.clientPhone || row.clientName || row.id);
+        const existing = map.get(key);
+        const lastVisitAt = existing?.lastVisitAt && new Date(existing.lastVisitAt).getTime() > new Date(row.startAt).getTime()
+          ? existing.lastVisitAt
+          : row.startAt;
+        map.set(key, {
+          id: existing?.id || key || slugifyTempId('client'),
+          salonId: context.salon.id,
+          name: row.clientName || existing?.name || 'Client',
+          phone: row.clientPhone || existing?.phone || '-',
+          notes: existing?.notes,
+          totalSpend: existing?.totalSpend || 0,
+          lastVisitAt,
+          createdAt: existing?.createdAt || row.createdAt
+        });
+      }
+
+      const term = String(query || '').trim().toLowerCase();
+      return Array.from(map.values())
+        .filter((row) => !term || row.name.toLowerCase().includes(term) || row.phone.toLowerCase().includes(term))
+        .sort((a, b) => +new Date(b.lastVisitAt || b.createdAt) - +new Date(a.lastVisitAt || a.createdAt));
     },
     getById: async () => null,
     create: async (input: CreateClientInput) => {
       return {
-        id: `tmp_${Date.now()}`,
-        salonId: 'unknown',
+        id: slugifyTempId('client'),
+        salonId: useAuthStore.getState().context?.salon?.id || 'unknown',
         name: input.name,
         phone: input.phone,
         notes: input.notes,
@@ -656,7 +741,12 @@ export const supabaseApi: CareChairApi = {
         createdAt: new Date().toISOString()
       };
     },
-    history: async () => []
+    history: async (clientId) => {
+      const context = await readOwnerContext();
+      if (!context.salon) throw new Error('SALON_REQUIRED');
+      const bookings = await safeListBookings(context.salon.id, new Date().toISOString(), 'list');
+      return bookings.filter((row) => String(row.clientPhone || row.clientName || row.id) === String(clientId));
+    }
   },
   staff: {
     list: async () => {
@@ -689,16 +779,70 @@ export const supabaseApi: CareChairApi = {
       }));
     },
     upsert: async (input: UpsertStaffInput) => {
-      // TODO: map to real staff write model and assign staff_services.
+      const context = await readOwnerContext();
+      if (!context.salon) throw new Error('SALON_REQUIRED');
+      const client = assertSupabase();
+      const staffId = String(input.id || '').trim();
+
+      if (staffId) {
+        const updateRes = await client
+          .from('staff')
+          .update({
+            name: input.name,
+            role: input.roleTitle,
+            phone: input.phone || null
+          } as any)
+          .eq('id', staffId)
+          .eq('salon_id', context.salon.id)
+          .select('id,name,role,phone,photo_url,is_active')
+          .single();
+        if (updateRes.error || !updateRes.data) throw updateRes.error || new Error('STAFF_UPDATE_FAILED');
+        await syncStaffServiceAssignments(client, context.salon.id, {
+          staffId,
+          nextIds: input.serviceIds || []
+        });
+        return {
+          id: String(updateRes.data.id),
+          salonId: context.salon.id,
+          name: String(updateRes.data.name || ''),
+          roleTitle: String((updateRes.data as any).role || input.roleTitle || 'Staff'),
+          phone: String((updateRes.data as any).phone || ''),
+          avatarUrl: String((updateRes.data as any).photo_url || ''),
+          color: input.color,
+          isActive: (updateRes.data as any).is_active !== false,
+          serviceIds: input.serviceIds || [],
+          workingHours: {}
+        };
+      }
+
+      const sortOrder = await nextSortOrder(client, 'staff', context.salon.id);
+      const insertRes = await client
+        .from('staff')
+        .insert({
+          salon_id: context.salon.id,
+          name: input.name,
+          role: input.roleTitle,
+          phone: input.phone || null,
+          sort_order: sortOrder,
+          is_active: true
+        } as any)
+        .select('id,name,role,phone,photo_url,is_active')
+        .single();
+      if (insertRes.error || !insertRes.data) throw insertRes.error || new Error('STAFF_CREATE_FAILED');
+      await syncStaffServiceAssignments(client, context.salon.id, {
+        staffId: String(insertRes.data.id),
+        nextIds: input.serviceIds || []
+      });
       return {
-        id: input.id || `tmp_${Date.now()}`,
-        salonId: 'unknown',
-        name: input.name,
-        roleTitle: input.roleTitle,
-        phone: input.phone,
+        id: String(insertRes.data.id),
+        salonId: context.salon.id,
+        name: String(insertRes.data.name || ''),
+        roleTitle: String((insertRes.data as any).role || input.roleTitle || 'Staff'),
+        phone: String((insertRes.data as any).phone || ''),
+        avatarUrl: String((insertRes.data as any).photo_url || ''),
         color: input.color,
-        isActive: true,
-        serviceIds: input.serviceIds,
+        isActive: (insertRes.data as any).is_active !== false,
+        serviceIds: input.serviceIds || [],
         workingHours: {}
       };
     }
@@ -732,16 +876,70 @@ export const supabaseApi: CareChairApi = {
       }));
     },
     upsert: async (input: UpsertServiceInput) => {
-      // TODO: map to real services write model and staff assignment relation.
+      const context = await readOwnerContext();
+      if (!context.salon) throw new Error('SALON_REQUIRED');
+      const client = assertSupabase();
+      const serviceId = String(input.id || '').trim();
+
+      if (serviceId) {
+        const updateRes = await client
+          .from('services')
+          .update({
+            name: input.name,
+            duration_minutes: input.durationMin,
+            price: input.price,
+            category: input.category || null,
+            is_active: input.isActive !== false
+          } as any)
+          .eq('id', serviceId)
+          .eq('salon_id', context.salon.id)
+          .select('id,name,duration_minutes,price,is_active,category')
+          .single();
+        if (updateRes.error || !updateRes.data) throw updateRes.error || new Error('SERVICE_UPDATE_FAILED');
+        await syncStaffServiceAssignments(client, context.salon.id, {
+          serviceId,
+          nextIds: input.assignedStaffIds || []
+        });
+        return {
+          id: String(updateRes.data.id),
+          salonId: context.salon.id,
+          name: String(updateRes.data.name || ''),
+          durationMin: Number((updateRes.data as any).duration_minutes || 30),
+          price: Number((updateRes.data as any).price || 0),
+          category: String((updateRes.data as any).category || ''),
+          assignedStaffIds: input.assignedStaffIds || [],
+          isActive: (updateRes.data as any).is_active !== false
+        };
+      }
+
+      const sortOrder = await nextSortOrder(client, 'services', context.salon.id);
+      const insertRes = await client
+        .from('services')
+        .insert({
+          salon_id: context.salon.id,
+          name: input.name,
+          duration_minutes: input.durationMin,
+          price: input.price,
+          category: input.category || null,
+          sort_order: sortOrder,
+          is_active: input.isActive !== false
+        } as any)
+        .select('id,name,duration_minutes,price,is_active,category')
+        .single();
+      if (insertRes.error || !insertRes.data) throw insertRes.error || new Error('SERVICE_CREATE_FAILED');
+      await syncStaffServiceAssignments(client, context.salon.id, {
+        serviceId: String(insertRes.data.id),
+        nextIds: input.assignedStaffIds || []
+      });
       return {
-        id: input.id || `tmp_${Date.now()}`,
-        salonId: 'unknown',
-        name: input.name,
-        durationMin: input.durationMin,
-        price: input.price,
-        category: input.category,
-        assignedStaffIds: input.assignedStaffIds,
-        isActive: input.isActive !== false
+        id: String(insertRes.data.id),
+        salonId: context.salon.id,
+        name: String(insertRes.data.name || ''),
+        durationMin: Number((insertRes.data as any).duration_minutes || 30),
+        price: Number((insertRes.data as any).price || 0),
+        category: String((insertRes.data as any).category || ''),
+        assignedStaffIds: input.assignedStaffIds || [],
+        isActive: (insertRes.data as any).is_active !== false
       };
     }
   },
