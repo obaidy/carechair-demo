@@ -10,6 +10,7 @@ import {useI18n} from '../i18n/provider';
 import {textDir} from '../utils/layout';
 import {useSendOtp, useVerifyOtp} from '../api/authHooks';
 import {useAuthStore} from '../state/authStore';
+import {pushDevLog} from '../lib/devLogger';
 
 const schema = z.object({
   code: z.string().min(4)
@@ -35,9 +36,16 @@ export function AuthOtpScreen({route}: any) {
 
   async function onSubmit(values: FormValues) {
     setSubmitError('');
+    pushDevLog('info', 'auth.verifyOtp', 'OTP submit pressed', {
+      phone: phone ? `${phone.slice(0, 5)}***${phone.slice(-2)}` : '',
+      codeLength: String(values.code || '').length
+    });
     try {
       await verifyOtp.mutateAsync({phone, code: values.code});
     } catch (error: any) {
+      pushDevLog('error', 'auth.verifyOtp', 'OTP submit failed in screen', {
+        message: String(error?.message || error || 'UNKNOWN_VERIFY_ERROR')
+      });
       setSubmitError(String(error?.message || t('requiredField')));
     }
   }

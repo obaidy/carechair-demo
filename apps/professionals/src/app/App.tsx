@@ -14,6 +14,7 @@ import {extractJoinTokenFromUrl, persistPendingJoinToken} from '../auth/session'
 import {flags} from '../config/flags';
 import {env, hasSupabaseConfig, supabaseHost} from '../utils/env';
 import {pushDevLog} from '../lib/devLogger';
+import {supabase} from '../api/supabase/client';
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,21 @@ function AppInner() {
     // eslint-disable-next-line no-console
     console.log('[CareChair Professionals] startup', startup);
     if (__DEV__) pushDevLog('info', 'startup', 'App bootstrap started', startup);
+  }, []);
+
+  useEffect(() => {
+    if (!__DEV__ || !supabase) return;
+    const {data} = supabase.auth.onAuthStateChange((event, currentSession) => {
+      pushDevLog('info', 'auth.session', 'Supabase auth state changed', {
+        event,
+        hasAccessToken: Boolean(currentSession?.access_token),
+        expiresAt: Number(currentSession?.expires_at || 0) * 1000 || null,
+        userId: String(currentSession?.user?.id || '')
+      });
+    });
+    return () => {
+      data.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {

@@ -92,6 +92,11 @@ export function useVerifyOtp() {
       }
       setHydrated(true);
       queryClient.invalidateQueries({queryKey: qk.ownerContext});
+    },
+    onError: (error: any) => {
+      pushDevLog('error', 'auth.verifyOtp', 'OTP verification mutation failed', {
+        message: String(error?.message || error || 'UNKNOWN_VERIFY_ERROR')
+      });
     }
   });
 }
