@@ -555,7 +555,7 @@ async function readOwnerContext(): Promise<OwnerContext> {
   const [salonRes, hoursRes] = await Promise.all([
     client
       .from('salons')
-      .select('id,name,slug,whatsapp,status,area,address,address_text,city,location_lat,location_lng,location_label,country_code,currency_code,created_at,updated_at')
+      .select('id,name,slug,whatsapp,status,area,address,address_text,city,location_lat,location_lng,location_label,country_code,currency_code,created_by,created_at,updated_at')
       .eq('id', salonId)
       .maybeSingle(),
     selectWorkingHoursWithFallback(client, salonId)
@@ -563,6 +563,9 @@ async function readOwnerContext(): Promise<OwnerContext> {
   const salonRow = salonRes.data;
 
   if (!salonRow) return {user: profile, salon: null};
+  if (String((salonRow as any).created_by || '') === profile.id) {
+    profile.role = 'OWNER';
+  }
 
   const derivedWindow = deriveSalonWindowFromHours(hoursRes.salonHours);
 

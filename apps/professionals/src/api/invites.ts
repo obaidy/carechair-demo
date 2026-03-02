@@ -461,15 +461,23 @@ export async function listActiveMembershipsV2(): Promise<Membership[]> {
       if (salonIds.length) {
         const salonQuery = salonIds.join(',');
         const salonsRes = await restRequest(
-          `/rest/v1/salons?select=id,name,slug&id=in.(${salonQuery})`,
+          `/rest/v1/salons?select=id,name,slug,created_by&id=in.(${salonQuery})`,
           {method: 'GET', token}
         );
         if (salonsRes.response.ok && Array.isArray(salonsRes.payload)) {
-          const byId = new Map<string, {name: string; slug: string}>(
-            salonsRes.payload.map((row: any) => [String(row.id), {name: String(row.name || 'Salon'), slug: String(row.slug || '')}])
+          const byId = new Map<string, {name: string; slug: string; createdBy: string}>(
+            salonsRes.payload.map((row: any) => [
+              String(row.id),
+              {
+                name: String(row.name || 'Salon'),
+                slug: String(row.slug || ''),
+                createdBy: String(row.created_by || '')
+              }
+            ])
           );
           return memberships.map((row) => ({
             ...row,
+            role: byId.get(row.salonId)?.createdBy === user.id ? 'OWNER' : row.role,
             salonName: byId.get(row.salonId)?.name || 'Salon',
             salonSlug: byId.get(row.salonId)?.slug || ''
           }));
@@ -549,7 +557,7 @@ export async function getOwnerContextBySalonIdV2(salonId: string | null): Promis
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const {response, payload} = await restRequest(
-      `/rest/v1/salons?select=id,name,slug,whatsapp,status,area,address,address_text,city,location_lat,location_lng,location_label,created_at,updated_at&id=eq.${encodeURIComponent(salonId)}&limit=1`,
+      `/rest/v1/salons?select=id,name,slug,whatsapp,status,area,address,address_text,city,location_lat,location_lng,location_label,created_by,created_at,updated_at&id=eq.${encodeURIComponent(salonId)}&limit=1`,
       {
         method: 'GET',
         token
@@ -557,6 +565,9 @@ export async function getOwnerContextBySalonIdV2(salonId: string | null): Promis
     );
     const row = Array.isArray(payload) ? payload[0] : null;
     if (response.ok && row) {
+      if (String(row.created_by || '') === user.id) {
+        user.role = 'OWNER';
+      }
       const hours = await selectSalonHoursWithFallback(client, salonId);
       const context = mapSalonRowToContext(row, user);
       if (context.salon) {

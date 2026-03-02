@@ -55,7 +55,7 @@ function safeInviteError(message: string) {
 }
 
 async function writeAudit(
-  serviceClient: ReturnType<typeof createClient>,
+  serviceClient: any,
   payload: {
     salonId?: string | null;
     actorUserId: string;
@@ -155,6 +155,12 @@ serve(async (req) => {
     }
   }
 
+  const existingMembership = await serviceClient
+    .from("salon_members")
+    .select("salon_id,role,status")
+    .eq("user_id", user.id)
+    .eq("status", "ACTIVE");
+
   const tokenHash = token ? await sha256Hex(token) : null;
 
   // Preferred path: atomic DB function with row lock + counters.
@@ -246,6 +252,22 @@ serve(async (req) => {
 
   const role = normalizeRole(invite.role);
   const grantRole = role === "OWNER" ? "MANAGER" : role;
+
+  const currentForSalon = (existingMembership.data || []).find((row: Record<string, unknown>) => String(row.salon_id || "") === String(invite.salon_id));
+  if (currentForSalon?.salon_id) {
+    const currentRole = normalizeRole(currentForSalon.role);
+    await writeAudit(serviceClient, {
+      salonId: String(invite.salon_id),
+      actorUserId: user.id,
+      action: "invite.accepted_existing_member",
+      meta: { method: token ? "token" : "code", role: currentRole },
+    });
+    return json(200, {
+      ok: true,
+      salon_id: invite.salon_id,
+      role: currentRole,
+    });
+  }
 
   const upsertRes = await serviceClient
     .from("salon_members")

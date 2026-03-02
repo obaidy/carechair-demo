@@ -74,7 +74,11 @@ async function selectActiveSalon(memberships: Membership[]) {
   }
   const saved = await readActiveSalonId();
   if (saved && memberships.some((member) => member.salonId === saved)) return saved;
-  const fallback = memberships[0]?.salonId || null;
+  const sorted = [...memberships].sort((a, b) => {
+    const rank = (role: Membership['role']) => (role === 'OWNER' ? 0 : role === 'MANAGER' ? 1 : 2);
+    return rank(a.role) - rank(b.role) || +new Date(b.joinedAt) - +new Date(a.joinedAt);
+  });
+  const fallback = sorted[0]?.salonId || null;
   if (fallback) {
     await persistActiveSalonId(fallback);
   }
