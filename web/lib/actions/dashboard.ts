@@ -5,6 +5,7 @@ import {z} from 'zod';
 import {readAuthSession} from '@/lib/auth/server';
 import {getSuperadminCode} from '@/lib/auth/config';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
+import {createServiceSupabaseClient} from '@/lib/supabase/service';
 import {normalizeSalonLifecycleStatus, SALON_STATUS} from '@/lib/types/status';
 
 function missingColumn(error: unknown, columnName: string): boolean {
@@ -451,6 +452,34 @@ export async function updateSalonSettingsAction(formData: FormData) {
     res = await supabase.from('salons').update(patch).eq('id', session.salonId);
   }
   if (res.error) return;
+
+  revalidatePath(parsed.data.path);
+}
+
+const reminderToggleSchema = z.object({
+  reminderId: z.string().uuid(),
+  enabled: z.enum(['true', 'false']),
+  path: z.string().min(1)
+});
+
+export async function updateReminderRuleAction(formData: FormData) {
+  const parsed = reminderToggleSchema.safeParse({
+    reminderId: formData.get('reminderId'),
+    enabled: formData.get('enabled'),
+    path: formData.get('path')
+  });
+  if (!parsed.success) return;
+
+  const session = await requireSalonAdminSession();
+  if (!session) return;
+  const supabase = createServiceSupabaseClient();
+  if (!supabase) return;
+
+  await supabase
+    .from('salon_reminders')
+    .update({enabled: parsed.data.enabled === 'true'})
+    .eq('id', parsed.data.reminderId)
+    .eq('salon_id', session.salonId);
 
   revalidatePath(parsed.data.path);
 }

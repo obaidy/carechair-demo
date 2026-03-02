@@ -1,5 +1,5 @@
 import {useCallback, useMemo, useState} from 'react';
-import {FlatList, Pressable, ScrollView, Text, View} from 'react-native';
+import {FlatList, Pressable, ScrollView, Switch, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect} from '@react-navigation/native';
 import {Controller, useForm} from 'react-hook-form';
@@ -23,11 +23,27 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+type WorkingHourEditorRow = {
+  start: string;
+  end: string;
+  off?: boolean;
+  breakStart?: string;
+  breakEnd?: string;
+};
+
+function buildDefaultWorkingHours(start = '08:00', end = '22:00') {
+  return Array.from({length: 7}).reduce<Record<number, WorkingHourEditorRow>>((acc, _row, day) => {
+    acc[day] = {start, end, off: false, breakStart: '', breakEnd: ''};
+    return acc;
+  }, {});
+}
+
 export function StaffScreen() {
   const {colors, spacing, typography, radius} = useTheme();
   const {t, isRTL} = useI18n();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Staff | null>(null);
+  const [workingHours, setWorkingHours] = useState<Record<number, WorkingHourEditorRow>>(buildDefaultWorkingHours());
 
   const staffQuery = useStaff();
   const servicesQuery = useServices();
@@ -45,9 +61,22 @@ export function StaffScreen() {
     }
   });
 
+  const dayLabels = useMemo(
+    () =>
+      isRTL
+        ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
+        : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    [isRTL]
+  );
+
   function openEditor(member?: Staff) {
+    const defaultHours = buildDefaultWorkingHours();
     if (member) {
       setEditing(member);
+      setWorkingHours({
+        ...defaultHours,
+        ...member.workingHours,
+      });
       form.reset({
         id: member.id,
         name: member.name,
@@ -58,14 +87,28 @@ export function StaffScreen() {
       });
     } else {
       setEditing(null);
+      setWorkingHours(buildDefaultWorkingHours());
       form.reset({name: '', roleTitle: '', phone: '', color: '#2563EB', serviceIds: []});
     }
     setEditorOpen(true);
   }
 
   async function onSubmit(values: FormValues) {
-    await upsertStaff.mutateAsync(values);
+    await upsertStaff.mutateAsync({
+      ...values,
+      workingHours
+    });
     setEditorOpen(false);
+  }
+
+  function patchWorkingHour(day: number, patch: Partial<WorkingHourEditorRow>) {
+    setWorkingHours((prev) => ({
+      ...prev,
+      [day]: {
+        ...(prev[day] || {start: '08:00', end: '22:00', off: false, breakStart: '', breakEnd: ''}),
+        ...patch
+      }
+    }));
   }
 
   const performance = useMemo(() => {
@@ -187,6 +230,64 @@ export function StaffScreen() {
               </View>
             )}
           />
+
+          <View style={{gap: spacing.sm}}>
+            <Text style={[typography.caption, {color: colors.textMuted}, textDir(isRTL)]}>{isRTL ? 'جدول العمل' : 'Working hours'}</Text>
+            {dayLabels.map((label, dayIndex) => {
+              const row = workingHours[dayIndex] || {start: '08:00', end: '22:00', off: false, breakStart: '', breakEnd: ''};
+              return (
+                <Card key={label} style={{gap: spacing.xs, backgroundColor: colors.surfaceSoft}}>
+                  <View style={{flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between'}}>
+                    <Text style={[typography.bodySm, {color: colors.text, fontWeight: '700'}, textDir(isRTL)]}>{label}</Text>
+                    <View style={{flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: spacing.xs}}>
+                      <Text style={[typography.bodySm, {color: colors.textMuted}, textDir(isRTL)]}>{isRTL ? 'إجازة' : 'Off'}</Text>
+                      <Switch value={Boolean(row.off)} onValueChange={(value) => patchWorkingHour(dayIndex, {off: value})} />
+                    </View>
+                  </View>
+                  {!row.off ? (
+                    <>
+                      <View style={{flexDirection: isRTL ? 'row-reverse' : 'row', gap: spacing.sm}}>
+                        <View style={{flex: 1}}>
+                          <Input
+                            label={isRTL ? 'من' : 'Start'}
+                            value={row.start}
+                            onChangeText={(value) => patchWorkingHour(dayIndex, {start: value})}
+                            placeholder="08:00"
+                          />
+                        </View>
+                        <View style={{flex: 1}}>
+                          <Input
+                            label={isRTL ? 'إلى' : 'End'}
+                            value={row.end}
+                            onChangeText={(value) => patchWorkingHour(dayIndex, {end: value})}
+                            placeholder="22:00"
+                          />
+                        </View>
+                      </View>
+                      <View style={{flexDirection: isRTL ? 'row-reverse' : 'row', gap: spacing.sm}}>
+                        <View style={{flex: 1}}>
+                          <Input
+                            label={isRTL ? 'بداية الاستراحة' : 'Break start'}
+                            value={row.breakStart || ''}
+                            onChangeText={(value) => patchWorkingHour(dayIndex, {breakStart: value})}
+                            placeholder="13:00"
+                          />
+                        </View>
+                        <View style={{flex: 1}}>
+                          <Input
+                            label={isRTL ? 'نهاية الاستراحة' : 'Break end'}
+                            value={row.breakEnd || ''}
+                            onChangeText={(value) => patchWorkingHour(dayIndex, {breakEnd: value})}
+                            placeholder="14:00"
+                          />
+                        </View>
+                      </View>
+                    </>
+                  ) : null}
+                </Card>
+              );
+            })}
+          </View>
 
           <Button title={t('save')} onPress={form.handleSubmit(onSubmit)} loading={upsertStaff.isPending} />
         </View>

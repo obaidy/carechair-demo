@@ -155,6 +155,27 @@ async function ensureOwnerMemberships(client: ReturnType<typeof createClient<any
   );
 }
 
+async function acceptInviteIfNeeded(cfg: {url: string; anonKey: string}, accessToken: string, inviteToken: string, inviteCode: string) {
+  if (!inviteToken && !inviteCode) return {ok: true};
+  const res = await fetch(`${cfg.url}/functions/v1/accept-invite`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      apikey: cfg.anonKey,
+      Authorization: `Bearer ${accessToken}`
+    },
+    body: JSON.stringify({
+      token: inviteToken || undefined,
+      code: inviteCode || undefined
+    })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data?.ok) {
+    return {ok: false, error: String(data?.error || 'invite_accept_failed')};
+  }
+  return {ok: true};
+}
+
 export async function POST(request: NextRequest) {
   let body: any = null;
   try {
@@ -166,6 +187,8 @@ export async function POST(request: NextRequest) {
   const locale = String(body?.locale || 'en');
   const role = parseRole(body?.role);
   const accessToken = String(body?.accessToken || '');
+  const inviteToken = String(body?.inviteToken || '').trim();
+  const inviteCode = String(body?.inviteCode || '').trim().toUpperCase();
   const nextPath = sanitizeNextPath(String(body?.next || ''), locale, role === 'superadmin' ? `/${locale}/sa` : `/${locale}/app`);
 
   if (!accessToken) {
@@ -208,6 +231,11 @@ export async function POST(request: NextRequest) {
     }
     await setSuperadminSession({userId: String(user.id)});
     return NextResponse.json({ok: true, nextPath});
+  }
+
+  const inviteAccepted = await acceptInviteIfNeeded(cfg, accessToken, inviteToken, inviteCode);
+  if (!inviteAccepted.ok) {
+    return NextResponse.json({ok: false, error: inviteAccepted.error || 'invite_accept_failed'}, {status: 400});
   }
 
   const memberships = await listActiveMembershipSalonIds(lookupClient, String(user.id));

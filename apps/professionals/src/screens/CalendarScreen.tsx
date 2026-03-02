@@ -12,6 +12,7 @@ import {useI18n} from '../i18n/provider';
 import {useUiStore} from '../state/uiStore';
 import {
   useBlockTime,
+  useAvailabilityContext,
   useBookings,
   useClients,
   useCreateBooking,
@@ -22,7 +23,8 @@ import {
 } from '../api/hooks';
 import {textDir} from '../utils/layout';
 import {useAuthStore} from '../state/authStore';
-import type {Booking, BookingStatus, Salon, Service, Staff} from '../types/models';
+import type {AvailabilityContext, Booking, BookingStatus, Salon, Service, Staff} from '../types/models';
+import {getWorkingWindow, validateBooking} from '../lib/availability';
 
 const createBookingSchema = z.object({
   clientName: z.string().min(2),
@@ -50,17 +52,7 @@ const rescheduleSchema = z.object({
 
 type RescheduleValues = z.infer<typeof rescheduleSchema>;
 
-type DayWindow = {startMin: number; endMin: number};
-
 type SlotOption = {label: string; value: string};
-
-function parseHmToMinutes(value: string, fallback: number) {
-  const [hRaw, mRaw] = String(value || '').split(':');
-  const hours = Number(hRaw);
-  const mins = Number(mRaw);
-  if (!Number.isFinite(hours) || !Number.isFinite(mins)) return fallback;
-  return hours * 60 + mins;
-}
 
 function minutesToDate(baseDay: Date, totalMinutes: number) {
   const hours = Math.floor(totalMinutes / 60);
@@ -68,60 +60,79 @@ function minutesToDate(baseDay: Date, totalMinutes: number) {
   return setMinutes(setHours(baseDay, hours), mins);
 }
 
-function overlaps(startA: Date, endA: Date, startB: Date, endB: Date) {
-  return startA < endB && endA > startB;
-}
-
-function getSalonWindow(salon: Salon | null): DayWindow {
-  return {
-    startMin: parseHmToMinutes(salon?.workdayStart || '08:00', 8 * 60),
-    endMin: parseHmToMinutes(salon?.workdayEnd || '22:00', 22 * 60)
-  };
-}
-
-function getStaffDayWindow(staff: Staff | undefined, date: Date, salonWindow: DayWindow): DayWindow | null {
-  if (!staff) return salonWindow;
-  const day = date.getDay();
-  const rule = staff.workingHours?.[day];
-  if (!rule) return salonWindow;
-  if (rule.off) return null;
-
-  const start = Math.max(salonWindow.startMin, parseHmToMinutes(rule.start, salonWindow.startMin));
-  const end = Math.min(salonWindow.endMin, parseHmToMinutes(rule.end, salonWindow.endMin));
-  if (end <= start) return null;
-  return {startMin: start, endMin: end};
-}
-
 function slotOptionsForStaff(params: {
   date: Date;
   staff: Staff | undefined;
   durationMin: number;
   bookings: Booking[];
-  salon: Salon | null;
+  availability: AvailabilityContext | null;
   excludeBookingId?: string;
 }): SlotOption[] {
-  const {date, staff, durationMin, bookings, salon, excludeBookingId} = params;
-  const salonWindow = getSalonWindow(salon);
-  const staffWindow = getStaffDayWindow(staff, date, salonWindow);
-  if (!staffWindow || !staff) return [];
+  const {date, staff, durationMin, bookings, availability, excludeBookingId} = params;
+  if (!staff || !availability) return [];
 
-  const dayBase = startOfDay(date);
-  const start = minutesToDate(dayBase, staffWindow.startMin);
-  const close = minutesToDate(dayBase, staffWindow.endMin);
+  const window = getWorkingWindow(
+    availability.salonHours.map((row) => ({
+      day_of_week: row.dayOfWeek,
+      open_time: row.openTime || null,
+      close_time: row.closeTime || null,
+      is_closed: row.isClosed || false
+    })),
+    availability.employeeHours.map((row) => ({
+      staff_id: row.staffId,
+      day_of_week: row.dayOfWeek,
+      start_time: row.startTime || null,
+      end_time: row.endTime || null,
+      is_off: row.isOff || false,
+      break_start: row.breakStart || null,
+      break_end: row.breakEnd || null
+    })),
+    staff.id,
+    date
+  );
+  if (!window) return [];
 
   const out: SlotOption[] = [];
-  for (let cursor = start; cursor < close; cursor = addMinutes(cursor, 30)) {
+  for (let cursor = new Date(window.start); cursor < window.end; cursor = addMinutes(cursor, 30)) {
     const end = addMinutes(cursor, durationMin);
-    if (end > close) continue;
+    if (end > window.end) continue;
 
-    const conflict = bookings.some((row) => {
-      if (row.staffId !== staff.id) return false;
-      if (row.id === excludeBookingId) return false;
-      if (row.status === 'canceled') return false;
-      return overlaps(cursor, end, parseISO(row.startAt), parseISO(row.endAt));
+    const result = validateBooking({
+      employeeId: staff.id,
+      start: cursor,
+      end,
+      bookings: bookings.map((row) => ({
+        id: row.id,
+        staff_id: row.staffId,
+        appointment_start: row.startAt,
+        appointment_end: row.endAt,
+        status: row.status === 'canceled' ? 'cancelled' : row.status
+      })),
+      timeOff: availability.timeOff.map((row) => ({
+        id: row.id,
+        staff_id: row.staffId,
+        start_at: row.startAt,
+        end_at: row.endAt
+      })),
+      salonHours: availability.salonHours.map((row) => ({
+        day_of_week: row.dayOfWeek,
+        open_time: row.openTime || null,
+        close_time: row.closeTime || null,
+        is_closed: row.isClosed || false
+      })),
+      employeeHours: availability.employeeHours.map((row) => ({
+        staff_id: row.staffId,
+        day_of_week: row.dayOfWeek,
+        start_time: row.startTime || null,
+        end_time: row.endTime || null,
+        is_off: row.isOff || false,
+        break_start: row.breakStart || null,
+        break_end: row.breakEnd || null
+      })),
+      excludeBookingId
     });
 
-    if (!conflict) {
+    if (result.ok) {
       out.push({label: format(cursor, 'HH:mm'), value: cursor.toISOString()});
     }
   }
@@ -137,8 +148,6 @@ export function CalendarScreen() {
   const setView = useUiStore((state) => state.setCalendarView);
   const selectedDateIso = useUiStore((state) => state.selectedDateIso);
   const setSelectedDateIso = useUiStore((state) => state.setSelectedDateIso);
-
-  const salon = useAuthStore((state) => state.context?.salon || null);
 
   const selectedDate = useMemo(() => new Date(selectedDateIso), [selectedDateIso]);
   const {width} = useWindowDimensions();
@@ -158,6 +167,7 @@ export function CalendarScreen() {
   const clientsQuery = useClients();
 
   const bookingsQuery = useBookings(selectedDate.toISOString(), view, selectedStaffId === 'all' ? undefined : selectedStaffId);
+  const availabilityQuery = useAvailabilityContext(selectedDate.toISOString());
 
   const createMutation = useCreateBooking(selectedDate.toISOString(), view, selectedStaffId === 'all' ? undefined : selectedStaffId);
   const statusMutation = useUpdateBookingStatus(selectedDate.toISOString(), view, selectedStaffId === 'all' ? undefined : selectedStaffId);
@@ -173,8 +183,9 @@ export function CalendarScreen() {
       void staffQuery.refetch();
       void servicesQuery.refetch();
       void bookingsQuery.refetch();
+      void availabilityQuery.refetch();
       return () => {};
-    }, [bookingsQuery, servicesQuery, staffQuery])
+    }, [availabilityQuery, bookingsQuery, servicesQuery, staffQuery])
   );
 
   const activeServices = useMemo(() => servicesRows.filter((s) => s.isActive), [servicesRows]);
@@ -189,20 +200,40 @@ export function CalendarScreen() {
     return map;
   }, [servicesRows]);
 
-  const salonWindow = useMemo(() => getSalonWindow(salon), [salon]);
+  const availability = availabilityQuery.data || null;
 
   const timelineSlots = useMemo(() => {
     const dayBase = startOfDay(selectedDate);
-    const selectedStaff = selectedStaffId === 'all' ? undefined : staffById.get(selectedStaffId);
-    const dayWindow = selectedStaff ? getStaffDayWindow(selectedStaff, selectedDate, salonWindow) : salonWindow;
-    if (!dayWindow) return [] as Date[];
+    const targetStaffId = selectedStaffId === 'all' ? staffRows[0]?.id || '' : selectedStaffId;
+    const window = availability && targetStaffId
+      ? getWorkingWindow(
+          availability.salonHours.map((row) => ({
+            day_of_week: row.dayOfWeek,
+            open_time: row.openTime || null,
+            close_time: row.closeTime || null,
+            is_closed: row.isClosed || false
+          })),
+          availability.employeeHours.map((row) => ({
+            staff_id: row.staffId,
+            day_of_week: row.dayOfWeek,
+            start_time: row.startTime || null,
+            end_time: row.endTime || null,
+            is_off: row.isOff || false,
+            break_start: row.breakStart || null,
+            break_end: row.breakEnd || null
+          })),
+          targetStaffId,
+          selectedDate
+        )
+      : null;
+    if (!window) return [] as Date[];
 
     const out: Date[] = [];
-    for (let minute = dayWindow.startMin; minute < dayWindow.endMin; minute += 30) {
-      out.push(minutesToDate(dayBase, minute));
+    for (let cursor = new Date(window.start); cursor < window.end; cursor = addMinutes(cursor, 30)) {
+      out.push(minutesToDate(dayBase, cursor.getHours() * 60 + cursor.getMinutes()));
     }
     return out;
-  }, [selectedDate, selectedStaffId, staffById, salonWindow]);
+  }, [availability, selectedDate, selectedStaffId, staffRows]);
 
   const bookingsBySlot = useMemo(() => {
     const map = new Map<number, Booking[]>();
@@ -270,9 +301,9 @@ export function CalendarScreen() {
       staff,
       durationMin: selectedCreateService?.durationMin || 30,
       bookings: bookingRows,
-      salon
+      availability
     });
-  }, [bookingRows, createStaffId, selectedCreateService?.durationMin, selectedDate, salon, staffById]);
+  }, [availability, bookingRows, createStaffId, selectedCreateService?.durationMin, selectedDate, staffById]);
 
   const blockSlotOptions = useMemo(() => {
     const staff = staffById.get(blockStaffId || '');
@@ -281,9 +312,9 @@ export function CalendarScreen() {
       staff,
       durationMin: 30,
       bookings: bookingRows,
-      salon
+      availability
     });
-  }, [bookingRows, blockStaffId, selectedDate, salon, staffById]);
+  }, [availability, bookingRows, blockStaffId, selectedDate, staffById]);
 
   const detailService = useMemo<Service | undefined>(() => {
     if (!rescheduleTarget) return undefined;
@@ -298,10 +329,10 @@ export function CalendarScreen() {
       staff,
       durationMin: detailService?.durationMin || 30,
       bookings: bookingRows,
-      salon,
+      availability,
       excludeBookingId: rescheduleTarget.id
     });
-  }, [bookingRows, rescheduleTarget, detailService?.durationMin, rescheduleStaffId, selectedDate, salon, staffById]);
+  }, [availability, bookingRows, rescheduleTarget, detailService?.durationMin, rescheduleStaffId, selectedDate, staffById]);
 
   const clientCandidates = useMemo(() => {
     const list = clientsQuery.data || [];
@@ -392,6 +423,16 @@ export function CalendarScreen() {
     return colors.status[status] || colors.textMuted;
   }
 
+  function translateActionError(error: any) {
+    const message = String(error?.message || '');
+    if (!message) return t('requiredField');
+    if (['closed_day', 'outside_working_hours', 'inside_break', 'time_off'].includes(message)) return t('outsideHours');
+    if (message === 'overlap') return t('overlap');
+    if (message === 'invalid_service_staff') return t('invalidServiceStaff');
+    if (message === 'select_employee') return t('requiredField');
+    return message;
+  }
+
   async function onCreate(values: CreateBookingValues) {
     setActionError('');
     try {
@@ -416,7 +457,7 @@ export function CalendarScreen() {
         startAt: ''
       });
     } catch (error: any) {
-      setActionError(String(error?.message || t('requiredField')));
+      setActionError(translateActionError(error));
     }
   }
 
@@ -432,7 +473,7 @@ export function CalendarScreen() {
         reason: ''
       });
     } catch (error: any) {
-      setActionError(String(error?.message || t('requiredField')));
+      setActionError(translateActionError(error));
     }
   }
 
@@ -454,7 +495,7 @@ export function CalendarScreen() {
       setDetailBooking(null);
       rescheduleForm.reset({staffId: '', startAt: ''});
     } catch (error: any) {
-      setActionError(String(error?.message || t('requiredField')));
+      setActionError(translateActionError(error));
     }
   }
 
@@ -474,7 +515,7 @@ export function CalendarScreen() {
       await statusMutation.mutateAsync({bookingId: detailBooking.id, status});
       setDetailBooking(null);
     } catch (error: any) {
-      setActionError(String(error?.message || t('requiredField')));
+      setActionError(translateActionError(error));
     }
   }
 

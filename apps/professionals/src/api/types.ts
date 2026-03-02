@@ -1,4 +1,5 @@
 import type {
+  AvailabilityContext,
   AuthSession,
   BlockTimeInput,
   Booking,
@@ -36,6 +37,7 @@ export interface CareChairApi {
   };
   owner: {
     getContext: () => Promise<OwnerContext>;
+    getAvailabilityContext: (dateIso: string) => Promise<AvailabilityContext>;
     createOrClaimSalon: (input: CreateSalonInput) => Promise<Salon>;
     requestActivation: (input: RequestActivationInput) => Promise<Salon>;
     updateSalonProfile: (patch: Partial<Salon>) => Promise<Salon>;

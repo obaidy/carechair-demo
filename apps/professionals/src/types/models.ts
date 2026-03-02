@@ -10,7 +10,7 @@ export type BookingStatus = 'confirmed' | 'pending' | 'completed' | 'no_show' | 
 
 export type CalendarViewMode = 'day' | 'week' | 'list';
 
-export type ReminderChannel = 'sms' | 'whatsapp';
+export type ReminderChannel = 'sms' | 'whatsapp' | 'push';
 
 export type ReminderType = 'booking_confirmed' | 'booking_reminder_24h' | 'booking_reminder_2h' | 'follow_up';
 
@@ -20,6 +20,36 @@ export type Reminder = {
   channel: ReminderChannel;
   type: ReminderType;
   enabled: boolean;
+};
+
+export type SalonHourRule = {
+  dayOfWeek: number;
+  openTime?: string;
+  closeTime?: string;
+  isClosed?: boolean;
+};
+
+export type EmployeeHourRule = {
+  staffId: string;
+  dayOfWeek: number;
+  startTime?: string;
+  endTime?: string;
+  isOff?: boolean;
+  breakStart?: string;
+  breakEnd?: string;
+};
+
+export type EmployeeTimeOff = {
+  id: string;
+  staffId: string;
+  startAt: string;
+  endAt: string;
+};
+
+export type AvailabilityContext = {
+  salonHours: SalonHourRule[];
+  employeeHours: EmployeeHourRule[];
+  timeOff: EmployeeTimeOff[];
 };
 
 export type EventType =
@@ -90,7 +120,7 @@ export type Staff = {
   color: string;
   isActive: boolean;
   serviceIds: string[];
-  workingHours: Record<number, {start: string; end: string; off?: boolean}>;
+  workingHours: Record<number, {start: string; end: string; off?: boolean; breakStart?: string; breakEnd?: string}>;
 };
 
 export type Client = {
@@ -176,6 +206,7 @@ export type UpsertStaffInput = {
   phone?: string;
   color: string;
   serviceIds: string[];
+  workingHours?: Record<number, {start: string; end: string; off?: boolean; breakStart?: string; breakEnd?: string}>;
 };
 
 export type UpsertServiceInput = {

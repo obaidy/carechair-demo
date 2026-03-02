@@ -595,6 +595,17 @@ ${t('whatsappFallback.phone')}: ${normalizedPhone}`;
         });
       }
 
+      void fetch('/api/notify-booking-event', {
+        method: 'POST',
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify({
+          salonId: salon.id,
+          bookingId: bookingRes.data.id,
+          title: 'New booking',
+          body: `${customerName.trim()} • ${appointmentLocal}`
+        })
+      }).catch(() => undefined);
+
       setSuccess({
         id: bookingRes.data.id,
         appointment: bookingRes.data.appointment_start || selectedSlot.startIso,

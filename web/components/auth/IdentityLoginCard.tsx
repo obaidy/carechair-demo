@@ -9,6 +9,8 @@ type Props = {
   locale: string;
   nextPath: string;
   defaultRole: 'salon_admin' | 'superadmin';
+  inviteToken?: string;
+  inviteCode?: string;
 };
 
 function toE164WithPlus(input: string) {
@@ -17,7 +19,7 @@ function toE164WithPlus(input: string) {
   return `+${normalized}`;
 }
 
-export default function IdentityLoginCard({locale, nextPath, defaultRole}: Props) {
+export default function IdentityLoginCard({locale, nextPath, defaultRole, inviteToken = '', inviteCode = ''}: Props) {
   const tx = useTx();
   const t = (
     key: string,
@@ -45,7 +47,9 @@ export default function IdentityLoginCard({locale, nextPath, defaultRole}: Props
         accessToken,
         role,
         next: nextPath,
-        locale
+        locale,
+        inviteToken,
+        inviteCode
       })
     });
 

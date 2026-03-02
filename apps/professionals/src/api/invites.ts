@@ -328,7 +328,7 @@ async function restRequest(path: string, init: RequestInit & {token: string}) {
   return {response, payload};
 }
 
-async function invokeEdgeWithLog(functionName: string, body: Record<string, unknown>) {
+export async function invokeEdgeWithLog(functionName: string, body: Record<string, unknown>) {
   const {token, source, expiresAt} = await getAccessTokenForApi();
   if (__DEV__) {
     pushDevLog('info', 'edge.invoke', `Invoking ${functionName}`, {
@@ -508,6 +508,17 @@ export async function getOwnerContextBySalonIdV2(salonId: string | null): Promis
   const user = await getUserProfileFromAuth();
   if (!salonId) return {user, salon: null};
   const {token, source} = await getAccessTokenForApi();
+  const membership = await restRequest(
+    `/rest/v1/salon_members?select=role&salon_id=eq.${encodeURIComponent(salonId)}&user_id=eq.${encodeURIComponent(user.id)}&status=eq.ACTIVE&limit=1`,
+    {
+      method: 'GET',
+      token
+    }
+  );
+  const membershipRow = Array.isArray(membership.payload) ? membership.payload[0] : null;
+  if (membership.response.ok && membershipRow?.role) {
+    user.role = normalizeRole(membershipRow.role);
+  }
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const {response, payload} = await restRequest(

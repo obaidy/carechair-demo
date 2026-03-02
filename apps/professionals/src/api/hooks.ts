@@ -18,6 +18,10 @@ export function useOwnerContext() {
   return useQuery({queryKey: qk.ownerContext, queryFn: () => api.owner.getContext()});
 }
 
+export function useAvailabilityContext(dateIso: string) {
+  return useQuery({queryKey: qk.availability(dateIso), queryFn: () => api.owner.getAvailabilityContext(dateIso)});
+}
+
 export function useDashboardSummary(dateIso: string) {
   return useQuery({queryKey: qk.dashboardSummary(dateIso), queryFn: () => api.dashboard.getSummary(dateIso)});
 }
@@ -141,6 +145,7 @@ export function useCreateBooking(dateIso: string, mode: 'day' | 'week' | 'list',
       queryClient.invalidateQueries({queryKey: qk.events});
       queryClient.invalidateQueries({queryKey: qk.dashboardSummary(dateIso)});
       queryClient.invalidateQueries({queryKey: qk.clients()});
+      queryClient.invalidateQueries({queryKey: qk.availability(dateIso)});
     }
   });
 }
@@ -175,6 +180,7 @@ export function useUpdateBookingStatus(dateIso: string, mode: 'day' | 'week' | '
       queryClient.invalidateQueries({queryKey: key});
       queryClient.invalidateQueries({queryKey: qk.events});
       queryClient.invalidateQueries({queryKey: qk.dashboardSummary(dateIso)});
+      queryClient.invalidateQueries({queryKey: qk.availability(dateIso)});
     }
   });
 }
@@ -186,6 +192,7 @@ export function useRescheduleBooking(dateIso: string, mode: 'day' | 'week' | 'li
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: qk.bookings(dateIso, mode, staffId)});
       queryClient.invalidateQueries({queryKey: qk.events});
+      queryClient.invalidateQueries({queryKey: qk.availability(dateIso)});
     }
   });
 }
@@ -197,6 +204,7 @@ export function useBlockTime(dateIso: string, mode: 'day' | 'week' | 'list', sta
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: qk.bookings(dateIso, mode, staffId)});
       queryClient.invalidateQueries({queryKey: qk.events});
+      queryClient.invalidateQueries({queryKey: qk.availability(dateIso)});
     }
   });
 }

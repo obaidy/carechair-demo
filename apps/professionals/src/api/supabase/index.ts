@@ -1,6 +1,8 @@
 import {endOfDay, parseISO, startOfDay, startOfWeek} from 'date-fns';
+import {Platform} from 'react-native';
 import type {CareChairApi} from '../types';
 import type {
+  AvailabilityContext,
   AuthSession,
   BlockTimeInput,
   Booking,
@@ -28,7 +30,8 @@ import {normalizeSalonStatus, toDbSalonStatus} from '../../types/status';
 import {pushDevLog} from '../../lib/devLogger';
 import {toPhoneWithPlus} from '../../lib/phone';
 import {env} from '../../utils/env';
-import {requestSalonActivationV2} from '../invites';
+import {invokeEdgeWithLog, requestSalonActivationV2} from '../invites';
+import {validateBooking} from '../../lib/availability';
 
 type HourRow = {
   day_of_week: number;
@@ -43,7 +46,23 @@ type EmployeeHourRow = {
   start_time?: string | null;
   end_time?: string | null;
   is_off?: boolean | null;
+  break_start?: string | null;
+  break_end?: string | null;
 };
+
+type TimeOffRow = {
+  id?: string | null;
+  staff_id: string;
+  start_at?: string | null;
+  end_at?: string | null;
+};
+
+const DEFAULT_REMINDER_RULES = [
+  {channel: 'sms', type: 'booking_confirmed'},
+  {channel: 'whatsapp', type: 'booking_reminder_24h'},
+  {channel: 'whatsapp', type: 'booking_reminder_2h'},
+  {channel: 'push', type: 'booking_confirmed'}
+] as const;
 
 function assertSupabase() {
   if (!supabase) throw new Error('SUPABASE_CONFIG_MISSING');
@@ -296,17 +315,153 @@ function deriveSalonWindowFromHours(rows: HourRow[]) {
 
 function buildStaffWorkingHours(rows: EmployeeHourRow[], staffId: string) {
   const entries = rows.filter((row) => String(row.staff_id || '') === staffId);
-  const out: Record<number, {start: string; end: string; off?: boolean}> = {};
+  const out: Record<number, {start: string; end: string; off?: boolean; breakStart?: string; breakEnd?: string}> = {};
   for (const row of entries) {
     const day = Number(row.day_of_week);
     if (!Number.isFinite(day)) continue;
     out[day] = {
       start: toHHMM(row.start_time, '08:00'),
       end: toHHMM(row.end_time, '22:00'),
-      off: Boolean(row.is_off)
+      off: Boolean(row.is_off),
+      breakStart: row.break_start ? toHHMM(row.break_start, '') : undefined,
+      breakEnd: row.break_end ? toHHMM(row.break_end, '') : undefined
     };
   }
   return out;
+}
+
+function dateRangeForDay(dateIso: string) {
+  const base = startOfDay(parseISO(dateIso));
+  const end = endOfDay(base);
+  return {base, startIso: base.toISOString(), endIso: end.toISOString()};
+}
+
+async function loadAvailabilityContext(client: ReturnType<typeof assertSupabase>, salonId: string, dateIso: string): Promise<AvailabilityContext> {
+  const {startIso, endIso} = dateRangeForDay(dateIso);
+  const [{salonHours, employeeHours}, timeOffRes] = await Promise.all([
+    selectWorkingHoursWithFallback(client, salonId),
+    client
+      .from('employee_time_off')
+      .select('id,staff_id,start_at,end_at')
+      .eq('salon_id', salonId)
+      .lt('start_at', endIso)
+      .gt('end_at', startIso)
+  ]);
+
+  if (timeOffRes.error && !missingColumn(timeOffRes.error, 'employee_time_off')) {
+    throw timeOffRes.error;
+  }
+
+  return {
+    salonHours: (salonHours || []).map((row) => ({
+      dayOfWeek: Number(row.day_of_week),
+      openTime: row.open_time ? toHHMM(row.open_time, '08:00') : undefined,
+      closeTime: row.close_time ? toHHMM(row.close_time, '22:00') : undefined,
+      isClosed: Boolean(row.is_closed)
+    })),
+    employeeHours: (employeeHours || []).map((row) => ({
+      staffId: String(row.staff_id || ''),
+      dayOfWeek: Number(row.day_of_week),
+      startTime: row.start_time ? toHHMM(row.start_time, '08:00') : undefined,
+      endTime: row.end_time ? toHHMM(row.end_time, '22:00') : undefined,
+      isOff: Boolean(row.is_off),
+      breakStart: row.break_start ? toHHMM(row.break_start, '') : undefined,
+      breakEnd: row.break_end ? toHHMM(row.break_end, '') : undefined
+    })),
+    timeOff: ((timeOffRes.data || []) as TimeOffRow[]).map((row) => ({
+      id: String(row.id || ''),
+      staffId: String(row.staff_id || ''),
+      startAt: String(row.start_at || ''),
+      endAt: String(row.end_at || '')
+    }))
+  };
+}
+
+function ensureBookingAllowed(params: {
+  staffId: string;
+  startAt: string;
+  endAt: string;
+  bookings: Booking[];
+  availability: AvailabilityContext;
+  excludeBookingId?: string;
+}) {
+  const {staffId, startAt, endAt, bookings, availability, excludeBookingId} = params;
+  const start = parseISO(startAt);
+  const end = parseISO(endAt);
+  const result = validateBooking({
+    employeeId: staffId,
+    start,
+    end,
+    bookings: bookings.map((row) => ({
+      id: row.id,
+      staff_id: row.staffId,
+      appointment_start: row.startAt,
+      appointment_end: row.endAt,
+      status: toDbBookingStatus(row.status)
+    })),
+    timeOff: availability.timeOff.map((row) => ({
+      id: row.id,
+      staff_id: row.staffId,
+      start_at: row.startAt,
+      end_at: row.endAt
+    })),
+    salonHours: availability.salonHours.map((row) => ({
+      day_of_week: row.dayOfWeek,
+      open_time: row.openTime || null,
+      close_time: row.closeTime || null,
+      is_closed: row.isClosed || false
+    })),
+    employeeHours: availability.employeeHours.map((row) => ({
+      staff_id: row.staffId,
+      day_of_week: row.dayOfWeek,
+      start_time: row.startTime || null,
+      end_time: row.endTime || null,
+      is_off: row.isOff || false,
+      break_start: row.breakStart || null,
+      break_end: row.breakEnd || null
+    })),
+    excludeBookingId
+  });
+  if (!result.ok) {
+    throw new Error(String(result.reason || 'slot_unavailable'));
+  }
+}
+
+async function sendBookingNotification(event: 'booking_created' | 'booking_updated' | 'booking_status_changed', payload: Record<string, unknown>) {
+  try {
+    await invokeEdgeWithLog('notify-booking-event', {event, ...payload});
+  } catch (error) {
+    if (__DEV__) {
+      pushDevLog('warn', 'edge.notify', 'Booking notification dispatch failed', {
+        event,
+        error: String((error as any)?.message || error || 'unknown')
+      });
+    }
+  }
+}
+
+async function syncEmployeeHours(
+  client: ReturnType<typeof assertSupabase>,
+  salonId: string,
+  staffId: string,
+  workingHours?: UpsertStaffInput['workingHours']
+) {
+  if (!workingHours) return;
+  const payload = Array.from({length: 7}, (_row, dayOfWeek) => {
+    const row = workingHours[dayOfWeek] || {start: '08:00', end: '22:00', off: false};
+    return {
+      salon_id: salonId,
+      staff_id: staffId,
+      day_of_week: dayOfWeek,
+      start_time: `${toHHMM(row.start, '08:00')}:00`,
+      end_time: `${toHHMM(row.end, '22:00')}:00`,
+      is_off: Boolean(row.off),
+      break_start: row.breakStart ? `${toHHMM(row.breakStart, '12:00')}:00` : null,
+      break_end: row.breakEnd ? `${toHHMM(row.breakEnd, '13:00')}:00` : null
+    };
+  });
+  const upsert = await client.from('employee_hours').upsert(payload as any, {onConflict: 'staff_id,day_of_week'});
+  if (upsert.error) throw upsert.error;
 }
 
 async function readOwnerContext(): Promise<OwnerContext> {
@@ -327,7 +482,7 @@ async function readOwnerContext(): Promise<OwnerContext> {
   if (!salonId) {
     const membershipRes = await client
       .from('salon_members')
-      .select('salon_id')
+      .select('salon_id,role')
       .eq('user_id', user.id)
       .eq('status', 'ACTIVE')
       .order('joined_at', {ascending: false})
@@ -336,6 +491,11 @@ async function readOwnerContext(): Promise<OwnerContext> {
     if (!membershipRes.error && membershipRes.data?.salon_id) {
       salonId = String(membershipRes.data.salon_id);
       profile.salonId = salonId;
+      profile.role = String((membershipRes.data as any).role || '').toUpperCase() === 'MANAGER'
+        ? 'MANAGER'
+        : String((membershipRes.data as any).role || '').toUpperCase() === 'STAFF'
+          ? 'STAFF'
+          : 'OWNER';
       useAuthStore.getState().setActiveSalonId(salonId);
     }
   }
@@ -484,6 +644,16 @@ async function syncStaffServiceAssignments(client: ReturnType<typeof assertSupab
   }
 }
 
+async function ensureReminderDefaults(client: ReturnType<typeof assertSupabase>, salonId: string) {
+  const payload = DEFAULT_REMINDER_RULES.map((row) => ({
+    salon_id: salonId,
+    channel: row.channel,
+    type: row.type,
+    enabled: false
+  }));
+  await client.from('salon_reminders').upsert(payload as any, {onConflict: 'salon_id,channel,type'});
+}
+
 export const supabaseApi: CareChairApi = {
   auth: {
     getSession: async () => {
@@ -588,6 +758,12 @@ export const supabaseApi: CareChairApi = {
   },
   owner: {
     getContext: async () => readOwnerContext(),
+    getAvailabilityContext: async (dateIso) => {
+      const context = await readOwnerContext();
+      if (!context.salon) throw new Error('SALON_REQUIRED');
+      const client = assertSupabase();
+      return loadAvailabilityContext(client, context.salon.id, dateIso);
+    },
     createOrClaimSalon: async (input: CreateSalonInput) => {
       const client = assertSupabase();
       const user = await readAuthUser();
@@ -757,6 +933,28 @@ export const supabaseApi: CareChairApi = {
       const context = await readOwnerContext();
       if (!context.salon) throw new Error('SALON_REQUIRED');
       const client = assertSupabase();
+      const [bookings, availability, serviceLinkRes] = await Promise.all([
+        safeListBookings(context.salon.id, input.startAt, 'day'),
+        loadAvailabilityContext(client, context.salon.id, input.startAt),
+        input.serviceId === 'blocked'
+          ? Promise.resolve({data: [{staff_id: input.staffId}], error: null} as any)
+          : client
+          .from('staff_services')
+          .select('staff_id')
+          .eq('salon_id', context.salon.id)
+          .eq('staff_id', input.staffId)
+          .eq('service_id', input.serviceId)
+          .limit(1)
+      ]);
+      if (serviceLinkRes.error) throw serviceLinkRes.error;
+      if (!(serviceLinkRes.data || []).length) throw new Error('invalid_service_staff');
+      ensureBookingAllowed({
+        staffId: input.staffId,
+        startAt: input.startAt,
+        endAt: input.endAt,
+        bookings,
+        availability
+      });
       const payload = {
         salon_id: context.salon.id,
         staff_id: input.staffId,
@@ -770,6 +968,12 @@ export const supabaseApi: CareChairApi = {
       };
       const {data, error} = await client.from('bookings').insert([payload]).select('*').single();
       if (error || !data) throw error || new Error('CREATE_FAILED');
+      await sendBookingNotification('booking_created', {
+        salonId: context.salon.id,
+        bookingId: String((data as any).id || ''),
+        title: 'New booking',
+        body: `${String((data as any).customer_name || 'Client')} • ${String((data as any).appointment_start || '')}`
+      });
       return mapBookingRow(data as any);
     },
     updateStatus: async (bookingId, status) => {
@@ -787,6 +991,12 @@ export const supabaseApi: CareChairApi = {
       const {data, error} = await client.from('bookings').update(patch as any).eq('id', bookingId).eq('salon_id', context.salon.id).select('*').single();
       if (error || !data) throw error || new Error('UPDATE_FAILED');
       const mapped = mapBookingRow(data as any);
+      await sendBookingNotification('booking_status_changed', {
+        salonId: context.salon.id,
+        bookingId: String((data as any).id || bookingId),
+        title: 'Booking updated',
+        body: `${mapped.clientName} • ${status}`
+      });
       return status === 'completed' || status === 'no_show' ? {...mapped, status} : mapped;
     },
     reschedule: async (input: RescheduleBookingInput) => {
@@ -798,11 +1008,63 @@ export const supabaseApi: CareChairApi = {
       const context = await readOwnerContext();
       if (!context.salon) throw new Error('SALON_REQUIRED');
       const client = assertSupabase();
+      const bookingRes = await client
+        .from('bookings')
+        .select('id,service_id,staff_id')
+        .eq('id', input.bookingId)
+        .eq('salon_id', context.salon.id)
+        .single();
+      if (bookingRes.error || !bookingRes.data) throw bookingRes.error || new Error('RESCHEDULE_FAILED');
+      const targetStaffId = String(input.staffId || (bookingRes.data as any).staff_id || '');
+      if (!targetStaffId) throw new Error('select_employee');
+      if (input.staffId) {
+        const linkRes = await client
+          .from('staff_services')
+          .select('staff_id')
+          .eq('salon_id', context.salon.id)
+          .eq('staff_id', targetStaffId)
+          .eq('service_id', String((bookingRes.data as any).service_id || ''))
+          .limit(1);
+        if (linkRes.error) throw linkRes.error;
+        if (!(linkRes.data || []).length) throw new Error('invalid_service_staff');
+      }
+      const [bookings, availability] = await Promise.all([
+        safeListBookings(context.salon.id, input.startAt, 'day'),
+        loadAvailabilityContext(client, context.salon.id, input.startAt)
+      ]);
+      ensureBookingAllowed({
+        staffId: targetStaffId,
+        startAt: input.startAt,
+        endAt: input.endAt,
+        bookings,
+        availability,
+        excludeBookingId: input.bookingId
+      });
       const {data, error} = await client.from('bookings').update(patch).eq('id', input.bookingId).eq('salon_id', context.salon.id).select('*').single();
       if (error || !data) throw error || new Error('RESCHEDULE_FAILED');
+      await sendBookingNotification('booking_updated', {
+        salonId: context.salon.id,
+        bookingId: String((data as any).id || input.bookingId),
+        title: 'Booking rescheduled',
+        body: `${String((data as any).customer_name || 'Client')} • ${String((data as any).appointment_start || '')}`
+      });
       return mapBookingRow(data as any);
     },
     blockTime: async (input: BlockTimeInput) => {
+      const context = await readOwnerContext();
+      if (!context.salon) throw new Error('SALON_REQUIRED');
+      const client = assertSupabase();
+      const [bookings, availability] = await Promise.all([
+        safeListBookings(context.salon.id, input.startAt, 'day'),
+        loadAvailabilityContext(client, context.salon.id, input.startAt)
+      ]);
+      ensureBookingAllowed({
+        staffId: input.staffId,
+        startAt: input.startAt,
+        endAt: input.endAt,
+        bookings,
+        availability
+      });
       return supabaseApi.bookings.create({
         clientName: input.reason || 'Blocked',
         clientPhone: '-',
@@ -929,6 +1191,7 @@ export const supabaseApi: CareChairApi = {
           staffId,
           nextIds: input.serviceIds || []
         });
+        await syncEmployeeHours(client, context.salon.id, staffId, input.workingHours);
         return {
           id: String(updateRes.data.id),
           salonId: context.salon.id,
@@ -939,7 +1202,7 @@ export const supabaseApi: CareChairApi = {
           color: input.color,
           isActive: (updateRes.data as any).is_active !== false,
           serviceIds: input.serviceIds || [],
-          workingHours: {}
+          workingHours: input.workingHours || {}
         };
       }
 
@@ -957,12 +1220,14 @@ export const supabaseApi: CareChairApi = {
         .select('id,name,role,phone,photo_url,is_active')
         .single();
       if (insertRes.error || !insertRes.data) throw insertRes.error || new Error('STAFF_CREATE_FAILED');
+      const createdStaffId = String(insertRes.data.id);
       await syncStaffServiceAssignments(client, context.salon.id, {
-        staffId: String(insertRes.data.id),
+        staffId: createdStaffId,
         nextIds: input.serviceIds || []
       });
+      await syncEmployeeHours(client, context.salon.id, createdStaffId, input.workingHours);
       return {
-        id: String(insertRes.data.id),
+        id: createdStaffId,
         salonId: context.salon.id,
         name: String(insertRes.data.name || ''),
         roleTitle: String((insertRes.data as any).role || input.roleTitle || 'Staff'),
@@ -971,7 +1236,7 @@ export const supabaseApi: CareChairApi = {
         color: input.color,
         isActive: (insertRes.data as any).is_active !== false,
         serviceIds: input.serviceIds || [],
-        workingHours: {}
+        workingHours: input.workingHours || {}
       };
     }
   },
@@ -1073,22 +1338,74 @@ export const supabaseApi: CareChairApi = {
   },
   reminders: {
     list: async () => {
-      // TODO: connect reminders config table.
-      return [] as Reminder[];
+      const context = await readOwnerContext();
+      if (!context.salon) throw new Error('SALON_REQUIRED');
+      const client = assertSupabase();
+      let res = await client
+        .from('salon_reminders')
+        .select('id,salon_id,channel,type,enabled')
+        .eq('salon_id', context.salon.id)
+        .order('channel', {ascending: true});
+
+      if (res.error) throw res.error;
+      if (!(res.data || []).length) {
+        await ensureReminderDefaults(client, context.salon.id);
+        res = await client
+          .from('salon_reminders')
+          .select('id,salon_id,channel,type,enabled')
+          .eq('salon_id', context.salon.id)
+          .order('channel', {ascending: true});
+        if (res.error) throw res.error;
+      }
+
+      return (res.data || []).map((row: any) => ({
+        id: String(row.id),
+        salonId: String(row.salon_id || context.salon!.id),
+        channel: String(row.channel || 'sms') as Reminder['channel'],
+        type: String(row.type || 'booking_confirmed') as Reminder['type'],
+        enabled: Boolean(row.enabled)
+      })) as Reminder[];
     },
     update: async (reminderId, enabled) => {
+      const context = await readOwnerContext();
+      if (!context.salon) throw new Error('SALON_REQUIRED');
+      const client = assertSupabase();
+      const res = await client
+        .from('salon_reminders')
+        .update({enabled} as any)
+        .eq('id', reminderId)
+        .eq('salon_id', context.salon.id)
+        .select('id,salon_id,channel,type,enabled')
+        .single();
+      if (res.error || !res.data) throw res.error || new Error('REMINDER_UPDATE_FAILED');
       return {
-        id: reminderId,
-        salonId: 'unknown',
-        channel: 'sms',
-        type: 'booking_reminder_24h',
-        enabled
+        id: String(res.data.id),
+        salonId: String((res.data as any).salon_id || context.salon.id),
+        channel: String((res.data as any).channel || 'sms') as Reminder['channel'],
+        type: String((res.data as any).type || 'booking_confirmed') as Reminder['type'],
+        enabled: Boolean((res.data as any).enabled)
       } as Reminder;
     }
   },
   notifications: {
-    registerPushToken: async (_token) => {
-      // TODO: connect device_tokens endpoint / table.
+    registerPushToken: async (token) => {
+      const context = await readOwnerContext();
+      if (!context.salon) throw new Error('SALON_REQUIRED');
+      const client = assertSupabase();
+      const user = await readAuthUser();
+      const platform = Platform.OS || 'unknown';
+      const res = await client.from('device_tokens').upsert(
+        {
+          salon_id: context.salon.id,
+          user_id: user.id,
+          token,
+          platform,
+          disabled_at: null,
+          last_seen_at: new Date().toISOString()
+        } as any,
+        {onConflict: 'token'}
+      );
+      if (res.error) throw res.error;
     }
   }
 };

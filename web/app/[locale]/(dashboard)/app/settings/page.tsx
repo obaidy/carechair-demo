@@ -1,9 +1,10 @@
 import {redirect} from 'next/navigation';
-import {updateOwnerSalonProfileAction, updateSalonSettingsAction, updateSalonVisibilityAction} from '@/lib/actions/dashboard';
+import {updateOwnerSalonProfileAction, updateReminderRuleAction, updateSalonSettingsAction, updateSalonVisibilityAction} from '@/lib/actions/dashboard';
 import ActivationRequestCard from '@/components/dashboard/ActivationRequestCard';
 import {getSessionSalon} from '@/lib/data/dashboard';
 import {getMessages, tx} from '@/lib/messages';
 import type {Locale} from '@/lib/i18n';
+import {createServiceSupabaseClient} from '@/lib/supabase/service';
 
 type Props = {params: Promise<{locale: string}>};
 
@@ -13,6 +14,35 @@ export default async function SettingsPage({params}: Props) {
 
   const salon = await getSessionSalon();
   if (!salon) redirect(`/${locale}/login?error=session`);
+
+  const reminderDefaults = [
+    {channel: 'sms', type: 'booking_confirmed'},
+    {channel: 'whatsapp', type: 'booking_reminder_24h'},
+    {channel: 'whatsapp', type: 'booking_reminder_2h'},
+    {channel: 'push', type: 'booking_confirmed'}
+  ];
+
+  const service = createServiceSupabaseClient();
+  if (service) {
+    await service.from('salon_reminders').upsert(
+      reminderDefaults.map((row) => ({
+        salon_id: String(salon.id),
+        channel: row.channel,
+        type: row.type,
+        enabled: false
+      })),
+      {onConflict: 'salon_id,channel,type'}
+    );
+  }
+
+  const remindersRes = service
+    ? await service
+        .from('salon_reminders')
+        .select('id,channel,type,enabled')
+        .eq('salon_id', salon.id)
+        .order('channel', {ascending: true})
+    : {data: [], error: null};
+  const reminders = remindersRes.data || [];
 
   const isPublic = Boolean(salon.is_public ?? salon.is_listed ?? false);
 
@@ -136,6 +166,24 @@ export default async function SettingsPage({params}: Props) {
             <button className="btn btn-secondary" type="submit">{tx(messages, 'common.save', 'Save')}</button>
           </div>
         </form>
+      </section>
+
+      <section className="panel settings-list">
+        <h2>{tx(messages, 'admin.settings.reminders', 'Reminders')}</h2>
+        {reminders.map((row: any) => (
+          <article className="settings-row" key={String(row.id)}>
+            <div>
+              <strong>{String(row.channel || '').toUpperCase()} • {String(row.type || '')}</strong>
+              <p className="muted">{Boolean(row.enabled) ? 'Enabled' : 'Disabled'}</p>
+            </div>
+            <form action={updateReminderRuleAction} className="row-actions">
+              <input type="hidden" name="path" value={`/${locale}/app/settings`} />
+              <input type="hidden" name="reminderId" value={String(row.id)} />
+              <input type="hidden" name="enabled" value={Boolean(row.enabled) ? 'false' : 'true'} />
+              <button className="btn btn-secondary" type="submit">{Boolean(row.enabled) ? 'Disable' : 'Enable'}</button>
+            </form>
+          </article>
+        ))}
       </section>
 
       <section className="panel settings-list">

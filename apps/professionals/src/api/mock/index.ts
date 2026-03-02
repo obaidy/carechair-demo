@@ -305,6 +305,14 @@ export const mockApi: CareChairApi = {
       const user = getSessionUser();
       return {user, salon: getSalonByUser(user)} as OwnerContext;
     },
+    getAvailabilityContext: async () => {
+      await wait();
+      return {
+        salonHours: [],
+        employeeHours: [],
+        timeOff: []
+      };
+    },
     createOrClaimSalon: async (input) => {
       await wait();
       const user = getSessionUser();

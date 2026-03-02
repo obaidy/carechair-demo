@@ -840,6 +840,16 @@ export default function SalonCalendar({
         }
 
         setBookings((prev) => prev.map((row) => (String(row.id) === optimisticId ? (insertRes.data as BookingRow) : row)));
+        void fetch('/api/notify-booking-event', {
+          method: 'POST',
+          headers: {'content-type': 'application/json'},
+          body: JSON.stringify({
+            salonId: salon.id,
+            bookingId: String((insertRes.data as any)?.id || ''),
+            title: 'New booking',
+            body: `${draft.customer_name} • ${draft.start.toISOString()}`
+          })
+        }).catch(() => undefined);
       } else {
         const payload = {
           customer_name: draft.customer_name,
@@ -870,6 +880,16 @@ export default function SalonCalendar({
         }
 
         setBookings((prev) => prev.map((row) => (String(row.id) === String(draft.id) ? (updateRes.data as BookingRow) : row)));
+        void fetch('/api/notify-booking-event', {
+          method: 'POST',
+          headers: {'content-type': 'application/json'},
+          body: JSON.stringify({
+            salonId: salon.id,
+            bookingId: String(draft.id),
+            title: 'Booking updated',
+            body: `${draft.customer_name} • ${draft.start.toISOString()}`
+          })
+        }).catch(() => undefined);
       }
 
       setDrawerOpen(false);
@@ -892,6 +912,17 @@ export default function SalonCalendar({
         setError(`${t('calendar.errors.delete', 'Failed to cancel booking')}: ${deleteRes.error.message}`);
         return;
       }
+
+      void fetch('/api/notify-booking-event', {
+        method: 'POST',
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify({
+          salonId: salon.id,
+          bookingId: String(draft.id),
+          title: 'Booking cancelled',
+          body: `Booking ${draft.id} was cancelled`
+        })
+      }).catch(() => undefined);
 
       setDrawerOpen(false);
       setSelectedBooking(null);
