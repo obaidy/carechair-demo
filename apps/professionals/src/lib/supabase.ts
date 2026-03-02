@@ -3,8 +3,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {createClient} from '@supabase/supabase-js';
 
 function readEnv(...keys: string[]) {
+  const envMap: Record<string, string> = {
+    EXPO_PUBLIC_SUPABASE_URL: String(process.env.EXPO_PUBLIC_SUPABASE_URL || '').trim(),
+    NEXT_PUBLIC_SUPABASE_URL: String(process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: String(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '').trim(),
+    EXPO_PUBLIC_ANON_KEY: String(process.env.EXPO_PUBLIC_ANON_KEY || '').trim(),
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: String(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim(),
+  };
   for (const key of keys) {
-    const value = String(process.env[key] || '').trim();
+    const value = envMap[key] || '';
     if (value) return value;
   }
   return '';
