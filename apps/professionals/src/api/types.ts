@@ -42,6 +42,7 @@ export interface CareChairApi {
     createOrClaimSalon: (input: CreateSalonInput) => Promise<Salon>;
     requestActivation: (input: RequestActivationInput) => Promise<Salon>;
     updateSalonProfile: (patch: Partial<Salon>) => Promise<Salon>;
+    deleteAccount: () => Promise<void>;
   };
   dashboard: {
     getSummary: (dateIso: string) => Promise<DashboardSummary>;
@@ -53,6 +54,7 @@ export interface CareChairApi {
     updateStatus: (bookingId: string, status: BookingStatus) => Promise<Booking>;
     reschedule: (input: RescheduleBookingInput) => Promise<Booking>;
     blockTime: (input: BlockTimeInput) => Promise<Booking>;
+    remove: (bookingId: string) => Promise<void>;
   };
   clients: {
     list: (query?: string) => Promise<Client[]>;

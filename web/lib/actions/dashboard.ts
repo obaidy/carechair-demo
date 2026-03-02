@@ -1,8 +1,9 @@
 'use server';
 
 import {revalidatePath} from 'next/cache';
+import {redirect} from 'next/navigation';
 import {z} from 'zod';
-import {readAuthSession} from '@/lib/auth/server';
+import {clearAuthSession, readAuthSession} from '@/lib/auth/server';
 import {getSuperadminCode} from '@/lib/auth/config';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 import {createServiceSupabaseClient} from '@/lib/supabase/service';
@@ -1104,4 +1105,39 @@ export async function superadminUpdateCountryConfigAction(formData: FormData) {
 
   if (res.error) return;
   revalidatePath(parsed.data.path);
+}
+
+const deleteMyAccountSchema = z.object({
+  locale: z.string().trim().min(2).max(8)
+});
+
+export async function deleteMyAccountAction(formData: FormData) {
+  const parsed = deleteMyAccountSchema.safeParse({
+    locale: formData.get('locale')
+  });
+  if (!parsed.success) return;
+
+  const session = await requireSalonAdminSession();
+  if (!session?.userId) return;
+  const supabase = createServiceSupabaseClient();
+  if (!supabase) return;
+
+  const ownedSalons = await supabase
+    .from('salons')
+    .select('id')
+    .eq('created_by', session.userId);
+  const ownedSalonIds = (ownedSalons.data || []).map((row: any) => String(row.id || '')).filter(Boolean);
+
+  if (ownedSalonIds.length > 0) {
+    const deleteOwned = await supabase.from('salons').delete().in('id', ownedSalonIds);
+    if (deleteOwned.error) return;
+  }
+
+  await supabase.from('salon_members').delete().eq('user_id', session.userId);
+  await supabase.from('device_tokens').delete().eq('user_id', session.userId);
+  await supabase.from('notification_preferences').delete().eq('user_id', session.userId);
+  await supabase.from('user_profiles').delete().eq('user_id', session.userId);
+  await supabase.auth.admin.deleteUser(session.userId);
+  await clearAuthSession();
+  redirect(`/${parsed.data.locale}/login?deleted=1`);
 }

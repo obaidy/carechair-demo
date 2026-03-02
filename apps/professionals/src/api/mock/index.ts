@@ -362,6 +362,17 @@ export const mockApi: CareChairApi = {
       const {salon} = assertSalonContext();
       Object.assign(salon, patch, {updatedAt: nowIso()});
       return salon;
+    },
+    deleteAccount: async () => {
+      await wait();
+      const user = getSessionUser();
+      db.salons = db.salons.filter((row) => row.ownerId !== user.id);
+      db.bookings = db.bookings.filter((row) => row.salonId !== user.salonId);
+      db.staff = db.staff.filter((row) => row.salonId !== user.salonId);
+      db.services = db.services.filter((row) => row.salonId !== user.salonId);
+      db.clients = db.clients.filter((row) => row.salonId !== user.salonId);
+      user.salonId = null;
+      runtimeSession = null;
     }
   },
   dashboard: {
@@ -456,6 +467,11 @@ export const mockApi: CareChairApi = {
       };
       db.bookings.push(block);
       return block;
+    },
+    remove: async (bookingId) => {
+      await wait();
+      const {salon} = assertSalonContext();
+      db.bookings = db.bookings.filter((row) => !(row.id === bookingId && row.salonId === salon.id));
     }
   },
   clients: {

@@ -204,9 +204,6 @@ async function getActiveSupabaseSession(options?: {allowRefresh?: boolean}) {
       const restored = await restoreSessionPromise;
       if (!restored.error && restored.data.session?.access_token) {
         session = restored.data.session;
-        if (__DEV__) {
-          pushDevLog('info', 'auth.session', 'Restored runtime Supabase session from persisted auth store tokens');
-        }
       } else {
         lastError = restored.error || lastError;
       }

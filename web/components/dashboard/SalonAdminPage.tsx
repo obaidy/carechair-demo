@@ -40,6 +40,7 @@ import {
   textareaToGalleryArray,
 } from '@/lib/media';
 import {useTx} from '@/lib/messages-client';
+import {deleteMyAccountAction} from '@/lib/actions/dashboard';
 
 const MEDIA_BUCKET = "carechair-media";
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -3483,6 +3484,16 @@ async function uploadToStorage(path, fileOrBlob, contentType) {
                     </Button>
                   ) : null}
                 </div>
+              </div>
+              <div className="admin-share-block" style={{ marginTop: 18, borderTop: "1px solid var(--border)", paddingTop: 18 }}>
+                <h4 style={{ color: "var(--danger)" }}>{tr("dashboard.deleteAccount", "Delete account")}</h4>
+                <p className="muted">{tr("dashboard.deleteAccountHint", "This permanently deletes your account and any salons you own.")}</p>
+                <form action={deleteMyAccountAction}>
+                  <input type="hidden" name="locale" value={locale} />
+                  <Button type="submit" variant="danger">
+                    {tr("dashboard.deleteAccount", "Delete account")}
+                  </Button>
+                </form>
               </div>
               </fieldset>
             </Card>

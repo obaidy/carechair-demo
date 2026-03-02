@@ -1,5 +1,5 @@
 import {redirect} from 'next/navigation';
-import {updateOwnerSalonProfileAction, updateReminderRuleAction, updateSalonSettingsAction, updateSalonVisibilityAction} from '@/lib/actions/dashboard';
+import {deleteMyAccountAction, updateOwnerSalonProfileAction, updateReminderRuleAction, updateSalonSettingsAction, updateSalonVisibilityAction} from '@/lib/actions/dashboard';
 import ActivationRequestCard from '@/components/dashboard/ActivationRequestCard';
 import {getSessionSalon} from '@/lib/data/dashboard';
 import {getMessages, tx} from '@/lib/messages';
@@ -205,6 +205,20 @@ export default async function SettingsPage({params}: Props) {
             <strong>Currency</strong>
             <p className="muted">{salon.currency_code || '-'}</p>
           </div>
+        </article>
+        <article className="settings-row">
+          <div>
+            <strong>{tx(messages, 'dashboard.deleteAccount', 'Delete account')}</strong>
+            <p className="muted">
+              {tx(messages, 'dashboard.deleteAccountHint', 'This permanently deletes your account and any salons you own.')}
+            </p>
+          </div>
+          <form action={deleteMyAccountAction} className="row-actions">
+            <input type="hidden" name="locale" value={locale} />
+            <button className="btn btn-danger" type="submit">
+              {tx(messages, 'dashboard.deleteAccount', 'Delete account')}
+            </button>
+          </form>
         </article>
       </section>
     </div>

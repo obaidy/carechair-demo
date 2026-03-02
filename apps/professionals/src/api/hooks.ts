@@ -82,6 +82,16 @@ export function useRequestActivation() {
   });
 }
 
+export function useDeleteAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.owner.deleteAccount(),
+    onSuccess: () => {
+      queryClient.clear();
+    }
+  });
+}
+
 export function useCreateClient() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -208,6 +218,35 @@ export function useBlockTime(dateIso: string, mode: 'day' | 'week' | 'list', sta
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: qk.bookings(dateIso, mode, staffId)});
       queryClient.invalidateQueries({queryKey: qk.events});
+      queryClient.invalidateQueries({queryKey: qk.availability(dateIso)});
+    }
+  });
+}
+
+export function useDeleteBooking(dateIso: string, mode: 'day' | 'week' | 'list', staffId?: string) {
+  const queryClient = useQueryClient();
+  const key = qk.bookings(dateIso, mode, staffId);
+
+  return useMutation({
+    mutationFn: (bookingId: string) => api.bookings.remove(bookingId),
+    onMutate: async (bookingId) => {
+      await queryClient.cancelQueries({queryKey: key});
+      const previous = queryClient.getQueryData<Booking[]>(key) || [];
+      queryClient.setQueryData<Booking[]>(
+        key,
+        previous.filter((row) => row.id !== bookingId)
+      );
+      return {previous};
+    },
+    onError: (_error, _bookingId, context) => {
+      if (context?.previous) queryClient.setQueryData(key, context.previous);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({queryKey: key});
+      queryClient.invalidateQueries({queryKey: qk.events});
+      queryClient.invalidateQueries({queryKey: qk.clients()});
+      queryClient.invalidateQueries({queryKey: qk.ownerContext});
+      queryClient.invalidateQueries({queryKey: qk.dashboardSummary(dateIso)});
       queryClient.invalidateQueries({queryKey: qk.availability(dateIso)});
     }
   });

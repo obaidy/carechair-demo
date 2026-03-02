@@ -262,9 +262,6 @@ async function getActiveSupabaseSession(client: ReturnType<typeof assertSupabase
       const restored = await restoreSessionPromise;
       if (!restored.error && restored.data.session?.access_token) {
         session = restored.data.session;
-        if (__DEV__) {
-          pushDevLog('info', 'auth.session', 'Restored runtime Supabase session from persisted auth store tokens');
-        }
       } else {
         lastError = restored.error || lastError;
       }
@@ -955,6 +952,15 @@ export const supabaseApi: CareChairApi = {
       const {error} = await client.from('salons').update({name: patch.name, area: patch.locationAddress, whatsapp: patch.phone} as any).eq('id', context.salon.id);
       if (error) throw error;
       return {...context.salon, ...patch, updatedAt: new Date().toISOString()};
+    },
+    deleteAccount: async () => {
+      await invokeEdgeWithLog('delete-account', {});
+      useAuthStore.getState().clear();
+      try {
+        await assertSupabase().auth.signOut();
+      } catch {
+        // Auth user can already be deleted on the backend.
+      }
     }
   },
   dashboard: {
@@ -1161,6 +1167,23 @@ export const supabaseApi: CareChairApi = {
         endAt: input.endAt,
         status: 'blocked',
         notes: input.reason
+      });
+    },
+    remove: async (bookingId) => {
+      const context = await readOwnerContext();
+      if (!context.salon) throw new Error('SALON_REQUIRED');
+      const client = assertSupabase();
+      const res = await client
+        .from('bookings')
+        .delete()
+        .eq('id', bookingId)
+        .eq('salon_id', context.salon.id);
+      if (res.error) throw res.error;
+      await sendBookingNotification('booking_status_changed', {
+        salonId: context.salon.id,
+        bookingId,
+        title: 'Booking deleted',
+        body: 'A booking was deleted'
       });
     }
   },

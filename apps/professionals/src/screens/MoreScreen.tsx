@@ -1,5 +1,5 @@
 import {useCallback, useState} from 'react';
-import {ScrollView, Share, Switch, Text, View} from 'react-native';
+import {Alert, ScrollView, Share, Switch, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Controller, useForm} from 'react-hook-form';
@@ -11,7 +11,7 @@ import {useI18n} from '../i18n/provider';
 import {textDir} from '../utils/layout';
 import {useAuthStore} from '../state/authStore';
 import {useUiStore} from '../state/uiStore';
-import {useNotificationPreferences, useReminders, useRequestActivation, useServices, useStaff, useUpdateNotificationPreference, useUpdateReminder, useUpsertService} from '../api/hooks';
+import {useDeleteAccount, useNotificationPreferences, useReminders, useRequestActivation, useServices, useStaff, useUpdateNotificationPreference, useUpdateReminder, useUpsertService} from '../api/hooks';
 import {useSignOut} from '../api/authHooks';
 import type {UpsertServiceInput} from '../types/models';
 import {createInvite, type CreateInviteResult} from '../api/invites';
@@ -60,6 +60,7 @@ export function MoreScreen() {
   const notificationPreferencesQuery = useNotificationPreferences();
 
   const requestActivation = useRequestActivation();
+  const deleteAccount = useDeleteAccount();
   const updateReminder = useUpdateReminder();
   const updateNotificationPreference = useUpdateNotificationPreference();
   const upsertService = useUpsertService();
@@ -100,7 +101,8 @@ export function MoreScreen() {
 
   const isActive = context?.salon?.status === 'ACTIVE';
   const currentMembership = memberships.find((membership) => membership.salonId === context?.salon?.id && membership.status === 'ACTIVE');
-  const canCreateInvite = currentMembership?.role === 'OWNER' || currentMembership?.role === 'MANAGER';
+  const effectiveRole = currentMembership?.role || context?.user.role || 'OWNER';
+  const canCreateInvite = effectiveRole === 'OWNER' || effectiveRole === 'MANAGER';
   const canManageSalon = canCreateInvite;
 
   useFocusEffect(
@@ -173,6 +175,25 @@ export function MoreScreen() {
       ? `انضم إلى ${context?.salon?.name || 'CareChair'} عبر كود الدعوة: ${inviteData.code}\n${inviteData.webLink || inviteData.inviteLink}`
       : `Join ${context?.salon?.name || 'CareChair'} with invite code: ${inviteData.code}\n${inviteData.webLink || inviteData.inviteLink}`;
     await Share.share({message});
+  }
+
+  function onDeleteAccount() {
+    Alert.alert(
+      isRTL ? 'حذف الحساب' : 'Delete account',
+      isRTL
+        ? 'سيتم حذف حسابك وكل الصالونات التي تملكها نهائياً. لا يمكن التراجع عن هذا الإجراء.'
+        : 'This permanently deletes your account and any salons you own. This action cannot be undone.',
+      [
+        {text: t('cancel'), style: 'cancel'},
+        {
+          text: isRTL ? 'حذف نهائياً' : 'Delete permanently',
+          style: 'destructive',
+          onPress: () => {
+            void deleteAccount.mutateAsync().catch(() => {});
+          }
+        }
+      ]
+    );
   }
 
   return (
@@ -306,11 +327,34 @@ export function MoreScreen() {
 
         <Card style={{gap: spacing.sm}}>
           <Text style={[typography.h3, {color: colors.text}, textDir(isRTL)]}>{t('teamRoles')}</Text>
+          <Text style={[typography.bodySm, {color: colors.text}, textDir(isRTL)]}>
+            {isRTL ? `صلاحيتك الحالية: ${effectiveRole}` : `Your current role: ${effectiveRole}`}
+          </Text>
           <Text style={[typography.bodySm, {color: colors.textMuted}, textDir(isRTL)]}>
             {isRTL
               ? 'هيكل أولي للصلاحيات: مالك / مدير / موظفة. سيتم ربط صلاحيات تفصيلية لاحقاً.'
               : 'Role scaffold ready: Owner / Manager / Staff. Fine-grained permissions can be added next.'}
           </Text>
+          {(staffQuery.data || []).length ? (
+            <View style={{gap: spacing.xs}}>
+              {(staffQuery.data || []).map((member) => (
+                <View
+                  key={member.id}
+                  style={{
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    paddingVertical: 8,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border
+                  }}
+                >
+                  <Text style={[typography.bodySm, {color: colors.text}, textDir(isRTL)]}>{member.name}</Text>
+                  <Text style={[typography.caption, {color: colors.textMuted}, textDir(isRTL)]}>{member.roleTitle || t('staffMember')}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
           {canCreateInvite ? (
             <View style={{gap: spacing.sm}}>
               <Text style={[typography.bodySm, {color: colors.text}, textDir(isRTL)]}>{t('teamInvites')}</Text>
@@ -373,6 +417,13 @@ export function MoreScreen() {
 
         <Button title={t('support')} variant="secondary" onPress={() => undefined} />
         {__DEV__ ? <Button title="Diagnostics" variant="secondary" onPress={() => navigation.navigate('Diagnostics')} /> : null}
+        <Card style={{gap: spacing.sm}}>
+          <Text style={[typography.h3, {color: colors.danger}, textDir(isRTL)]}>{t('dangerZone')}</Text>
+          <Text style={[typography.bodySm, {color: colors.textMuted}, textDir(isRTL)]}>
+            {t('deleteAccountHint')}
+          </Text>
+          <Button title={t('deleteAccount')} variant="danger" onPress={onDeleteAccount} loading={deleteAccount.isPending} />
+        </Card>
         <Button title={t('logout')} variant="ghost" onPress={() => signOut.mutate()} loading={signOut.isPending} />
       </ScrollView>
 

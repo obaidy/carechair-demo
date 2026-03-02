@@ -16,6 +16,7 @@ import {
   useBookings,
   useClients,
   useCreateBooking,
+  useDeleteBooking,
   useRescheduleBooking,
   useServices,
   useStaff,
@@ -65,6 +66,11 @@ function floorToHalfHour(date: Date) {
   next.setSeconds(0, 0);
   next.setMinutes(next.getMinutes() < 30 ? 0 : 30);
   return next;
+}
+
+function slotKey(date: Date) {
+  const rounded = floorToHalfHour(date);
+  return `${String(rounded.getHours()).padStart(2, '0')}:${String(rounded.getMinutes()).padStart(2, '0')}`;
 }
 
 function normalizePhoneDigits(value: string | undefined | null) {
@@ -158,6 +164,7 @@ export function CalendarScreen({route, navigation}: any) {
   const view = useUiStore((state) => state.calendarView);
   const setView = useUiStore((state) => state.setCalendarView);
   const selectedDateIso = useUiStore((state) => state.selectedDateIso);
+  const userRole = useAuthStore((state) => state.context?.user.role || 'OWNER');
   const setSelectedDateIso = useUiStore((state) => state.setSelectedDateIso);
   const salon = useAuthStore((state) => state.context?.salon || null);
   const userPhone = useAuthStore((state) => state.context?.user.phone || '');
@@ -187,12 +194,14 @@ export function CalendarScreen({route, navigation}: any) {
   const statusMutation = useUpdateBookingStatus(selectedDate.toISOString(), view, selectedStaffId === 'all' ? undefined : selectedStaffId);
   const rescheduleMutation = useRescheduleBooking(selectedDate.toISOString(), view, selectedStaffId === 'all' ? undefined : selectedStaffId);
   const blockMutation = useBlockTime(selectedDate.toISOString(), view, selectedStaffId === 'all' ? undefined : selectedStaffId);
+  const deleteMutation = useDeleteBooking(selectedDate.toISOString(), view, selectedStaffId === 'all' ? undefined : selectedStaffId);
 
   const staffRows = staffQuery.data || [];
   const servicesRows = servicesQuery.data || [];
   const bookingRows = bookingsQuery.data || [];
   const currentMembership = memberships.find((membership) => membership.salonId === salon?.id && membership.status === 'ACTIVE');
-  const canManageBookings = currentMembership?.role !== 'STAFF';
+  const effectiveRole = currentMembership?.role || userRole;
+  const canManageBookings = effectiveRole !== 'STAFF';
   const ownStaffRecord = useMemo(() => {
     const phone = normalizePhoneDigits(userPhone);
     if (!phone) return null;
@@ -210,10 +219,10 @@ export function CalendarScreen({route, navigation}: any) {
   );
 
   useEffect(() => {
-    if (currentMembership?.role === 'STAFF' && ownStaffRecord?.id && selectedStaffId !== ownStaffRecord.id) {
+    if (effectiveRole === 'STAFF' && ownStaffRecord?.id && selectedStaffId !== ownStaffRecord.id) {
       setSelectedStaffId(ownStaffRecord.id);
     }
-  }, [currentMembership?.role, ownStaffRecord?.id, selectedStaffId]);
+  }, [effectiveRole, ownStaffRecord?.id, selectedStaffId]);
 
   useEffect(() => {
     const action = route?.params?.action;
@@ -239,28 +248,33 @@ export function CalendarScreen({route, navigation}: any) {
 
   const timelineSlots = useMemo(() => {
     const dayBase = startOfDay(selectedDate);
-    const window = availability && (selectedStaffId === 'all' || selectedStaffId)
-      ? getWorkingWindow(
-          availability.salonHours.map((row) => ({
-            day_of_week: row.dayOfWeek,
-            open_time: row.openTime || null,
-            close_time: row.closeTime || null,
-            is_closed: row.isClosed || false
-          })),
-          availability.employeeHours.map((row) => ({
-            staff_id: row.staffId,
-            day_of_week: row.dayOfWeek,
-            start_time: row.startTime || null,
-            end_time: row.endTime || null,
-            is_off: row.isOff || false,
-            break_start: row.breakStart || null,
-            break_end: row.breakEnd || null
-          })),
-          selectedStaffId === 'all' ? '__salon__' : selectedStaffId,
-          selectedDate
-        )
-      : null;
-    if (!window) return [] as Date[];
+    if (!availability) return [] as Date[];
+    const salonHours = availability.salonHours.map((row) => ({
+      day_of_week: row.dayOfWeek,
+      open_time: row.openTime || null,
+      close_time: row.closeTime || null,
+      is_closed: row.isClosed || false
+    }));
+    const employeeHours = availability.employeeHours.map((row) => ({
+      staff_id: row.staffId,
+      day_of_week: row.dayOfWeek,
+      start_time: row.startTime || null,
+      end_time: row.endTime || null,
+      is_off: row.isOff || false,
+      break_start: row.breakStart || null,
+      break_end: row.breakEnd || null
+    }));
+    const window =
+      selectedStaffId === 'all'
+        ? getWorkingWindow(salonHours, [], '__salon__', selectedDate)
+        : getWorkingWindow(salonHours, employeeHours, selectedStaffId, selectedDate);
+    if (!window) {
+      const fallback: Date[] = [];
+      for (let minutes = 8 * 60; minutes < 22 * 60; minutes += 30) {
+        fallback.push(minutesToDate(dayBase, minutes));
+      }
+      return fallback;
+    }
 
     const out: Date[] = [];
     for (let cursor = new Date(window.start); cursor < window.end; cursor = addMinutes(cursor, 30)) {
@@ -270,9 +284,9 @@ export function CalendarScreen({route, navigation}: any) {
   }, [availability, selectedDate, selectedStaffId, staffRows]);
 
   const bookingsBySlot = useMemo(() => {
-    const map = new Map<number, Booking[]>();
+    const map = new Map<string, Booking[]>();
     for (const booking of bookingRows) {
-      const key = +floorToHalfHour(parseISO(booking.startAt));
+      const key = slotKey(parseISO(booking.startAt));
       const existing = map.get(key);
       if (existing) existing.push(booking);
       else map.set(key, [booking]);
@@ -553,13 +567,24 @@ export function CalendarScreen({route, navigation}: any) {
     }
   }
 
+  async function deleteBooking() {
+    if (!detailBooking) return;
+    setActionError('');
+    try {
+      await deleteMutation.mutateAsync(detailBooking.id);
+      setDetailBooking(null);
+    } catch (error: any) {
+      setActionError(translateActionError(error));
+    }
+  }
+
   const dayGrid = (
     <FlatList
       data={timelineSlots}
       keyExtractor={(item) => item.toISOString()}
       contentContainerStyle={{padding: 16, gap: 10, paddingBottom: 120}}
       renderItem={({item}) => {
-        const matches = bookingsBySlot.get(+item) || [];
+        const matches = bookingsBySlot.get(slotKey(item)) || [];
         return (
           <View style={{flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10}}>
             <Text style={[typography.bodySm, {width: 58, color: colors.textMuted}, textDir(isRTL)]}>{format(item, 'HH:mm')}</Text>
@@ -609,7 +634,7 @@ export function CalendarScreen({route, navigation}: any) {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap: spacing.xs}}>
-        {currentMembership?.role !== 'STAFF' ? <Chip label={t('allStaff')} active={selectedStaffId === 'all'} onPress={() => setSelectedStaffId('all')} /> : null}
+        {effectiveRole !== 'STAFF' ? <Chip label={t('allStaff')} active={selectedStaffId === 'all'} onPress={() => setSelectedStaffId('all')} /> : null}
         {staffRows.map((staff) => (
           <Chip key={staff.id} label={staff.name} active={selectedStaffId === staff.id} onPress={() => setSelectedStaffId(staff.id)} />
         ))}
@@ -661,7 +686,7 @@ export function CalendarScreen({route, navigation}: any) {
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap: spacing.xs}}>
-              {currentMembership?.role !== 'STAFF' ? <Chip label={t('allStaff')} active={selectedStaffId === 'all'} onPress={() => setSelectedStaffId('all')} /> : null}
+              {effectiveRole !== 'STAFF' ? <Chip label={t('allStaff')} active={selectedStaffId === 'all'} onPress={() => setSelectedStaffId('all')} /> : null}
               {staffRows.map((staff) => (
                 <Chip key={staff.id} label={staff.name} active={selectedStaffId === staff.id} onPress={() => setSelectedStaffId(staff.id)} />
               ))}
@@ -744,14 +769,16 @@ export function CalendarScreen({route, navigation}: any) {
             <Text style={[typography.bodySm, {color: colors.textMuted}, textDir(isRTL)]}>
               {serviceById.get(detailBooking.serviceId)?.name || t('service')} • {staffById.get(detailBooking.staffId)?.name || t('staffMember')}
             </Text>
-            <View style={{gap: spacing.xs}}>
+            <View style={{gap: spacing.xs, paddingBottom: spacing.sm}}>
               {actionError ? <Text style={[typography.bodySm, {color: colors.danger}, textDir(isRTL)]}>{actionError}</Text> : null}
+              <Text style={[typography.caption, {color: colors.textMuted}, textDir(isRTL)]}>{isRTL ? 'إجراءات الحجز' : 'Booking actions'}</Text>
               {canManageBookings && detailBooking.status === 'pending' ? (
                 <Button title={t('confirmBooking')} onPress={() => void changeStatus('confirmed')} loading={statusMutation.isPending} />
               ) : null}
               {canManageBookings ? <Button title={t('markCompleted')} onPress={() => void changeStatus('completed')} loading={statusMutation.isPending} /> : null}
               {canManageBookings ? <Button title={t('markNoShow')} variant="secondary" onPress={() => void changeStatus('no_show')} loading={statusMutation.isPending} /> : null}
               {canManageBookings ? <Button title={t('cancelBooking')} variant="danger" onPress={() => void changeStatus('canceled')} loading={statusMutation.isPending} /> : null}
+              {canManageBookings ? <Button title={t('deleteBooking')} variant="danger" onPress={() => void deleteBooking()} loading={deleteMutation.isPending} /> : null}
               {canManageBookings ? (
                 <Button
                   title={t('reschedule')}

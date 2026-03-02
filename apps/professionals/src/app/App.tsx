@@ -1,4 +1,4 @@
-import {useEffect, useMemo} from 'react';
+import {useEffect, useMemo, useRef} from 'react';
 import {Linking, Text, View} from 'react-native';
 import {NavigationContainer, DarkTheme, DefaultTheme, type Theme as NavigationTheme} from '@react-navigation/native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
@@ -36,6 +36,7 @@ function AppInner() {
   const session = useAuthStore((state) => state.session);
   const pendingJoinToken = useAuthStore((state) => state.pendingJoinToken);
   const setPendingJoinToken = useAuthStore((state) => state.setPendingJoinToken);
+  const lastAuthLogRef = useRef('');
 
   usePushNotifications(Boolean(session));
 
@@ -61,12 +62,16 @@ function AppInner() {
   useEffect(() => {
     if (!__DEV__ || !supabase) return;
     const {data} = supabase.auth.onAuthStateChange((event, currentSession) => {
-      pushDevLog('info', 'auth.session', 'Supabase auth state changed', {
+      const payload = {
         event,
         hasAccessToken: Boolean(currentSession?.access_token),
         expiresAt: Number(currentSession?.expires_at || 0) * 1000 || null,
         userId: String(currentSession?.user?.id || '')
-      });
+      };
+      const signature = JSON.stringify(payload);
+      if (signature === lastAuthLogRef.current) return;
+      lastAuthLogRef.current = signature;
+      pushDevLog('info', 'auth.session', 'Supabase auth state changed', payload);
     });
     return () => {
       data.subscription.unsubscribe();
