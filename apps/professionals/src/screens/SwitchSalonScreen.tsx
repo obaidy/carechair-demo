@@ -52,7 +52,10 @@ export function SwitchSalonScreen({navigation}: any) {
           const selected = membership.salonId === activeSalonId;
           return (
             <Card key={`${membership.salonId}:${membership.role}`} style={{gap: spacing.xs}}>
-              <Text style={[typography.body, {color: colors.text}, textDir(isRTL)]}>{membership.salonId}</Text>
+              <Text style={[typography.body, {color: colors.text}, textDir(isRTL)]}>{membership.salonName || membership.salonId}</Text>
+              {membership.salonSlug ? (
+                <Text style={[typography.caption, {color: colors.textMuted}, textDir(isRTL)]}>/{membership.salonSlug}</Text>
+              ) : null}
               <Text style={[typography.caption, {color: colors.textMuted}, textDir(isRTL)]}>
                 {isRTL ? 'الدور' : 'Role'}: {membership.role}
               </Text>

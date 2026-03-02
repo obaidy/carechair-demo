@@ -16,6 +16,8 @@ import {useSignOut} from '../api/authHooks';
 import type {UpsertServiceInput} from '../types/models';
 import {createInvite, type CreateInviteResult} from '../api/invites';
 import {api} from '../api';
+import {formatSalonOperationalCurrency} from '../utils';
+import * as Clipboard from 'expo-clipboard';
 
 const activationSchema = z.object({
   city: z.string().optional(),
@@ -66,6 +68,7 @@ export function MoreScreen() {
   const [inviteData, setInviteData] = useState<CreateInviteResult | null>(null);
   const [inviteSaving, setInviteSaving] = useState(false);
   const [inviteError, setInviteError] = useState('');
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   const activationForm = useForm<ActivationValues>({
     resolver: zodResolver(activationSchema),
@@ -96,6 +99,7 @@ export function MoreScreen() {
   const isActive = context?.salon?.status === 'ACTIVE';
   const currentMembership = memberships.find((membership) => membership.salonId === context?.salon?.id && membership.status === 'ACTIVE');
   const canCreateInvite = currentMembership?.role === 'OWNER' || currentMembership?.role === 'MANAGER';
+  const canManageSalon = canCreateInvite;
 
   useFocusEffect(
     useCallback(() => {
@@ -150,6 +154,9 @@ export function MoreScreen() {
         expiresInHours: 168
       });
       setInviteData(data);
+      setInviteCopied(false);
+      await Clipboard.setStringAsync(data.webLink || data.inviteLink);
+      setInviteCopied(true);
     } catch (error: any) {
       setInviteError(String(error?.message || (isRTL ? 'فشل إنشاء الدعوة.' : 'Failed to create invite.')));
     } finally {
@@ -186,11 +193,13 @@ export function MoreScreen() {
           {(servicesQuery.data || []).map((service) => (
             <View key={service.id} style={{paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border}}>
               <Text style={[typography.body, {color: colors.text}, textDir(isRTL)]}>{service.name}</Text>
-              <Text style={[typography.bodySm, {color: colors.textMuted}, textDir(isRTL)]}>{service.durationMin} {t('minutes')} • ${service.price}</Text>
+              <Text style={[typography.bodySm, {color: colors.textMuted}, textDir(isRTL)]}>
+                {service.durationMin} {t('minutes')} • {context?.salon ? formatSalonOperationalCurrency(service.price, context.salon, locale) : service.price}
+              </Text>
             </View>
           ))}
           {!servicesQuery.data?.length ? <EmptyState title={t('noData')} /> : null}
-          <Button title={isRTL ? 'إضافة خدمة' : 'Add service'} onPress={() => setServiceEditorOpen(true)} />
+          {canManageSalon ? <Button title={isRTL ? 'إضافة خدمة' : 'Add service'} onPress={() => setServiceEditorOpen(true)} /> : null}
         </Card>
 
         <Card style={{gap: spacing.sm}}>
@@ -202,12 +211,13 @@ export function MoreScreen() {
               <Switch
                 value={Boolean(reminder.enabled)}
                 onValueChange={(value) => updateReminder.mutate({reminderId: reminder.id, enabled: value})}
-                disabled={!isActive || updateReminder.isPending}
+                disabled={!isActive || updateReminder.isPending || !canManageSalon}
               />
             </View>
           ))}
         </Card>
 
+        {!isActive ? (
         <Card style={{gap: spacing.sm}}>
           <Text style={[typography.h3, {color: colors.text}, textDir(isRTL)]}>{t('requestActivation')}</Text>
           <Text style={[typography.bodySm, {color: colors.textMuted}, textDir(isRTL)]}>{t('activationHint')}</Text>
@@ -265,6 +275,7 @@ export function MoreScreen() {
 
           <Button title={t('requestActivation')} onPress={activationForm.handleSubmit(onRequestActivation)} loading={requestActivation.isPending} />
         </Card>
+        ) : null}
 
         <Card style={{gap: spacing.sm}}>
           <Text style={[typography.h3, {color: colors.text}, textDir(isRTL)]}>{t('teamRoles')}</Text>
@@ -303,6 +314,11 @@ export function MoreScreen() {
                   <Text style={[typography.bodySm, {color: colors.primary}, textDir(isRTL)]}>
                     {t('inviteLink')}: {inviteData.webLink || inviteData.inviteLink}
                   </Text>
+                  {inviteCopied ? (
+                    <Text style={[typography.bodySm, {color: colors.textMuted}, textDir(isRTL)]}>
+                      {isRTL ? 'تم نسخ رابط الدعوة.' : 'Invite link copied.'}
+                    </Text>
+                  ) : null}
                   <Button title={t('shareInvite')} variant="secondary" onPress={onShareInvite} />
                 </Card>
               ) : null}

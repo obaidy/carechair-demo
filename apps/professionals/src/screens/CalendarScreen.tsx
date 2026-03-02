@@ -23,7 +23,7 @@ import {
 } from '../api/hooks';
 import {textDir} from '../utils/layout';
 import {useAuthStore} from '../state/authStore';
-import type {AvailabilityContext, Booking, BookingStatus, Salon, Service, Staff} from '../types/models';
+import type {AvailabilityContext, Booking, BookingStatus, Service, Staff} from '../types/models';
 import {getWorkingWindow, validateBooking} from '../lib/availability';
 
 const createBookingSchema = z.object({
@@ -58,6 +58,17 @@ function minutesToDate(baseDay: Date, totalMinutes: number) {
   const hours = Math.floor(totalMinutes / 60);
   const mins = totalMinutes % 60;
   return setMinutes(setHours(baseDay, hours), mins);
+}
+
+function floorToHalfHour(date: Date) {
+  const next = new Date(date);
+  next.setSeconds(0, 0);
+  next.setMinutes(next.getMinutes() < 30 ? 0 : 30);
+  return next;
+}
+
+function normalizePhoneDigits(value: string | undefined | null) {
+  return String(value || '').replace(/\D/g, '');
 }
 
 function slotOptionsForStaff(params: {
@@ -140,7 +151,7 @@ function slotOptionsForStaff(params: {
   return out;
 }
 
-export function CalendarScreen() {
+export function CalendarScreen({route, navigation}: any) {
   const {colors, spacing, typography, radius} = useTheme();
   const {t, isRTL} = useI18n();
 
@@ -148,6 +159,9 @@ export function CalendarScreen() {
   const setView = useUiStore((state) => state.setCalendarView);
   const selectedDateIso = useUiStore((state) => state.selectedDateIso);
   const setSelectedDateIso = useUiStore((state) => state.setSelectedDateIso);
+  const salon = useAuthStore((state) => state.context?.salon || null);
+  const userPhone = useAuthStore((state) => state.context?.user.phone || '');
+  const memberships = useAuthStore((state) => state.memberships);
 
   const selectedDate = useMemo(() => new Date(selectedDateIso), [selectedDateIso]);
   const {width} = useWindowDimensions();
@@ -177,6 +191,13 @@ export function CalendarScreen() {
   const staffRows = staffQuery.data || [];
   const servicesRows = servicesQuery.data || [];
   const bookingRows = bookingsQuery.data || [];
+  const currentMembership = memberships.find((membership) => membership.salonId === salon?.id && membership.status === 'ACTIVE');
+  const canManageBookings = currentMembership?.role !== 'STAFF';
+  const ownStaffRecord = useMemo(() => {
+    const phone = normalizePhoneDigits(userPhone);
+    if (!phone) return null;
+    return staffRows.find((row) => normalizePhoneDigits(row.phone) === phone) || null;
+  }, [staffRows, userPhone]);
 
   useFocusEffect(
     useCallback(() => {
@@ -187,6 +208,20 @@ export function CalendarScreen() {
       return () => {};
     }, [availabilityQuery, bookingsQuery, servicesQuery, staffQuery])
   );
+
+  useEffect(() => {
+    if (currentMembership?.role === 'STAFF' && ownStaffRecord?.id && selectedStaffId !== ownStaffRecord.id) {
+      setSelectedStaffId(ownStaffRecord.id);
+    }
+  }, [currentMembership?.role, ownStaffRecord?.id, selectedStaffId]);
+
+  useEffect(() => {
+    const action = route?.params?.action;
+    if (!action) return;
+    if (action === 'createBooking' && canManageBookings) setCreateOpen(true);
+    if (action === 'blockTime' && canManageBookings) setBlockOpen(true);
+    navigation?.setParams?.({action: undefined, walkIn: undefined});
+  }, [canManageBookings, navigation, route?.params?.action]);
 
   const activeServices = useMemo(() => servicesRows.filter((s) => s.isActive), [servicesRows]);
   const staffById = useMemo(() => new Map(staffRows.map((row) => [row.id, row])), [staffRows]);
@@ -204,8 +239,7 @@ export function CalendarScreen() {
 
   const timelineSlots = useMemo(() => {
     const dayBase = startOfDay(selectedDate);
-    const targetStaffId = selectedStaffId === 'all' ? staffRows[0]?.id || '' : selectedStaffId;
-    const window = availability && targetStaffId
+    const window = availability && (selectedStaffId === 'all' || selectedStaffId)
       ? getWorkingWindow(
           availability.salonHours.map((row) => ({
             day_of_week: row.dayOfWeek,
@@ -222,7 +256,7 @@ export function CalendarScreen() {
             break_start: row.breakStart || null,
             break_end: row.breakEnd || null
           })),
-          targetStaffId,
+          selectedStaffId === 'all' ? '__salon__' : selectedStaffId,
           selectedDate
         )
       : null;
@@ -238,7 +272,7 @@ export function CalendarScreen() {
   const bookingsBySlot = useMemo(() => {
     const map = new Map<number, Booking[]>();
     for (const booking of bookingRows) {
-      const key = +new Date(booking.startAt);
+      const key = +floorToHalfHour(parseISO(booking.startAt));
       const existing = map.get(key);
       if (existing) existing.push(booking);
       else map.set(key, [booking]);
@@ -575,7 +609,7 @@ export function CalendarScreen() {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap: spacing.xs}}>
-        <Chip label={t('allStaff')} active={selectedStaffId === 'all'} onPress={() => setSelectedStaffId('all')} />
+        {currentMembership?.role !== 'STAFF' ? <Chip label={t('allStaff')} active={selectedStaffId === 'all'} onPress={() => setSelectedStaffId('all')} /> : null}
         {staffRows.map((staff) => (
           <Chip key={staff.id} label={staff.name} active={selectedStaffId === staff.id} onPress={() => setSelectedStaffId(staff.id)} />
         ))}
@@ -613,8 +647,8 @@ export function CalendarScreen() {
         <View style={{flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center'}}>
           <Text style={[typography.h2, {color: colors.text}, textDir(isRTL)]}>{t('calendar')}</Text>
           <View style={{flexDirection: isRTL ? 'row-reverse' : 'row', gap: spacing.xs}}>
-            <Button title={t('addBooking')} onPress={() => setCreateOpen(true)} />
-            <Button title={t('blockTime')} variant="secondary" onPress={() => setBlockOpen(true)} />
+            {canManageBookings ? <Button title={t('addBooking')} onPress={() => setCreateOpen(true)} /> : null}
+            {canManageBookings ? <Button title={t('blockTime')} variant="secondary" onPress={() => setBlockOpen(true)} /> : null}
           </View>
         </View>
 
@@ -627,7 +661,7 @@ export function CalendarScreen() {
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap: spacing.xs}}>
-              <Chip label={t('allStaff')} active={selectedStaffId === 'all'} onPress={() => setSelectedStaffId('all')} />
+              {currentMembership?.role !== 'STAFF' ? <Chip label={t('allStaff')} active={selectedStaffId === 'all'} onPress={() => setSelectedStaffId('all')} /> : null}
               {staffRows.map((staff) => (
                 <Chip key={staff.id} label={staff.name} active={selectedStaffId === staff.id} onPress={() => setSelectedStaffId(staff.id)} />
               ))}
@@ -712,18 +746,23 @@ export function CalendarScreen() {
             </Text>
             <View style={{gap: spacing.xs}}>
               {actionError ? <Text style={[typography.bodySm, {color: colors.danger}, textDir(isRTL)]}>{actionError}</Text> : null}
-              <Button title={t('markCompleted')} onPress={() => void changeStatus('completed')} loading={statusMutation.isPending} />
-              <Button title={t('markNoShow')} variant="secondary" onPress={() => void changeStatus('no_show')} loading={statusMutation.isPending} />
-              <Button title={t('cancelBooking')} variant="danger" onPress={() => void changeStatus('canceled')} loading={statusMutation.isPending} />
-              <Button
-                title={t('reschedule')}
-                variant="ghost"
-                onPress={() => {
-                  openReschedule(detailBooking);
-                  setDetailBooking(null);
-                }}
-                loading={rescheduleMutation.isPending}
-              />
+              {canManageBookings && detailBooking.status === 'pending' ? (
+                <Button title={t('confirmBooking')} onPress={() => void changeStatus('confirmed')} loading={statusMutation.isPending} />
+              ) : null}
+              {canManageBookings ? <Button title={t('markCompleted')} onPress={() => void changeStatus('completed')} loading={statusMutation.isPending} /> : null}
+              {canManageBookings ? <Button title={t('markNoShow')} variant="secondary" onPress={() => void changeStatus('no_show')} loading={statusMutation.isPending} /> : null}
+              {canManageBookings ? <Button title={t('cancelBooking')} variant="danger" onPress={() => void changeStatus('canceled')} loading={statusMutation.isPending} /> : null}
+              {canManageBookings ? (
+                <Button
+                  title={t('reschedule')}
+                  variant="ghost"
+                  onPress={() => {
+                    openReschedule(detailBooking);
+                    setDetailBooking(null);
+                  }}
+                  loading={rescheduleMutation.isPending}
+                />
+              ) : null}
             </View>
           </View>
         ) : null}

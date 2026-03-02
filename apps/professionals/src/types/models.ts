@@ -86,6 +86,8 @@ export type Salon = {
   name: string;
   slug: string;
   phone: string;
+  countryCode?: string;
+  currencyCode?: string;
   locationLabel: string;
   locationAddress: string;
   locationLat?: number;
@@ -153,6 +155,7 @@ export type Booking = {
 export type DashboardSummary = {
   bookingsCount: number;
   revenue: number;
+  revenueFormatted?: string;
   noShows: number;
   availableSlots: number;
   nextAppointment: Booking | null;

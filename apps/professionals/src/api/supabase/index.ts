@@ -188,6 +188,26 @@ function mapBookingRow(row: any): Booking {
   };
 }
 
+function formatSalonOperationalCurrencyMobile(
+  value: number | string | null | undefined,
+  salon: {countryCode?: string | null; currencyCode?: string | null},
+  locale: string
+) {
+  const amount = Number(value || 0);
+  const country = String(salon.countryCode || '').toUpperCase();
+  const code = country === 'IQ' ? 'IQD' : String(salon.currencyCode || 'USD').toUpperCase();
+  const safeLocale = String(locale || 'en').startsWith('ar') ? 'ar-IQ-u-nu-latn' : locale || 'en-US';
+  if (code === 'IQD') {
+    const numberPart = new Intl.NumberFormat(safeLocale, {maximumFractionDigits: 0}).format(amount);
+    return `${numberPart} ${String(locale || '').startsWith('ar') ? 'د.ع' : 'IQD'}`;
+  }
+  try {
+    return new Intl.NumberFormat(safeLocale, {style: 'currency', currency: code, maximumFractionDigits: 0}).format(amount);
+  } catch {
+    return `${Math.round(amount).toLocaleString('en-US')} ${code}`;
+  }
+}
+
 function slugifyTempId(prefix: string) {
   return `${prefix}_${Date.now().toString(36)}`;
 }
@@ -489,14 +509,31 @@ async function readOwnerContext(): Promise<OwnerContext> {
       .limit(1)
       .maybeSingle();
     if (!membershipRes.error && membershipRes.data?.salon_id) {
-      salonId = String(membershipRes.data.salon_id);
-      profile.salonId = salonId;
-      profile.role = String((membershipRes.data as any).role || '').toUpperCase() === 'MANAGER'
-        ? 'MANAGER'
-        : String((membershipRes.data as any).role || '').toUpperCase() === 'STAFF'
-          ? 'STAFF'
-          : 'OWNER';
+        salonId = String(membershipRes.data.salon_id);
+        profile.salonId = salonId;
+        profile.role = String((membershipRes.data as any).role || '').toUpperCase() === 'MANAGER'
+          ? 'MANAGER'
+          : String((membershipRes.data as any).role || '').toUpperCase() === 'STAFF'
+            ? 'STAFF'
+            : 'OWNER';
       useAuthStore.getState().setActiveSalonId(salonId);
+    }
+  }
+  if (salonId) {
+    const roleRes = await client
+      .from('salon_members')
+      .select('role')
+      .eq('salon_id', salonId)
+      .eq('user_id', user.id)
+      .eq('status', 'ACTIVE')
+      .maybeSingle();
+    if (!roleRes.error && roleRes.data?.role) {
+      profile.role =
+        String((roleRes.data as any).role || '').toUpperCase() === 'MANAGER'
+          ? 'MANAGER'
+          : String((roleRes.data as any).role || '').toUpperCase() === 'STAFF'
+            ? 'STAFF'
+            : 'OWNER';
     }
   }
   if (!salonId) return {user: profile, salon: null};
@@ -504,7 +541,7 @@ async function readOwnerContext(): Promise<OwnerContext> {
   const [salonRes, hoursRes] = await Promise.all([
     client
       .from('salons')
-      .select('id,name,slug,whatsapp,status,area,address,address_text,city,location_lat,location_lng,location_label,created_at,updated_at')
+      .select('id,name,slug,whatsapp,status,area,address,address_text,city,location_lat,location_lng,location_label,country_code,currency_code,created_at,updated_at')
       .eq('id', salonId)
       .maybeSingle(),
     selectWorkingHoursWithFallback(client, salonId)
@@ -521,6 +558,8 @@ async function readOwnerContext(): Promise<OwnerContext> {
     name: String(salonRow.name || 'Salon'),
     slug: String(salonRow.slug || ''),
     phone: String((salonRow as any).whatsapp || ''),
+    countryCode: String((salonRow as any).country_code || 'IQ'),
+    currencyCode: String((salonRow as any).currency_code || ''),
     locationLabel: String((salonRow as any).location_label || (salonRow as any).area || (salonRow as any).city || ''),
     locationAddress: String((salonRow as any).address_text || (salonRow as any).address || (salonRow as any).area || ''),
     locationLat: Number.isFinite(Number((salonRow as any).location_lat)) ? Number((salonRow as any).location_lat) : undefined,
@@ -906,19 +945,50 @@ export const supabaseApi: CareChairApi = {
       const context = await readOwnerContext();
       if (!context.salon) throw new Error('SALON_REQUIRED');
       const bookings = await safeListBookings(context.salon.id, dateIso, 'day');
+      const services = await supabaseApi.services.list();
+      const priceByService = new Map(services.map((row) => [row.id, Number(row.price || 0)]));
       const nextAppointment = bookings.find((row) => +new Date(row.startAt) > Date.now()) || null;
       const noShows = bookings.filter((row) => row.status === 'no_show').length;
+      const revenue = bookings
+        .filter((row) => row.status === 'completed' || row.status === 'confirmed' || row.status === 'pending')
+        .reduce((sum, row) => sum + Number(priceByService.get(row.serviceId) || 0), 0);
       return {
         bookingsCount: bookings.length,
-        revenue: 0,
+        revenue,
+        revenueFormatted: formatSalonOperationalCurrencyMobile(revenue, context.salon, 'en'),
         noShows,
         availableSlots: Math.max(0, 28 - bookings.length),
         nextAppointment
       } as DashboardSummary;
     },
-    listEvents: async () => {
-      // TODO: read from dedicated event_logs table when available.
-      return [] as EventLog[];
+    listEvents: async (limit = 10) => {
+      const context = await readOwnerContext();
+      if (!context.salon) throw new Error('SALON_REQUIRED');
+      const bookings = await listSalonBookingsAll(context.salon.id);
+      return bookings.slice(0, limit).map((row) => ({
+        id: row.id,
+        salonId: context.salon!.id,
+        type:
+          row.status === 'completed'
+            ? 'booking_completed'
+            : row.status === 'no_show'
+              ? 'booking_no_show'
+              : row.status === 'canceled'
+                ? 'booking_cancelled'
+                : 'booking_new',
+        title:
+          row.status === 'completed'
+            ? 'Booking completed'
+            : row.status === 'no_show'
+              ? 'No-show recorded'
+              : row.status === 'canceled'
+                ? 'Booking cancelled'
+                : 'New booking',
+        description: `${row.clientName} • ${row.startAt}`,
+        createdAt: row.updatedAt || row.createdAt,
+        bookingId: row.id,
+        clientId: row.clientId || undefined
+      }));
     }
   },
   bookings: {

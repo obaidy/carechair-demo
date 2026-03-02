@@ -11,12 +11,14 @@ import {useDashboardSummary, useEvents} from '../api/hooks';
 import {useAuthStore} from '../state/authStore';
 import {textDir} from '../utils/layout';
 import {api} from '../api';
+import {formatSalonOperationalCurrency} from '../utils';
 
 export function DashboardScreen({navigation}: any) {
   const {colors, spacing, typography, radius} = useTheme();
-  const {t, isRTL} = useI18n();
+  const {t, isRTL, locale} = useI18n();
   const [quickOpen, setQuickOpen] = useState(false);
   const context = useAuthStore((state) => state.context);
+  const memberships = useAuthStore((state) => state.memberships);
   const setContext = useAuthStore((state) => state.setContext);
 
   const todayIso = useMemo(() => new Date().toISOString(), []);
@@ -35,6 +37,8 @@ export function DashboardScreen({navigation}: any) {
   );
 
   const status = context?.salon?.status || 'DRAFT';
+  const currentMembership = memberships.find((membership) => membership.salonId === context?.salon?.id && membership.status === 'ACTIVE');
+  const canManageSalon = currentMembership?.role !== 'STAFF';
 
   const statusLabel =
     status === 'ACTIVE'
@@ -87,7 +91,10 @@ export function DashboardScreen({navigation}: any) {
 
         <View style={{flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap'}}>
           <StatCard label={t('bookings')} value={summaryQuery.data?.bookingsCount ?? '-'} />
-          <StatCard label={t('revenue')} value={summaryQuery.data ? `$${summaryQuery.data.revenue}` : '-'} />
+          <StatCard
+            label={t('revenue')}
+            value={summaryQuery.data && context?.salon ? formatSalonOperationalCurrency(summaryQuery.data.revenue, context.salon, locale) : '-'}
+          />
           <StatCard label={t('noShows')} value={summaryQuery.data?.noShows ?? '-'} />
           <StatCard label={t('availableSlots')} value={summaryQuery.data?.availableSlots ?? '-'} />
         </View>
@@ -118,35 +125,37 @@ export function DashboardScreen({navigation}: any) {
         </Card>
       </ScrollView>
 
-      <Pressable
-        onPress={() => setQuickOpen(true)}
-        style={{
-          position: 'absolute',
-          right: 22,
-          bottom: 24,
-          width: 58,
-          height: 58,
-          borderRadius: 29,
-          backgroundColor: colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-          shadowColor: colors.shadow,
-          shadowOpacity: 0.25,
-          shadowRadius: 10,
-          shadowOffset: {width: 0, height: 5},
-          elevation: 4
-        }}
-      >
-        <Ionicons name="add" size={28} color="#fff" />
-      </Pressable>
+      {canManageSalon ? (
+        <Pressable
+          onPress={() => setQuickOpen(true)}
+          style={{
+            position: 'absolute',
+            right: 22,
+            bottom: 24,
+            width: 58,
+            height: 58,
+            borderRadius: 29,
+            backgroundColor: colors.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+            shadowColor: colors.shadow,
+            shadowOpacity: 0.25,
+            shadowRadius: 10,
+            shadowOffset: {width: 0, height: 5},
+            elevation: 4
+          }}
+        >
+          <Ionicons name="add" size={28} color="#fff" />
+        </Pressable>
+      ) : null}
 
       <Sheet visible={quickOpen} onClose={() => setQuickOpen(false)}>
         <Text style={[typography.h3, {color: colors.text}, textDir(isRTL)]}>{t('quickActions')}</Text>
         <View style={{gap: spacing.sm}}>
-          <ActionRow label={t('addBooking')} icon="calendar-outline" onPress={() => { setQuickOpen(false); navigation.navigate('CalendarTab'); }} />
-          <ActionRow label={t('addWalkIn')} icon="person-add-outline" onPress={() => setQuickOpen(false)} />
-          <ActionRow label={t('blockTime')} icon="remove-circle-outline" onPress={() => { setQuickOpen(false); navigation.navigate('CalendarTab'); }} />
-          <ActionRow label={t('messageClient')} icon="chatbubbles-outline" onPress={() => setQuickOpen(false)} />
+          <ActionRow label={t('addBooking')} icon="calendar-outline" onPress={() => { setQuickOpen(false); navigation.navigate('CalendarTab', {action: 'createBooking'}); }} />
+          <ActionRow label={t('addWalkIn')} icon="person-add-outline" onPress={() => { setQuickOpen(false); navigation.navigate('CalendarTab', {action: 'createBooking', walkIn: true}); }} />
+          <ActionRow label={t('blockTime')} icon="remove-circle-outline" onPress={() => { setQuickOpen(false); navigation.navigate('CalendarTab', {action: 'blockTime'}); }} />
+          <ActionRow label={t('messageClient')} icon="chatbubbles-outline" onPress={() => { setQuickOpen(false); navigation.navigate('ClientsTab'); }} />
         </View>
       </Sheet>
     </SafeAreaView>

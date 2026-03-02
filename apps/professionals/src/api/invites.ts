@@ -14,6 +14,8 @@ export type Membership = {
   role: UserRole;
   status: MembershipStatus;
   joinedAt: string;
+  salonName?: string;
+  salonSlug?: string;
 };
 
 type InviteRole = Exclude<UserRole, 'OWNER'>;
@@ -442,13 +444,32 @@ export async function listActiveMembershipsV2(): Promise<Membership[]> {
     );
 
     if (response.ok && Array.isArray(payload)) {
-      return payload.map((row: any) => ({
+      const memberships = payload.map((row: any) => ({
         salonId: String(row.salon_id),
         userId: String(row.user_id),
         role: normalizeRole(row.role),
         status: normalizeStatus(row.status),
         joinedAt: String(row.joined_at || new Date().toISOString())
       }));
+      const salonIds = memberships.map((row) => row.salonId).filter(Boolean);
+      if (salonIds.length) {
+        const salonQuery = salonIds.join(',');
+        const salonsRes = await restRequest(
+          `/rest/v1/salons?select=id,name,slug&id=in.(${salonQuery})`,
+          {method: 'GET', token}
+        );
+        if (salonsRes.response.ok && Array.isArray(salonsRes.payload)) {
+          const byId = new Map<string, {name: string; slug: string}>(
+            salonsRes.payload.map((row: any) => [String(row.id), {name: String(row.name || 'Salon'), slug: String(row.slug || '')}])
+          );
+          return memberships.map((row) => ({
+            ...row,
+            salonName: byId.get(row.salonId)?.name || 'Salon',
+            salonSlug: byId.get(row.salonId)?.slug || ''
+          }));
+        }
+      }
+      return memberships;
     }
 
     lastError = payload || new Error(`HTTP_${response.status}`);

@@ -14,6 +14,8 @@ export type DevLogEntry = {
 const CAPACITY = 200;
 const entries: DevLogEntry[] = [];
 const listeners = new Set<() => void>();
+let lastSignature = '';
+let lastAt = 0;
 
 function emit() {
   for (const listener of listeners) listener();
@@ -32,6 +34,11 @@ function toEntry(level: DevLogLevel, scope: string, message: string, data?: unkn
 
 export function pushDevLog(level: DevLogLevel, scope: string, message: string, data?: unknown) {
   if (!__DEV__) return;
+  const signature = `${level}|${scope}|${message}|${JSON.stringify(data ?? null)}`;
+  const now = Date.now();
+  if (signature === lastSignature && now - lastAt < 2500) return;
+  lastSignature = signature;
+  lastAt = now;
   const entry = toEntry(level, scope, message, data);
   entries.unshift(entry);
   if (entries.length > CAPACITY) entries.length = CAPACITY;

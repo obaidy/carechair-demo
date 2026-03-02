@@ -11,6 +11,8 @@ import {useI18n} from '../i18n/provider';
 import {textDir} from '../utils/layout';
 import {useBookings, useServices, useStaff, useUpsertStaff} from '../api/hooks';
 import type {Staff} from '../types/models';
+import {useAuthStore} from '../state/authStore';
+import {formatSalonOperationalCurrency} from '../utils';
 
 const schema = z.object({
   id: z.string().optional(),
@@ -40,10 +42,11 @@ function buildDefaultWorkingHours(start = '08:00', end = '22:00') {
 
 export function StaffScreen() {
   const {colors, spacing, typography, radius} = useTheme();
-  const {t, isRTL} = useI18n();
+  const {t, isRTL, locale} = useI18n();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Staff | null>(null);
   const [workingHours, setWorkingHours] = useState<Record<number, WorkingHourEditorRow>>(buildDefaultWorkingHours());
+  const salon = useAuthStore((state) => state.context?.salon || null);
 
   const staffQuery = useStaff();
   const servicesQuery = useServices();
@@ -160,7 +163,9 @@ export function StaffScreen() {
               >
                 <Text style={[typography.body, {color: colors.text, fontWeight: '700'}, textDir(isRTL)]}>{row.member.name}</Text>
                 <Text style={[typography.bodySm, {color: colors.textMuted}, textDir(isRTL)]}>{t('bookings')}: {row.bookingsCount}</Text>
-                <Text style={[typography.bodySm, {color: colors.textMuted}, textDir(isRTL)]}>{t('revenue')}: ${row.revenue}</Text>
+                <Text style={[typography.bodySm, {color: colors.textMuted}, textDir(isRTL)]}>
+                  {t('revenue')}: {salon ? formatSalonOperationalCurrency(row.revenue, salon, locale) : row.revenue}
+                </Text>
               </View>
             ))}
           </ScrollView>

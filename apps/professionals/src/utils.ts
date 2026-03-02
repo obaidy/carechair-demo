@@ -69,3 +69,29 @@ export function mapValidationReasonToMessageKey(reason: string): string {
   if (reason === 'overlap') return 'overlap';
   return 'slotUnavailable';
 }
+
+export function formatSalonOperationalCurrency(
+  value: number | string | null | undefined,
+  salon: {countryCode?: string | null; currencyCode?: string | null},
+  locale: LocaleCode
+) {
+  const amount = Number(value || 0);
+  const country = String(salon?.countryCode || '').toUpperCase();
+  const code = country === 'IQ' ? 'IQD' : String(salon?.currencyCode || 'USD').toUpperCase();
+  const safeLocale = locale === 'ar' ? 'ar-IQ-u-nu-latn' : locale === 'cs' ? 'cs-CZ' : locale === 'ru' ? 'ru-RU' : 'en-US';
+
+  if (code === 'IQD') {
+    const numberPart = new Intl.NumberFormat(safeLocale, {maximumFractionDigits: 0}).format(amount);
+    return `${numberPart} ${locale === 'ar' ? 'د.ع' : 'IQD'}`;
+  }
+
+  try {
+    return new Intl.NumberFormat(safeLocale, {
+      style: 'currency',
+      currency: code,
+      maximumFractionDigits: 0
+    }).format(amount);
+  } catch {
+    return `${Math.round(amount).toLocaleString('en-US')} ${code}`;
+  }
+}
