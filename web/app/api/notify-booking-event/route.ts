@@ -1,6 +1,5 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {createServiceSupabaseClient} from '@/lib/supabase/service';
-import {sendSalonPushNotification} from '@/lib/notifications/push';
 
 export async function POST(request: NextRequest) {
   let body: any = null;
@@ -38,16 +37,33 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await sendSalonPushNotification({
-      salonId,
-      title,
-      body: message,
-      data: {
-        bookingId,
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceRoleKey) {
+      return NextResponse.json({ok: false, error: 'supabase_env_missing'}, {status: 500});
+    }
+
+    const edgeRes = await fetch(`${supabaseUrl}/functions/v1/notify-booking-event`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`
+      },
+      body: JSON.stringify({
         salonId,
-        source: 'web'
-      }
+        bookingId,
+        event: String(body?.event || 'booking_status_changed'),
+        title,
+        body: message
+      })
     });
+
+    const result = await edgeRes.json().catch(() => null);
+    if (!edgeRes.ok) {
+      return NextResponse.json({ok: false, error: result?.error || 'edge_push_failed'}, {status: edgeRes.status});
+    }
+
     return NextResponse.json({ok: true, result});
   } catch (error: any) {
     return NextResponse.json({ok: false, error: String(error?.message || error || 'push_failed')}, {status: 500});

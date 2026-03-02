@@ -13,6 +13,7 @@ import type {
   CreateSalonInput,
   DashboardSummary,
   EventLog,
+  NotificationPreference,
   OwnerContext,
   Reminder,
   RequestActivationInput,
@@ -63,6 +64,15 @@ const DEFAULT_REMINDER_RULES = [
   {channel: 'whatsapp', type: 'booking_reminder_2h'},
   {channel: 'push', type: 'booking_confirmed'}
 ] as const;
+
+const DEFAULT_NOTIFICATION_PREFERENCE_TYPES: Array<NotificationPreference['type']> = [
+  'booking_created',
+  'booking_updated',
+  'booking_status_changed',
+  'daily_summary'
+];
+let restoreSessionPromise: Promise<any> | null = null;
+let lastRestoredSessionFingerprint = '';
 
 function assertSupabase() {
   if (!supabase) throw new Error('SUPABASE_CONFIG_MISSING');
@@ -239,10 +249,17 @@ async function getActiveSupabaseSession(client: ReturnType<typeof assertSupabase
   if (!session) {
     const cached = useAuthStore.getState().session;
     if (cached?.accessToken && cached?.refreshToken) {
-      const restored = await client.auth.setSession({
-        access_token: cached.accessToken,
-        refresh_token: cached.refreshToken
-      });
+      const fingerprint = `${cached.accessToken.slice(0, 24)}:${cached.refreshToken.slice(0, 24)}`;
+      if (!restoreSessionPromise || lastRestoredSessionFingerprint !== fingerprint) {
+        lastRestoredSessionFingerprint = fingerprint;
+        restoreSessionPromise = client.auth.setSession({
+          access_token: cached.accessToken,
+          refresh_token: cached.refreshToken
+        }).finally(() => {
+          restoreSessionPromise = null;
+        });
+      }
+      const restored = await restoreSessionPromise;
       if (!restored.error && restored.data.session?.access_token) {
         session = restored.data.session;
         if (__DEV__) {
@@ -1476,6 +1493,61 @@ export const supabaseApi: CareChairApi = {
         {onConflict: 'token'}
       );
       if (res.error) throw res.error;
+    },
+    listPreferences: async () => {
+      const context = await readOwnerContext();
+      if (!context.salon) throw new Error('SALON_REQUIRED');
+      const client = assertSupabase();
+      const user = await readAuthUser();
+      const res = await client
+        .from('notification_preferences')
+        .select('id,salon_id,user_id,channel,type,enabled')
+        .eq('salon_id', context.salon.id)
+        .eq('user_id', user.id)
+        .eq('channel', 'push');
+      if (res.error) throw res.error;
+
+      const byType = new Map<string, any>((res.data || []).map((row: any) => [String(row.type || ''), row]));
+      return DEFAULT_NOTIFICATION_PREFERENCE_TYPES.map((type) => {
+        const row = byType.get(type);
+        return {
+          id: String(row?.id || type),
+          salonId: String(row?.salon_id || context.salon?.id || ''),
+          userId: String(row?.user_id || user.id),
+          channel: 'push',
+          type,
+          enabled: row ? Boolean(row.enabled) : true
+        } as NotificationPreference;
+      });
+    },
+    updatePreference: async (type, enabled) => {
+      const context = await readOwnerContext();
+      if (!context.salon) throw new Error('SALON_REQUIRED');
+      const client = assertSupabase();
+      const user = await readAuthUser();
+      const res = await client
+        .from('notification_preferences')
+        .upsert(
+          {
+            salon_id: context.salon.id,
+            user_id: user.id,
+            channel: 'push',
+            type,
+            enabled
+          } as any,
+          {onConflict: 'salon_id,user_id,channel,type'}
+        )
+        .select('id,salon_id,user_id,channel,type,enabled')
+        .single();
+      if (res.error || !res.data) throw res.error || new Error('NOTIFICATION_PREFERENCE_UPDATE_FAILED');
+      return {
+        id: String((res.data as any).id || type),
+        salonId: String((res.data as any).salon_id || context.salon.id),
+        userId: String((res.data as any).user_id || user.id),
+        channel: 'push',
+        type: String((res.data as any).type || type) as NotificationPreference['type'],
+        enabled: Boolean((res.data as any).enabled)
+      } as NotificationPreference;
     }
   }
 };

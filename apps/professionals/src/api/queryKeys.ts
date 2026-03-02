@@ -8,5 +8,6 @@ export const qk = {
   clientHistory: (clientId?: string) => ['client-history', clientId || 'none'] as const,
   staff: ['staff'] as const,
   services: ['services'] as const,
-  reminders: ['reminders'] as const
+  reminders: ['reminders'] as const,
+  notificationPreferences: ['notification-preferences'] as const
 };

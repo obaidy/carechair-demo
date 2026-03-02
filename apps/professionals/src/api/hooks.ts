@@ -58,6 +58,10 @@ export function useReminders() {
   return useQuery({queryKey: qk.reminders, queryFn: () => api.reminders.list()});
 }
 
+export function useNotificationPreferences() {
+  return useQuery({queryKey: qk.notificationPreferences, queryFn: () => api.notifications.listPreferences()});
+}
+
 export function useCreateSalon() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -215,6 +219,17 @@ export function useUpdateReminder() {
     mutationFn: (payload: {reminderId: string; enabled: boolean}) => api.reminders.update(payload.reminderId, payload.enabled),
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: qk.reminders});
+    }
+  });
+}
+
+export function useUpdateNotificationPreference() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: {type: 'booking_created' | 'booking_updated' | 'booking_status_changed' | 'daily_summary'; enabled: boolean}) =>
+      api.notifications.updatePreference(payload.type, payload.enabled),
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: qk.notificationPreferences});
     }
   });
 }

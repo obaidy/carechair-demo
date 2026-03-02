@@ -846,6 +846,7 @@ export default function SalonCalendar({
           body: JSON.stringify({
             salonId: salon.id,
             bookingId: String((insertRes.data as any)?.id || ''),
+            event: 'booking_created',
             title: 'New booking',
             body: `${draft.customer_name} • ${draft.start.toISOString()}`
           })
@@ -886,6 +887,7 @@ export default function SalonCalendar({
           body: JSON.stringify({
             salonId: salon.id,
             bookingId: String(draft.id),
+            event: 'booking_updated',
             title: 'Booking updated',
             body: `${draft.customer_name} • ${draft.start.toISOString()}`
           })
@@ -919,6 +921,7 @@ export default function SalonCalendar({
         body: JSON.stringify({
           salonId: salon.id,
           bookingId: String(draft.id),
+          event: 'booking_status_changed',
           title: 'Booking cancelled',
           body: `Booking ${draft.id} was cancelled`
         })

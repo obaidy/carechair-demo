@@ -3,6 +3,8 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 type TemplateName =
   | "booking_created"
   | "booking_confirmed"
+  | "booking_reminder_24h"
+  | "booking_reminder_2h"
   | "booking_cancelled"
   | "salon_approved"
   | "salon_rejected";
@@ -24,6 +26,8 @@ const corsHeaders = {
 const ALLOWED_TEMPLATES = new Set<TemplateName>([
   "booking_created",
   "booking_confirmed",
+  "booking_reminder_24h",
+  "booking_reminder_2h",
   "booking_cancelled",
   "salon_approved",
   "salon_rejected",

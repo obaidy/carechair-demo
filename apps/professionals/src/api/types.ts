@@ -11,6 +11,7 @@ import type {
   CreateSalonInput,
   DashboardSummary,
   EventLog,
+  NotificationPreference,
   OwnerContext,
   Reminder,
   RequestActivationInput,
@@ -74,5 +75,7 @@ export interface CareChairApi {
   };
   notifications: {
     registerPushToken: (token: string) => Promise<void>;
+    listPreferences: () => Promise<NotificationPreference[]>;
+    updatePreference: (type: NotificationPreference['type'], enabled: boolean) => Promise<NotificationPreference>;
   };
 }

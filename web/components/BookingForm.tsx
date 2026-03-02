@@ -601,6 +601,7 @@ ${t('whatsappFallback.phone')}: ${normalizedPhone}`;
         body: JSON.stringify({
           salonId: salon.id,
           bookingId: bookingRes.data.id,
+          event: 'booking_created',
           title: 'New booking',
           body: `${customerName.trim()} • ${appointmentLocal}`
         })

@@ -628,6 +628,21 @@ export const mockApi: CareChairApi = {
     registerPushToken: async (_token) => {
       await wait(40);
       // TODO: send device token to backend endpoint once available.
+    },
+    listPreferences: async () => {
+      await wait(40);
+      const {salon, user} = assertSalonContext();
+      return [
+        {id: 'booking_created', salonId: salon.id, userId: user.id, channel: 'push' as const, type: 'booking_created' as const, enabled: true},
+        {id: 'booking_updated', salonId: salon.id, userId: user.id, channel: 'push' as const, type: 'booking_updated' as const, enabled: true},
+        {id: 'booking_status_changed', salonId: salon.id, userId: user.id, channel: 'push' as const, type: 'booking_status_changed' as const, enabled: true},
+        {id: 'daily_summary', salonId: salon.id, userId: user.id, channel: 'push' as const, type: 'daily_summary' as const, enabled: true},
+      ];
+    },
+    updatePreference: async (type, enabled) => {
+      await wait(40);
+      const {salon, user} = assertSalonContext();
+      return {id: type, salonId: salon.id, userId: user.id, channel: 'push' as const, type, enabled};
     }
   }
 };

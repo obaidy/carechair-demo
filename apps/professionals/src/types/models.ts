@@ -22,6 +22,21 @@ export type Reminder = {
   enabled: boolean;
 };
 
+export type NotificationPreferenceType =
+  | 'booking_created'
+  | 'booking_updated'
+  | 'booking_status_changed'
+  | 'daily_summary';
+
+export type NotificationPreference = {
+  id: string;
+  salonId: string;
+  userId: string;
+  channel: 'push';
+  type: NotificationPreferenceType;
+  enabled: boolean;
+};
+
 export type SalonHourRule = {
   dayOfWeek: number;
   openTime?: string;

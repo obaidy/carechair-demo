@@ -130,6 +130,8 @@ function delay(ms: number) {
 }
 
 const SESSION_REFRESH_LEEWAY_MS = 2 * 60 * 1000;
+let restoreSessionPromise: Promise<any> | null = null;
+let lastRestoredSessionFingerprint = '';
 
 function syncStoreSession(session: any) {
   if (!session?.access_token) return;
@@ -189,10 +191,17 @@ async function getActiveSupabaseSession(options?: {allowRefresh?: boolean}) {
   if (!session) {
     const cached = useAuthStore.getState().session;
     if (cached?.accessToken && cached?.refreshToken) {
-      const restored = await client.auth.setSession({
-        access_token: cached.accessToken,
-        refresh_token: cached.refreshToken
-      });
+      const fingerprint = `${cached.accessToken.slice(0, 24)}:${cached.refreshToken.slice(0, 24)}`;
+      if (!restoreSessionPromise || lastRestoredSessionFingerprint !== fingerprint) {
+        lastRestoredSessionFingerprint = fingerprint;
+        restoreSessionPromise = client.auth.setSession({
+          access_token: cached.accessToken,
+          refresh_token: cached.refreshToken
+        }).finally(() => {
+          restoreSessionPromise = null;
+        });
+      }
+      const restored = await restoreSessionPromise;
       if (!restored.error && restored.data.session?.access_token) {
         session = restored.data.session;
         if (__DEV__) {

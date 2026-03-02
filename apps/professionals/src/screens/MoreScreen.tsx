@@ -11,7 +11,7 @@ import {useI18n} from '../i18n/provider';
 import {textDir} from '../utils/layout';
 import {useAuthStore} from '../state/authStore';
 import {useUiStore} from '../state/uiStore';
-import {useReminders, useRequestActivation, useServices, useStaff, useUpdateReminder, useUpsertService} from '../api/hooks';
+import {useNotificationPreferences, useReminders, useRequestActivation, useServices, useStaff, useUpdateNotificationPreference, useUpdateReminder, useUpsertService} from '../api/hooks';
 import {useSignOut} from '../api/authHooks';
 import type {UpsertServiceInput} from '../types/models';
 import {createInvite, type CreateInviteResult} from '../api/invites';
@@ -57,9 +57,11 @@ export function MoreScreen() {
   const servicesQuery = useServices();
   const staffQuery = useStaff();
   const remindersQuery = useReminders();
+  const notificationPreferencesQuery = useNotificationPreferences();
 
   const requestActivation = useRequestActivation();
   const updateReminder = useUpdateReminder();
+  const updateNotificationPreference = useUpdateNotificationPreference();
   const upsertService = useUpsertService();
   const signOut = useSignOut();
 
@@ -106,11 +108,12 @@ export function MoreScreen() {
       void servicesQuery.refetch();
       void staffQuery.refetch();
       void remindersQuery.refetch();
+      void notificationPreferencesQuery.refetch();
       void api.owner.getContext().then((next) => {
         setContext(next);
       }).catch(() => {});
       return () => {};
-    }, [remindersQuery, servicesQuery, staffQuery, setContext])
+    }, [notificationPreferencesQuery, remindersQuery, servicesQuery, staffQuery, setContext])
   );
 
   async function onRequestActivation(values: ActivationValues) {
@@ -215,6 +218,30 @@ export function MoreScreen() {
               />
             </View>
           ))}
+        </Card>
+
+        <Card style={{gap: spacing.sm}}>
+          <Text style={[typography.h3, {color: colors.text}, textDir(isRTL)]}>{t('notificationSettings')}</Text>
+          {(notificationPreferencesQuery.data || []).map((row) => {
+            const labelKey =
+              row.type === 'booking_created'
+                ? 'notificationBookingCreated'
+                : row.type === 'booking_updated'
+                  ? 'notificationBookingUpdated'
+                  : row.type === 'daily_summary'
+                    ? 'notificationDailySummary'
+                    : 'notificationBookingStatus';
+            return (
+              <View key={row.type} style={{flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between'}}>
+                <Text style={[typography.bodySm, {color: colors.text}, textDir(isRTL)]}>{t(labelKey)}</Text>
+                <Switch
+                  value={Boolean(row.enabled)}
+                  onValueChange={(value) => updateNotificationPreference.mutate({type: row.type, enabled: value})}
+                  disabled={updateNotificationPreference.isPending}
+                />
+              </View>
+            );
+          })}
         </Card>
 
         {!isActive ? (
